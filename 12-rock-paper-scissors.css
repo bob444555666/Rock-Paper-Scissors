@@ -1,156 +1,24 @@
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: white;
-}
-
-
-/* LOGIN AND SIGN UP */
-
-.auth-page,
-.signup-page {
-  position: fixed;
-  top: 0;
-  left: 0;
-
-  width: 100%;
-  height: 100%;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  background-color: white;
-}
-
-
-.auth-box {
-  width: 360px;
-
-  border: 1px solid #dadce0;
-  border-radius: 8px;
-
-  padding: 40px;
-
-  box-sizing: border-box;
-}
-
-
-.auth-box h1 {
-  font-size: 28px;
-  font-weight: 400;
-  margin: 0 0 10px;
-}
-
-
-.auth-subtitle {
-  font-size: 16px;
-  color: #5f6368;
-  margin-bottom: 30px;
-}
-
-
-.auth-box input {
-  width: 100%;
-  box-sizing: border-box;
-
-  padding: 14px;
-
-  margin-bottom: 15px;
-
-  border: 1px solid #dadce0;
-  border-radius: 4px;
-
-  font-size: 16px;
-}
-
-
-.auth-box input:focus {
-  outline: none;
-  border: 2px solid #1a73e8;
-}
-
-
-.blue-button {
-  width: 100%;
-
-  padding: 12px;
-
-  border: none;
-  border-radius: 4px;
-
-  background-color: #1a73e8;
-  color: white;
-
-  font-size: 15px;
-  font-weight: bold;
-
-  cursor: pointer;
-}
-
-
-.blue-button:hover {
-  background-color: #1765cc;
-}
-
-
-.signup-text {
-  margin-top: 30px;
-  font-size: 14px;
-  color: #5f6368;
-}
-
-
-.link-button {
-  border: none;
-  background: none;
-
-  color: #1a73e8;
-
-  font-weight: bold;
-
-  cursor: pointer;
-}
-
-
-#login-message,
-#signup-message {
-  font-size: 14px;
-  color: #d93025;
-}
-
-
-/* HIDE EVERYTHING UNTIL LOGIN */
-
-.signup-page {
-  display: none;
-}
-
-
-.game-container {
-  display: none;
-}
-
-
-
-
-
-
 body {
   background-color: rgb(25, 25, 25);
   color: white;
   font-family: Arial;
 }
 
+
+/* ================================= */
+/* YOUR ORIGINAL GAME CSS */
+/* ================================= */
+
 .title {
   font-size: 30px;
   font-weight: bold;
 }
 
+
 .move-icon {
   height: 50px;
 }
+
 
 .move-button {
   background-color: transparent;
@@ -162,15 +30,18 @@ body {
   cursor: pointer;
 }
 
+
 .result {
   font-size: 25px;
   font-weight: bold;
   margin-top: 50px;
 }
 
+
 .score {
   margin-top: 60px;
 }
+
 
 .reset-score-button,
 .auto-play-button {
@@ -179,4 +50,204 @@ body {
   font-size: 15px;
   padding: 8px 15px;
   cursor: pointer;
+}
+
+
+/* ================================= */
+/* GOOGLE-STYLE LOGIN */
+/* ================================= */
+
+.auth-page,
+.signup-page {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  background-color: white;
+
+  color: #202124;
+}
+
+
+.signup-page {
+  display: none;
+}
+
+
+.google-box {
+  width: 450px;
+
+  border: 1px solid #dadce0;
+
+  border-radius: 8px;
+
+  padding: 48px 40px 36px;
+
+  box-sizing: border-box;
+
+  background-color: white;
+}
+
+
+.google-logo {
+  font-size: 32px;
+
+  font-weight: bold;
+
+  margin-bottom: 25px;
+}
+
+
+.google-blue {
+  color: #4285f4;
+}
+
+
+.google-red {
+  color: #ea4335;
+}
+
+
+.google-yellow {
+  color: #fbbc05;
+}
+
+
+.google-green {
+  color: #34a853;
+}
+
+
+.google-box h1 {
+  font-size: 24px;
+
+  font-weight: 400;
+
+  margin: 0 0 10px;
+}
+
+
+.auth-subtitle {
+  font-size: 16px;
+
+  margin: 0 0 30px;
+
+  color: #202124;
+
+  line-height: 1.5;
+}
+
+
+.google-box input {
+  width: 100%;
+
+  height: 55px;
+
+  box-sizing: border-box;
+
+  padding: 0 14px;
+
+  margin-bottom: 20px;
+
+  border: 1px solid #747775;
+
+  border-radius: 4px;
+
+  font-size: 16px;
+}
+
+
+.google-box input:focus {
+  outline: none;
+
+  border: 2px solid #1a73e8;
+}
+
+
+.next-button {
+  float: right;
+
+  background-color: #1a73e8;
+
+  color: white;
+
+  border: none;
+
+  border-radius: 4px;
+
+  padding: 10px 24px;
+
+  font-size: 14px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+}
+
+
+.next-button:hover {
+  background-color: #1765cc;
+}
+
+
+.account-row {
+  margin-top: 70px;
+
+  display: flex;
+
+  gap: 5px;
+
+  align-items: center;
+
+  font-size: 14px;
+
+  color: #5f6368;
+}
+
+
+.create-link {
+  border: none;
+
+  background-color: transparent;
+
+  color: #1a73e8;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  font-size: 14px;
+}
+
+
+.create-link:hover {
+  text-decoration: underline;
+}
+
+
+#login-message,
+#signup-message {
+  color: #d93025;
+
+  font-size: 14px;
+
+  margin-top: 0;
+}
+
+
+/* ================================= */
+/* HIDE GAME UNTIL LOGIN */
+/* ================================= */
+
+.game-container {
+  display: none;
 }
