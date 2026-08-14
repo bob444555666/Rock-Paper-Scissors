@@ -1,84 +1,115 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Rock Paper Scissors</title>
-    <link rel="stylesheet" href="12-rock-paper-scissors.css">
-  </head>
-  <body>
+<head>
+  <title>Rock Paper Scissors</title>
+  <link rel="stylesheet" href="style.css">
+</head>
 
-<div class="auth-container">
+<body>
 
-  <div id="login-page">
-    <h2>Login</h2>
+  <!-- LOGIN PAGE -->
+  <div class="auth-page">
 
-    <input type="text" id="login-username" placeholder="Username">
-    <input type="password" id="login-password" placeholder="Password">
+    <div class="auth-box">
 
-    <button id="login-button">Login</button>
+      <h1>Sign in</h1>
+      <p class="auth-subtitle">to continue to Rock Paper Scissors</p>
 
-    <p id="login-message"></p>
+      <input
+        type="text"
+        id="login-username"
+        placeholder="Email or username"
+      >
 
-    <p>
-      Don't have an account?
-      <button id="show-signup">Sign Up</button>
-    </p>
+      <input
+        type="password"
+        id="login-password"
+        placeholder="Password"
+      >
+
+      <p id="login-message"></p>
+
+      <button id="login-button" class="blue-button">
+        Sign in
+      </button>
+
+      <p class="signup-text">
+        Don't have an account?
+        <button id="show-signup" class="link-button">
+          Create account
+        </button>
+      </p>
+
+    </div>
+
   </div>
 
 
-  <div id="signup-page" style="display: none;">
-    <h2>Sign Up</h2>
+  <!-- SIGN UP PAGE -->
+  <div class="signup-page">
 
-    <input type="text" id="signup-username" placeholder="Username">
-    <input type="password" id="signup-password" placeholder="Password">
+    <div class="auth-box">
 
-    <button id="signup-button">Create Account</button>
+      <h1>Create account</h1>
+      <p class="auth-subtitle">Create your Rock Paper Scissors account</p>
 
-    <p id="signup-message"></p>
+      <input
+        type="text"
+        id="signup-username"
+        placeholder="Username"
+      >
 
-    <p>
-      Already have an account?
-      <button id="show-login">Login</button>
-    </p>
+      <input
+        type="password"
+        id="signup-password"
+        placeholder="Password"
+      >
+
+      <p id="signup-message"></p>
+
+      <button id="signup-button" class="blue-button">
+        Create account
+      </button>
+
+      <p class="signup-text">
+        Already have an account?
+        <button id="show-login" class="link-button">
+          Sign in
+        </button>
+      </p>
+
+    </div>
+
   </div>
 
-</div>
 
-<div id="game-page" style="display: none;">
+  <!-- YOUR ORIGINAL GAME -->
+  <div class="game-container">
 
-  <!-- PUT YOUR ORIGINAL ROCK PAPER SCISSORS HTML HERE -->
+    <!-- PUT ALL OF YOUR ORIGINAL GAME HTML HERE -->
 
-</div>
-
-    
-    <p class="title">Rock Paper Scissors</p>
-    <button class="move-button js-rock-button">
-      <img src="images/rock-emoji.png" class="move-icon">
+    <button class="js-rock-button">
+      Rock
     </button>
 
-    <button class="move-button js-paper-button">
-      <img src="images/paper-emoji.png" class="move-icon">
+    <button class="js-paper-button">
+      Paper
     </button>
 
-    <button class="move-button js-scissors-button">
-      <img src="images/scissors-emoji.png" class="move-icon">
+    <button class="js-scissors-button">
+      Scissors
     </button>
 
-    <p class="js-result result"></p>
+    <p class="js-result"></p>
+
     <p class="js-moves"></p>
-    <p class="js-score score"></p>
 
-    <button onclick="
-      score.wins = 0;
-      score.losses = 0;
-      score.ties = 0;
-      localStorage.removeItem('score');
-      updateScoreElement();
-    " class="reset-score-button js-reset-score-button">Reset Score</button>
+    <p class="js-score"></p>
 
-    <button class="auto-play-button" onclick="
-      autoPlay();
-    ">Auto Play</button>
-    
-    <script src="12-rock-paper-scissors.js"></script>
-  </body>
+  </div>
+
+
+  <script src="script.js"></script>
+
+</body>
 </html>
