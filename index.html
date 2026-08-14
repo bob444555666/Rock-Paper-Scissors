@@ -1,170 +1,39 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Rock Paper Scissors</title>
-  <link rel="stylesheet" href="styles/12-rock-paper-scissors.css">
-</head>
-
-<body>
-
-  <!-- =========================
-       LOGIN SCREEN
-  ========================== -->
-
-  <div class="login-page">
-
-    <div class="login-box">
-
-      <div class="logo">
-        <span class="blue">G</span><span class="red">o</span><span class="yellow">o</span><span class="blue">g</span><span class="green">l</span><span class="red">e</span>
-      </div>
-
-      <h1>Sign in</h1>
-
-      <p class="login-subtitle">
-        Use your account to continue to Rock Paper Scissors
-      </p>
-
-      <input
-        class="login-input"
-        type="text"
-        id="login-username"
-        placeholder="Username"
-      >
-
-      <input
-        class="login-input"
-        type="password"
-        id="login-password"
-        placeholder="Password"
-      >
-
-      <p class="login-message" id="login-message"></p>
-
-      <div class="login-bottom">
-
-        <button
-          class="create-account-button"
-          id="create-account-button">
-          Create account
-        </button>
-
-        <button
-          class="next-button"
-          id="login-button">
-          Sign in
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- =========================
-       CREATE ACCOUNT SCREEN
-  ========================== -->
-
-  <div class="signup-page">
-
-    <div class="login-box">
-
-      <div class="logo">
-        <span class="blue">G</span><span class="red">o</span><span class="yellow">o</span><span class="blue">g</span><span class="green">l</span><span class="red">e</span>
-      </div>
-
-      <h1>Create account</h1>
-
-      <p class="login-subtitle">
-        Create your Rock Paper Scissors account
-      </p>
-
-      <input
-        class="login-input"
-        type="text"
-        id="signup-username"
-        placeholder="Username"
-      >
-
-      <input
-        class="login-input"
-        type="password"
-        id="signup-password"
-        placeholder="Password"
-      >
-
-      <p class="login-message" id="signup-message"></p>
-
-      <div class="login-bottom">
-
-        <button
-          class="create-account-button"
-          id="back-to-login">
-          Sign in instead
-        </button>
-
-        <button
-          class="next-button"
-          id="signup-button">
-          Create account
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- =========================
-       ROCK PAPER SCISSORS GAME
-  ========================== -->
-
-  <div class="game">
-
+  <head>
+    <title>Rock Paper Scissors</title>
+    <link rel="stylesheet" href="styles/12-rock-paper-scissors.css">
+  </head>
+  <body>
     <p class="title">Rock Paper Scissors</p>
-
     <button class="move-button js-rock-button">
-      <img
-        src="images/rock-emoji.png"
-        class="move-icon">
+      <img src="images/rock-emoji.png" class="move-icon">
     </button>
 
     <button class="move-button js-paper-button">
-      <img
-        src="images/paper-emoji.png"
-        class="move-icon">
+      <img src="images/paper-emoji.png" class="move-icon">
     </button>
 
     <button class="move-button js-scissors-button">
-      <img
-        src="images/scissors-emoji.png"
-        class="move-icon">
+      <img src="images/scissors-emoji.png" class="move-icon">
     </button>
 
     <p class="js-result result"></p>
-
     <p class="js-moves"></p>
-
     <p class="js-score score"></p>
 
-    <button
-      class="reset-score-button"
-      id="reset-score-button">
-      Reset Score
-    </button>
+    <button onclick="
+      score.wins = 0;
+      score.losses = 0;
+      score.ties = 0;
+      localStorage.removeItem('score');
+      updateScoreElement();
+    " class="reset-score-button js-reset-score-button">Reset Score</button>
 
-    <button
-      class="auto-play-button"
-      id="auto-play-button">
-      Auto Play
-    </button>
-
-  </div>
-
-
-  <script src="scripts/12-rock-paper-scissors.js"></script>
-
-</body>
+    <button class="auto-play-button" onclick="
+      autoPlay();
+    ">Auto Play</button>
+    
+    <script src="scripts/12-rock-paper-scissors.js"></script>
+  </body>
 </html>
