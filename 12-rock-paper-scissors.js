@@ -1,144 +1,3 @@
-// ================================
-// LOGIN / SIGN UP
-// ================================
-
-const authPage = document.querySelector('.auth-page');
-const signupPage = document.querySelector('.signup-page');
-const gameContainer = document.querySelector('.game-container');
-
-
-// CREATE ACCOUNT PAGE
-
-document.querySelector('#show-signup')
-  .addEventListener('click', () => {
-
-    authPage.style.display = 'none';
-    signupPage.style.display = 'flex';
-
-  });
-
-
-// LOGIN PAGE
-
-document.querySelector('#show-login')
-  .addEventListener('click', () => {
-
-    signupPage.style.display = 'none';
-    authPage.style.display = 'flex';
-
-  });
-
-
-// SIGN UP
-
-document.querySelector('#signup-button')
-  .addEventListener('click', () => {
-
-    const username =
-      document.querySelector('#signup-username').value;
-
-    const password =
-      document.querySelector('#signup-password').value;
-
-
-    if (username === '' || password === '') {
-
-      document.querySelector('#signup-message').innerHTML =
-        'Enter a username and password.';
-
-      return;
-    }
-
-
-    const existingUser =
-      localStorage.getItem(`user_${username}`);
-
-
-    if (existingUser) {
-
-      document.querySelector('#signup-message').innerHTML =
-        'That account already exists.';
-
-      return;
-    }
-
-
-    const user = {
-      username: username,
-      password: password
-    };
-
-
-    localStorage.setItem(
-      `user_${username}`,
-      JSON.stringify(user)
-    );
-
-
-    document.querySelector('#signup-message').style.color =
-      '#188038';
-
-    document.querySelector('#signup-message').innerHTML =
-      'Account created! Now sign in.';
-
-
-    document.querySelector('#signup-username').value = '';
-    document.querySelector('#signup-password').value = '';
-
-  });
-
-
-// LOGIN
-
-document.querySelector('#login-button')
-  .addEventListener('click', () => {
-
-    const username =
-      document.querySelector('#login-username').value;
-
-    const password =
-      document.querySelector('#login-password').value;
-
-
-    const savedUser =
-      localStorage.getItem(`user_${username}`);
-
-
-    if (!savedUser) {
-
-      document.querySelector('#login-message').innerHTML =
-        'Incorrect username or password.';
-
-      return;
-    }
-
-
-    const user = JSON.parse(savedUser);
-
-
-    if (user.password !== password) {
-
-      document.querySelector('#login-message').innerHTML =
-        'Incorrect username or password.';
-
-      return;
-    }
-
-
-    // LOGIN SUCCESSFUL
-
-    authPage.style.display = 'none';
-
-    signupPage.style.display = 'none';
-
-    gameContainer.style.display = 'block';
-
-  });
-
-
-
-
-
 let score = JSON.parse(localStorage.getItem('score')) || {
   wins: 0,
   losses: 0,
@@ -163,12 +22,14 @@ let intervalId;
 //const autoPlay = () => {
 
 //};
+
 function autoPlay() {
   if (!isAutoPlaying) {
     intervalId = setInterval(() => {
       const playerMove = pickComputerMove();
       playGame(playerMove);
     }, 1000);
+
     isAutoPlaying = true;
 
   } else {
@@ -224,7 +85,7 @@ function playGame(playerMove) {
     } else if (computerMove === 'scissors') {
       result = 'You lose.';
     }
-    
+
   } else if (playerMove === 'rock') {
     if (computerMove === 'rock') {
       result = 'Tie.';
@@ -275,3 +136,151 @@ function pickComputerMove() {
 
   return computerMove;
 }
+
+
+// =====================================
+// ACCOUNT SYSTEM
+// =====================================
+
+const authPage = document.querySelector('.auth-page');
+const signupPage = document.querySelector('.signup-page');
+const gameContainer = document.querySelector('.game-container');
+
+
+// =====================================
+// CREATE ACCOUNT LINK
+// =====================================
+
+document.querySelector('#create-account')
+  .addEventListener('click', () => {
+
+    authPage.style.display = 'none';
+
+    signupPage.style.display = 'flex';
+
+  });
+
+
+// =====================================
+// BACK TO SIGN IN
+// =====================================
+
+document.querySelector('#back-to-login')
+  .addEventListener('click', () => {
+
+    signupPage.style.display = 'none';
+
+    authPage.style.display = 'flex';
+
+  });
+
+
+// =====================================
+// CREATE ACCOUNT
+// =====================================
+
+document.querySelector('#signup-button')
+  .addEventListener('click', () => {
+
+    const username =
+      document.querySelector('#signup-username').value;
+
+    const password =
+      document.querySelector('#signup-password').value;
+
+
+    if (username === '' || password === '') {
+
+      document.querySelector('#signup-message').innerHTML =
+        'Enter a username and password.';
+
+      return;
+    }
+
+
+    const existingUser =
+      localStorage.getItem(`user_${username}`);
+
+
+    if (existingUser) {
+
+      document.querySelector('#signup-message').innerHTML =
+        'That account already exists.';
+
+      return;
+    }
+
+
+    const user = {
+      username: username,
+      password: password
+    };
+
+
+    localStorage.setItem(
+      `user_${username}`,
+      JSON.stringify(user)
+    );
+
+
+    document.querySelector('#signup-message').style.color =
+      '#188038';
+
+    document.querySelector('#signup-message').innerHTML =
+      'Account created! You can now sign in.';
+
+
+    document.querySelector('#signup-username').value = '';
+    document.querySelector('#signup-password').value = '';
+
+  });
+
+
+// =====================================
+// SIGN IN
+// =====================================
+
+document.querySelector('#login-next')
+  .addEventListener('click', () => {
+
+    const username =
+      document.querySelector('#login-username').value;
+
+
+    const savedUser =
+      localStorage.getItem(`user_${username}`);
+
+
+    if (!savedUser) {
+
+      document.querySelector('#login-message').innerHTML =
+        'Couldn’t find your account.';
+
+      return;
+    }
+
+
+    const password = prompt('Enter your password');
+
+
+    const user = JSON.parse(savedUser);
+
+
+    if (password !== user.password) {
+
+      document.querySelector('#login-message').innerHTML =
+        'Wrong password.';
+
+      return;
+    }
+
+
+    // LOGIN SUCCESSFUL
+
+    authPage.style.display = 'none';
+
+    signupPage.style.display = 'none';
+
+    gameContainer.style.display = 'block';
+
+  });
