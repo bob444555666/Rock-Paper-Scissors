@@ -17,14 +17,14 @@ console.log(localStorage.getItem('message'));
 
 
 
-const rock = document.getElementById ("stone");
+const rock = document.getElementById ("rock");
 const paper = document.getElementById ("paper");
 const scissors = document.getElementById ("scissors");
 const resetScore = document.getElementById ("resetScore");
 
 
 rock.addEventListener("click", function () {
-  playGame('stone');
+  playGame('rock');
 
 
 });
@@ -62,7 +62,7 @@ function pickComputerMove() {
 
     
     if (randomNumber >= 0 && randomNumber < 1 / 3) {
-      computerMove = 'stone';
+      computerMove = 'rock';
     } else if (randomNumber >= 1 / 3 && randomNumber < 2 / 3) {
       computerMove = 'paper';
     } else if (randomNumber >= 2 / 3 && randomNumber < 1) {
@@ -81,7 +81,7 @@ const computerMove = pickComputerMove();
 
 
 if (playerMove === 'scissors') {
-    if (computerMove === 'stone') {
+    if (computerMove === 'rock') {
     result = 'You lose.';
     } else if (computerMove === 'paper') {
       result = 'You win.';
@@ -95,7 +95,7 @@ else if (playerMove === 'paper') {
 
 
  
-  if (computerMove === 'stone') {
+  if (computerMove === 'rock') {
    result = 'You win.';
   } else if (computerMove === 'paper') {
     result = 'Tie.';
@@ -104,7 +104,7 @@ else if (playerMove === 'paper') {
   }
 } 
 
-else if (playerMove === 'stone') {
+else if (playerMove === 'rock') {
 const computerMove = pickComputerMove();
 
   
