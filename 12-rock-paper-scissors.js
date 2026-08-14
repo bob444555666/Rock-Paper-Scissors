@@ -1,3 +1,103 @@
+
+// ===============================
+// LOGIN / SIGN UP SYSTEM
+// ===============================
+
+const loginPage = document.querySelector('#login-page');
+const signupPage = document.querySelector('#signup-page');
+const gamePage = document.querySelector('#game-page');
+
+const loginButton = document.querySelector('#login-button');
+const signupButton = document.querySelector('#signup-button');
+
+const showSignup = document.querySelector('#show-signup');
+const showLogin = document.querySelector('#show-login');
+
+
+// Show Sign Up
+showSignup.addEventListener('click', () => {
+  loginPage.style.display = 'none';
+  signupPage.style.display = 'block';
+});
+
+
+// Show Login
+showLogin.addEventListener('click', () => {
+  signupPage.style.display = 'none';
+  loginPage.style.display = 'block';
+});
+
+
+// Sign Up
+signupButton.addEventListener('click', () => {
+
+  const username = document.querySelector('#signup-username').value;
+  const password = document.querySelector('#signup-password').value;
+
+  if (username === '' || password === '') {
+    document.querySelector('#signup-message').innerHTML =
+      'Please enter a username and password.';
+    return;
+  }
+
+  const existingUser = localStorage.getItem(`user_${username}`);
+
+  if (existingUser) {
+    document.querySelector('#signup-message').innerHTML =
+      'That username already exists.';
+    return;
+  }
+
+  const user = {
+    username: username,
+    password: password
+  };
+
+  localStorage.setItem(`user_${username}`, JSON.stringify(user));
+
+  document.querySelector('#signup-message').innerHTML =
+    'Account created! You can now log in.';
+
+  document.querySelector('#signup-username').value = '';
+  document.querySelector('#signup-password').value = '';
+});
+
+
+// Login
+loginButton.addEventListener('click', () => {
+
+  const username = document.querySelector('#login-username').value;
+  const password = document.querySelector('#login-password').value;
+
+  const savedUser = localStorage.getItem(`user_${username}`);
+
+  if (!savedUser) {
+    document.querySelector('#login-message').innerHTML =
+      'Username or password is incorrect.';
+    return;
+  }
+
+  const user = JSON.parse(savedUser);
+
+  if (user.password !== password) {
+    document.querySelector('#login-message').innerHTML =
+      'Username or password is incorrect.';
+    return;
+  }
+
+  // Login successful
+  localStorage.setItem('loggedInUser', username);
+
+  loginPage.style.display = 'none';
+  signupPage.style.display = 'none';
+  gamePage.style.display = 'block';
+
+});
+
+
+
+
+
 let score = JSON.parse(localStorage.getItem('score')) || {
   wins: 0,
   losses: 0,
