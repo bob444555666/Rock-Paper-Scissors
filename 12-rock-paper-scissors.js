@@ -135,7 +135,7 @@ function joinGame() {
   */
 
   const server =
-    'wss://YOUR-WORKER.YOUR-NAME.workers.dev'
+    'wss://rps-server.heyboernathan.workers.dev'
 
 
   socket = new WebSocket(
