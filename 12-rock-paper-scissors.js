@@ -948,6 +948,7 @@ function logout() {
   token = null
   try { localStorage.removeItem('token') } catch (error) {}
   setUser(null)
+  clearScores()
   disconnect()
 }
  
@@ -998,6 +999,7 @@ function finishLogin(data) {
   try { localStorage.setItem('token', token) } catch (error) {}
   setUser(data.user)
   hideAuth()
+  loadProfile()
   resultElement.textContent = `Welcome, ${data.user.name}!`
 }
  
@@ -1046,12 +1048,7 @@ $('#guest-btn').addEventListener('click', () => {
   setMode('computer')
 })
  
-userChip.addEventListener('click', () => {
-  if (confirm('Log out of ' + (user ? user.name : 'your account') + '?')) {
-    logout()
-    showAuth('')
-  }
-})
+userChip.addEventListener('click', openProfile)
  
 async function handleConnectFail() {
   connectionStatus.textContent = 'Could not connect'
@@ -1085,6 +1082,7 @@ async function startAuth() {
       const res = await fetch(API + '/me?token=' + encodeURIComponent(token))
       if (res.ok) {
         setUser((await res.json()).user)
+        loadProfile()
         return
       }
     } catch (error) {}
@@ -1101,4 +1099,155 @@ async function startAuth() {
 }
  
 startAuth()
+ 
+ 
+ 
+/* ================= Profile, scores kept in the account, leaderboard ================= */
+ 
+let profile = null
+ 
+async function account(action, body) {
+  try {
+    const res = await fetch(API + '/account/' + action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, token })
+    })
+    const data = await res.json()
+    if (res.status === 401) {
+      $('#profile-layer').hidden = true
+      logout()
+      showAuth('Please log in again.')
+    }
+    return { ok: res.ok, data }
+  } catch (error) {
+    return { ok: false, data: { error: 'Could not reach the server.' } }
+  }
+}
+ 
+function clearScores() {
+  profile = null
+  for (const key of ['online', 'computer']) {
+    scores[key].wins = 0
+    scores[key].losses = 0
+    scores[key].ties = 0
+    try { localStorage.removeItem(SCORE_KEYS[key]) } catch (error) {}
+  }
+  updateScoreElement()
+}
+ 
+async function loadProfile() {
+  const r = await account('profile', {})
+  if (!r.ok) return
+  profile = r.data.user
+  Object.assign(scores.online, profile.stats.online)
+  Object.assign(scores.computer, profile.stats.computer)
+  updateScoreElement()
+}
+ 
+function pfMsg(text) {
+  $('#pf-msg').textContent = text
+}
+ 
+function renderProfile() {
+  const line = s => `W ${s.wins}, L ${s.losses}, T ${s.ties}`
+  $('#pf-name').textContent = user ? user.name : 'Profile'
+  $('#pf-email').textContent = profile && profile.email ? profile.email : ''
+  $('#pf-online').textContent = 'Online: ' + line(scores.online)
+  $('#pf-computer').textContent = 'Computer: ' + line(scores.computer)
+}
+ 
+function openProfile() {
+  $('#profile-layer').hidden = false
+  pfMsg('')
+  renderProfile()
+}
+ 
+// computer games are reported by the page; online games are recorded by the server
+window.addEventListener('rps-result', event => {
+  if (token && event.detail.which === 'computer') {
+    account('score', { result: event.detail.result })
+  }
+})
+ 
+resetButton.addEventListener('click', () => {
+  if (token) account('reset-score', { mode })
+})
+ 
+$('#pf-user-go').addEventListener('click', async () => {
+  pfMsg('Please wait...')
+  const r = await account('username', { username: $('#pf-user').value.trim(), password: $('#pf-cur').value })
+  if (!r.ok) return pfMsg(r.data.error || 'Something went wrong.')
+  token = r.data.token
+  try { localStorage.setItem('token', token) } catch (error) {}
+  setUser({ name: r.data.user.name })
+  renderProfile()
+  $('#pf-user').value = ''
+  pfMsg('Username changed.')
+})
+ 
+$('#pf-pw-go').addEventListener('click', async () => {
+  pfMsg('Please wait...')
+  const r = await account('password', { password: $('#pf-cur').value, newPassword: $('#pf-new').value })
+  if (!r.ok) return pfMsg(r.data.error || 'Something went wrong.')
+  $('#pf-new').value = ''
+  pfMsg('Password changed.')
+})
+ 
+$('#pf-logout').addEventListener('click', () => {
+  $('#profile-layer').hidden = true
+  logout()
+  showAuth('')
+})
+ 
+$('#pf-delete').addEventListener('click', async () => {
+  if (!confirm('Delete your account and all your scores? This cannot be undone.')) return
+  pfMsg('Please wait...')
+  const r = await account('delete', { password: $('#pf-cur').value })
+  if (!r.ok) return pfMsg(r.data.error || 'Something went wrong.')
+  $('#profile-layer').hidden = true
+  logout()
+  showAuth('Your account was deleted.')
+})
+ 
+async function openLeaderboard(which) {
+  $('#lb-layer').hidden = false
+  document.querySelectorAll('.tab[data-lb]').forEach(tab => {
+    tab.classList.toggle('on', tab.dataset.lb === which)
+  })
+ 
+  const list = $('#lb-list')
+  list.textContent = 'Loading...'
+ 
+  try {
+    const res = await fetch(API + '/leaderboard?mode=' + which, { cache: 'no-store' })
+    const rows = (await res.json()).rows || []
+    list.textContent = rows.length ? '' : 'No scores yet. Be the first!'
+ 
+    rows.forEach((r, i) => {
+      const row = document.createElement('div')
+      row.className = 'row' + (user && r.name === user.name ? ' me' : '')
+      const name = document.createElement('span')
+      name.textContent = `${i + 1}. ${r.name}`
+      const record = document.createElement('em')
+      record.textContent = `${r.wins}W ${r.losses}L`
+      row.append(name, record)
+      list.append(row)
+    })
+  } catch (error) {
+    list.textContent = 'Could not load the leaderboard.'
+  }
+}
+ 
+$('#lb-btn').addEventListener('click', () => openLeaderboard('online'))
+ 
+document.querySelectorAll('.tab[data-lb]').forEach(tab => {
+  tab.addEventListener('click', () => openLeaderboard(tab.dataset.lb))
+})
+ 
+document.querySelectorAll('[data-close]').forEach(button => {
+  button.addEventListener('click', () => {
+    button.closest('.ui-layer').hidden = true
+  })
+})
  
