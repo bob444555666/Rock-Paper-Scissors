@@ -517,3 +517,7 @@ body {
 .auth-or { margin: 4px 0 12px; font-size: 13px; color: rgba(255, 255, 255, 0.5); }
 .auth-card .big { margin-bottom: 8px; }
  
+#lb-btn { left: 12px; border-color: var(--purple); box-shadow: 0 0 14px rgba(168, 85, 247, 0.7); }
+.big.danger { background: #dc2626; }
+#lb-list { margin-top: 6px; }
+ 
