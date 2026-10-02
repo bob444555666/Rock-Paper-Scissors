@@ -1,1045 +1,519 @@
-let socket = null
-let myPlayerId = null
-let currentRoom = null
-let connected = false
-let myMove = null
- 
-let mode = 'online'
-let computerBusy = false
-let level = 'easy'
-let playerHistory = []
- 
- 
-const BEATS = {
-  rock: 'scissors',
-  paper: 'rock',
-  scissors: 'paper'
+:root {
+  --black: #07060d;
+  --panel: rgba(255, 255, 255, 0.04);
+  --purple: #a855f7;
+  --blue: #3b82f6;
+  --green: #22f5a0;
+  --text: #ecebf5;
 }
  
-const COUNTER = {
-  rock: 'paper',
-  paper: 'scissors',
-  scissors: 'rock'
+* {
+  box-sizing: border-box;
 }
  
-const MOVES = ['rock', 'paper', 'scissors']
- 
- 
-const LEVELS = {
-  easy: {
-    smart: 0,
-    text: 'Totally random. Good for warming up.'
-  },
-  medium: {
-    smart: 0.5,
-    text: 'Notices which move you use the most.'
-  },
-  hard: {
-    smart: 0.75,
-    text: 'Learns what you tend to throw after each move.'
-  },
-  insane: {
-    smart: 0.95,
-    text: 'Hunts for patterns in your last moves. Good luck.'
-  }
+[hidden] {
+  display: none !important;
 }
  
- 
-const SCORE_KEYS = {
-  online: 'score',
-  computer: 'computerScore'
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  background: var(--black);
 }
  
- 
-function loadScore(key) {
- 
-  try {
- 
-    return JSON.parse(
-      localStorage.getItem(key)
-    ) || {
-      wins: 0,
-      losses: 0,
-      ties: 0
-    }
- 
-  } catch (error) {
- 
-    return {
-      wins: 0,
-      losses: 0,
-      ties: 0
-    }
- 
-  }
- 
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(20px + env(safe-area-inset-top))
+    calc(16px + env(safe-area-inset-right))
+    calc(24px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  text-align: center;
+  color: var(--text);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(168, 85, 247, 0.25), transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.22), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(34, 245, 160, 0.18), transparent 45%),
+    var(--black);
+  background-attachment: fixed;
 }
  
- 
-// online and computer games each keep their own score
-const scores = {
-  online: loadScore(SCORE_KEYS.online),
-  computer: loadScore(SCORE_KEYS.computer)
+.title {
+  margin: 0 0 20px;
+  font-size: clamp(26px, 9vw, 40px);
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--purple), var(--blue), var(--green));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.5));
 }
  
- 
-try {
- 
-  const savedLevel =
-    localStorage.getItem('level')
- 
-  if (LEVELS[savedLevel]) {
-    level = savedLevel
-  }
- 
-} catch (error) {}
- 
- 
-const roomInput =
-  document.querySelector('#room-code')
- 
-const joinButton =
-  document.querySelector('#join-button')
- 
-const connectionStatus =
-  document.querySelector('#connection-status')
- 
-const playerCount =
-  document.querySelector('#player-count')
- 
- 
-const onlineBox =
-  document.querySelector('#online-box')
- 
-const computerBox =
-  document.querySelector('#computer-box')
- 
-const modeOnlineButton =
-  document.querySelector('#mode-online')
- 
-const modeComputerButton =
-  document.querySelector('#mode-computer')
- 
-const levelButtons =
-  document.querySelectorAll('.level-button')
- 
-const levelDescription =
-  document.querySelector('#level-description')
- 
-const scoreLabel =
-  document.querySelector('.js-score-label')
- 
-const resetButton =
-  document.querySelector('#reset-button')
- 
- 
-const resultElement =
-  document.querySelector('.js-result')
- 
-const movesElement =
-  document.querySelector('.js-moves')
- 
- 
-const rockButton =
-  document.querySelector('.js-rock-button')
- 
-const paperButton =
-  document.querySelector('.js-paper-button')
- 
-const scissorsButton =
-  document.querySelector('.js-scissors-button')
- 
- 
-updateScoreElement()
-updateLevelButtons()
- 
- 
-rockButton.addEventListener(
-  'click',
-  () => makeMove('rock')
-)
- 
- 
-paperButton.addEventListener(
-  'click',
-  () => makeMove('paper')
-)
- 
- 
-scissorsButton.addEventListener(
-  'click',
-  () => makeMove('scissors')
-)
- 
- 
-joinButton.addEventListener(
-  'click',
-  joinGame
-)
- 
- 
-modeOnlineButton.addEventListener(
-  'click',
-  () => setMode('online')
-)
- 
- 
-modeComputerButton.addEventListener(
-  'click',
-  () => setMode('computer')
-)
- 
- 
-levelButtons.forEach(button => {
- 
-  button.addEventListener('click', () => {
- 
-    level = button.dataset.level
- 
-    // fresh start so the computer forgets your old moves
-    playerHistory = []
- 
-    try {
-      localStorage.setItem('level', level)
-    } catch (error) {}
- 
-    updateLevelButtons()
-    updateScoreElement()
- 
-    resultElement.textContent =
-      'Pick a move to play the computer.'
- 
-    movesElement.innerHTML = ''
- 
-  })
- 
-})
- 
- 
-resetButton.addEventListener('click', () => {
- 
-  const score = scores[mode]
- 
-  score.wins = 0
-  score.losses = 0
-  score.ties = 0
- 
-  localStorage.removeItem(SCORE_KEYS[mode])
- 
-  updateScoreElement()
- 
-})
- 
- 
-document.body.addEventListener(
-  'keydown',
-  event => {
- 
-    if (event.target.tagName === 'INPUT') {
-      return
-    }
- 
-    if (event.key === 'r') {
-      makeMove('rock')
-    }
- 
-    if (event.key === 'p') {
-      makeMove('paper')
-    }
- 
-    if (event.key === 's') {
-      makeMove('scissors')
-    }
- 
-  }
-)
- 
- 
-function setMode(newMode) {
- 
-  if (newMode === mode) {
-    return
-  }
- 
-  mode = newMode
- 
-  movesElement.innerHTML = ''
- 
-  modeOnlineButton.classList
-    .toggle('active', mode === 'online')
- 
-  modeComputerButton.classList
-    .toggle('active', mode === 'computer')
- 
-  onlineBox.hidden = mode !== 'online'
-  computerBox.hidden = mode !== 'computer'
- 
- 
-  if (mode === 'computer') {
- 
-    disconnect()
- 
-    resultElement.textContent =
-      'Pick a move to play the computer.'
- 
-  }
- 
-  else {
- 
-    resultElement.textContent =
-      'Join a room to play'
- 
-  }
- 
- 
-  updateScoreElement()
- 
+/* ---------- Online box ---------- */
+ 
+.online-box,
+.computer-box {
+  width: 100%;
+  max-width: 340px;
+  margin: 0 0 28px;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.15);
+  backdrop-filter: blur(6px);
 }
  
- 
-function disconnect() {
- 
-  if (socket) {
- 
-    const oldSocket = socket
- 
-    socket = null
- 
-    oldSocket.close()
- 
-  }
- 
-  connected = false
-  myMove = null
- 
-  connectionStatus.textContent =
-    'Not connected'
- 
-  playerCount.textContent =
-    'Players: 0/2'
- 
+#connection-status {
+  margin: 0 0 14px;
+  font-weight: bold;
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(34, 245, 160, 0.5);
 }
  
- 
-function joinGame() {
- 
-  if (!token) {
-    showAuth('Log in to play online.')
-    return
-  }
- 
-  const room =
-    roomInput.value
-      .trim()
-      .toUpperCase()
- 
- 
-  if (!room) {
- 
-    resultElement.textContent =
-      'Enter a room code.'
- 
-    return
-  }
- 
- 
-  if (socket) {
- 
-    const oldSocket = socket
- 
-    socket = null
- 
-    oldSocket.close()
- 
-  }
- 
- 
-  myMove = null
-  connected = false
- 
- 
-  currentRoom = room
- 
- 
-  /*
-    CHANGE THIS TO YOUR
-    CLOUDFLARE WORKER ADDRESS
-  */
- 
-  const server =
-    'wss://rps-server.heyboernathan.workers.dev'
- 
- 
-  const ws = new WebSocket(
-    `${server}/room?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}`
-  )
- 
-  socket = ws
- 
- 
-  connectionStatus.textContent =
-    'Connecting...'
- 
- 
-  ws.addEventListener(
-    'open',
-    () => {
- 
-      connected = true
- 
-      connectionStatus.textContent =
-        `Connected to room ${room}`
- 
-      resultElement.textContent =
-        'Waiting for another player...'
- 
-    }
-  )
- 
- 
-  ws.addEventListener(
-    'message',
-    event => {
- 
-      const data =
-        JSON.parse(event.data)
- 
- 
-      if (data.type === 'welcome') {
- 
-        myPlayerId =
-          data.playerId
- 
-      }
- 
- 
-      if (data.type === 'players') {
- 
-        playerCount.textContent =
-          `Players: ${data.count}/2`
- 
- 
-        if (data.count === 1) {
- 
-          resultElement.textContent =
-            'Waiting for another player...'
- 
-        }
- 
- 
-        if (data.count === 2) {
- 
-          resultElement.textContent =
-            'Both players connected. Choose your move.'
- 
-        }
- 
-      }
- 
- 
-      if (data.type === 'opponent-move') {
- 
-        movesElement.innerHTML =
-          'Your opponent has chosen a move.'
- 
-      }
- 
- 
-      if (data.type === 'result') {
- 
-        showResult(data)
- 
-      }
- 
- 
-      if (data.type === 'error') {
- 
-        resultElement.textContent =
-          data.message
- 
-      }
- 
-    }
-  )
- 
- 
-  ws.addEventListener(
-    'close',
-    () => {
- 
-      // ignore sockets we already replaced or closed on purpose
-      if (socket !== ws) {
-        return
-      }
- 
-      // never opened: login expired, room full or server off
-      if (!connected) {
-        handleConnectFail()
-        return
-      }
- 
-      connected = false
-      myMove = null
- 
-      connectionStatus.textContent =
-        'Disconnected'
- 
-      playerCount.textContent =
-        'Players: 0/2'
- 
-    }
-  )
- 
+#room-code {
+  width: 140px;
+  padding: 10px 12px;
+  font-size: 16px; /* 16px stops iPhone zooming in on the input */
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-appearance: none;
+  font-family: inherit;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 2px solid var(--purple);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
  
- 
-function makeMove(move) {
- 
-  if (mode === 'computer') {
- 
-    playComputer(move)
- 
-    return
- 
-  }
- 
- 
-  if (!connected) {
- 
-    resultElement.textContent =
-      'Join a room first.'
- 
-    return
- 
-  }
- 
- 
-  if (myMove !== null) {
- 
-    resultElement.textContent =
-      'You already chose a move.'
- 
-    return
- 
-  }
- 
- 
-  myMove = move
- 
- 
-  resultElement.textContent =
-    `You chose ${move}. Waiting for opponent...`
- 
- 
-  socket.send(
-    JSON.stringify({
-      type: 'move',
-      move: move
-    })
-  )
- 
+#room-code::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0;
+  text-transform: none;
 }
  
- 
-function playComputer(move) {
- 
-  if (computerBusy) {
-    return
-  }
- 
-  computerBusy = true
- 
-  movesElement.innerHTML = ''
- 
-  resultElement.textContent =
-    'Computer is choosing...'
- 
- 
-  setTimeout(() => {
- 
-    computerBusy = false
- 
-    // player left computer mode while waiting
-    if (mode !== 'computer') {
-      return
-    }
- 
- 
-    // the computer picks BEFORE it sees your move
-    const computerMove =
-      computerChoose()
- 
-    playerHistory.push(move)
- 
- 
-    let result = 'loss'
- 
-    if (move === computerMove) {
-      result = 'tie'
-    }
- 
-    else if (BEATS[move] === computerMove) {
-      result = 'win'
-    }
- 
- 
-    applyResult(
-      'computer',
-      result,
-      move,
-      computerMove,
-      'Computer'
-    )
- 
-  }, 400)
- 
+#room-code:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.7);
 }
  
- 
-function randomMove() {
- 
-  return MOVES[
-    Math.floor(Math.random() * MOVES.length)
-  ]
- 
+#join-button {
+  margin-left: 6px;
+  padding: 11px 18px;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: inherit;
+  color: white;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
  
- 
-function computerChoose() {
- 
-  const smart = LEVELS[level].smart
- 
-  if (
-    playerHistory.length > 0 &&
-    Math.random() < smart
-  ) {
- 
-    const predicted = predictPlayerMove()
- 
-    if (predicted) {
-      return COUNTER[predicted]
-    }
- 
-  }
- 
-  return randomMove()
- 
+#join-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.8);
 }
  
- 
-function mostCommon(counts) {
- 
-  const best =
-    Math.max(...MOVES.map(m => counts[m]))
- 
-  const tied =
-    MOVES.filter(m => counts[m] === best)
- 
-  return tied[
-    Math.floor(Math.random() * tied.length)
-  ]
- 
+#join-button:active {
+  transform: translateY(0);
 }
  
- 
-function predictPlayerMove() {
- 
-  const h = playerHistory
- 
-  const counts = {
-    rock: 0,
-    paper: 0,
-    scissors: 0
-  }
- 
-  let total = 0
- 
- 
-  // insane: look at your last 2 moves
-  if (level === 'insane' && h.length >= 3) {
- 
-    const a = h[h.length - 2]
-    const b = h[h.length - 1]
- 
-    for (let i = 0; i < h.length - 2; i++) {
- 
-      if (h[i] === a && h[i + 1] === b) {
- 
-        counts[h[i + 2]]++
-        total++
- 
-      }
- 
-    }
- 
-    if (total > 0) {
-      return mostCommon(counts)
-    }
- 
-  }
- 
- 
-  // hard + insane: look at your last move
-  if (
-    (level === 'hard' || level === 'insane') &&
-    h.length >= 2
-  ) {
- 
-    const last = h[h.length - 1]
- 
-    counts.rock = 0
-    counts.paper = 0
-    counts.scissors = 0
-    total = 0
- 
-    for (let i = 0; i < h.length - 1; i++) {
- 
-      if (h[i] === last) {
- 
-        counts[h[i + 1]]++
-        total++
- 
-      }
- 
-    }
- 
-    if (total > 0) {
-      return mostCommon(counts)
-    }
- 
-  }
- 
- 
-  // everyone: your most used move
-  counts.rock = 0
-  counts.paper = 0
-  counts.scissors = 0
- 
-  const recent =
-    level === 'medium' ? h.slice(-10) : h
- 
-  recent.forEach(m => counts[m]++)
- 
-  return mostCommon(counts)
- 
+#player-count {
+  margin: 14px 0 0;
+  color: var(--blue);
+  font-weight: 600;
 }
  
+/* ---------- Move buttons ---------- */
  
-function showResult(data) {
- 
-  myMove = null
- 
-  applyResult(
-    'online',
-    data.result,
-    data.yourMove,
-    data.opponentMove,
-    data.opponentName || 'Opponent'
-  )
- 
+.move-row {
+  display: flex;
+  justify-content: center;
+  gap: clamp(8px, 3vw, 14px);
+  width: 100%;
 }
  
- 
-function applyResult(
-  which,
-  result,
-  yourMove,
-  opponentMove,
-  opponentName
-) {
- 
-  const score = scores[which]
- 
- 
-  movesElement.innerHTML =
-    `You
-     <img
-       src="images/${yourMove}-emoji.png"
-       class="move-icon"
-     >
-     <img
-       src="images/${opponentMove}-emoji.png"
-       class="move-icon"
-     >
-     ${opponentName}`
- 
- 
-  if (result === 'win') {
- 
-    score.wins++
- 
-    resultElement.textContent =
-      'You win!'
- 
-  }
- 
- 
-  else if (result === 'loss') {
- 
-    score.losses++
- 
-    resultElement.textContent =
-      'You lose.'
- 
-  }
- 
- 
-  else {
- 
-    score.ties++
- 
-    resultElement.textContent =
-      'Tie.'
- 
-  }
- 
- 
-  localStorage.setItem(
-    SCORE_KEYS[which],
-    JSON.stringify(score)
-  )
- 
- 
-  window.dispatchEvent(new CustomEvent('rps-result', {
-    detail: { which, result, level }
-  }))
- 
-  updateScoreElement()
+.move-icon {
+  height: clamp(38px, 12vw, 50px);
+  vertical-align: middle;
 }
  
- 
-function updateLevelButtons() {
- 
-  levelButtons.forEach(button => {
- 
-    button.classList.toggle(
-      'active',
-      button.dataset.level === level
-    )
- 
-  })
- 
-  levelDescription.textContent =
-    LEVELS[level].text
- 
+.move-button {
+  --size: clamp(84px, 27vw, 120px);
+  width: var(--size);
+  height: var(--size);
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.55);
+  border: 3px solid var(--purple);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
  
- 
-function updateScoreElement() {
- 
-  const score = scores[mode]
- 
-  if (mode === 'computer') {
- 
-    const name =
-      level.charAt(0).toUpperCase() +
-      level.slice(1)
- 
-    scoreLabel.textContent =
-      'Computer score'
- 
-    resetButton.textContent =
-      'Reset Computer Score'
- 
-  }
- 
-  else {
- 
-    scoreLabel.textContent =
-      'Online score'
- 
-    resetButton.textContent =
-      'Reset Online Score'
- 
-  }
- 
-  document.querySelector('.js-score')
-    .textContent =
-      `Wins: ${score.wins}, ` +
-      `Losses: ${score.losses}, ` +
-      `Ties: ${score.ties}`
- 
+.js-paper-button {
+  border-color: var(--blue);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.5);
 }
  
- 
- 
-/* ================= Google login / register ================= */
- 
-const GOOGLE_CLIENT_ID = '673440193252-jv6q8cop00g3jkq4dd6953bc24fifb0c.apps.googleusercontent.com'
-const API = 'https://rps-server.heyboernathan.workers.dev'
- 
-let token = null
-let user = null
-let authTab = 'login'
-let googleStarted = false
- 
-const authLayer = document.querySelector('#auth-layer')
-const authTitle = document.querySelector('#auth-title')
-const authSub = document.querySelector('#auth-sub')
-const authMsg = document.querySelector('#auth-msg')
-const authTabs = document.querySelectorAll('.tab[data-tab]')
-const googleBtn = document.querySelector('#google-btn')
-const guestBtn = document.querySelector('#guest-btn')
-const userChip = document.querySelector('#user-chip')
- 
-const AUTH_TEXT = {
-  login: ['Welcome back', 'Log in with Google to play online.', 'signin_with'],
-  register: ['Create your account', 'Register in one tap with Google. No password to remember.', 'signup_with']
+.js-scissors-button {
+  border-color: var(--green);
+  box-shadow: 0 0 14px rgba(34, 245, 160, 0.5);
 }
  
-try { token = localStorage.getItem('token') } catch (error) {}
- 
-function showAuth(message) {
-  authLayer.hidden = false
-  authMsg.textContent = message || ''
-  renderGoogleButton()
+.move-button:hover {
+  transform: translateY(-6px) scale(1.06);
+  background-color: rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.9);
 }
  
-function hideAuth() {
-  authLayer.hidden = true
+.js-paper-button:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.9);
 }
  
-async function checkServer() {
-  try {
-    const res = await fetch(API + '/status', { cache: 'no-store' })
-    return (await res.json()).online === true
-  } catch (error) {
-    return null // could not reach the server at all
-  }
+.js-scissors-button:hover {
+  background-color: rgba(34, 245, 160, 0.15);
+  box-shadow: 0 0 30px rgba(34, 245, 160, 0.9);
 }
  
-function setUser(u) {
-  user = u
-  userChip.hidden = !u
-  if (u) userChip.textContent = '👤 ' + (u.name || 'Player').split(' ')[0]
+.move-button:active {
+  transform: scale(0.95);
 }
  
-function logout() {
-  token = null
-  try { localStorage.removeItem('token') } catch (error) {}
-  setUser(null)
-  disconnect()
+/* ---------- Result, moves, score ---------- */
+ 
+.result {
+  margin: 28px 0 0;
+  font-size: clamp(20px, 6vw, 26px);
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 0 14px rgba(168, 85, 247, 0.8);
 }
  
-function renderGoogleButton() {
-  if (!window.google || !google.accounts) {
-    setTimeout(renderGoogleButton, 300)
-    return
-  }
-  if (!googleStarted) {
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogle
-    })
-    googleStarted = true
-  }
-  googleBtn.innerHTML = ''
-  google.accounts.id.renderButton(googleBtn, {
-    theme: 'filled_black',
-    size: 'large',
-    shape: 'pill',
-    text: AUTH_TEXT[authTab][2],
-    width: 260
-  })
+.js-moves {
+  min-height: 60px;
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.75);
 }
  
-async function handleGoogle(response) {
-  authMsg.textContent = 'Signing in...'
-  try {
-    const res = await fetch(API + '/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: response.credential })
-    })
-    const data = await res.json()
- 
-    if (!res.ok) {
-      authMsg.textContent = data.error || 'Sign-in failed.'
-      return
-    }
- 
-    token = data.token
-    try { localStorage.setItem('token', token) } catch (error) {}
-    setUser(data.user)
-    hideAuth()
- 
-    const first = (data.user.name || 'Player').split(' ')[0]
-    resultElement.textContent = data.isNew
-      ? `Account created. Welcome, ${first}!`
-      : `Welcome back, ${first}!`
-  } catch (error) {
-    authMsg.textContent = 'Could not reach the server. Try again.'
-  }
+.js-moves .move-icon {
+  margin: 0 12px;
+  padding: 8px;
+  height: 66px;
+  background: var(--panel);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  border-radius: 50%;
 }
  
-async function handleConnectFail() {
-  connectionStatus.textContent = 'Could not connect'
-  playerCount.textContent = 'Players: 0/2'
- 
-  const status = await checkServer()
-  if (status !== true) {
-    resultElement.textContent = status === null
-      ? '⚠️ Cannot reach the server.'
-      : '🔴 The server is offline right now.'
-    return
-  }
- 
-  try {
-    const res = await fetch(API + '/me?token=' + encodeURIComponent(token))
-    if (res.status === 401) {
-      logout()
-      showAuth('Your login expired. Log in again.')
-      return
-    }
-  } catch (error) {}
- 
-  resultElement.textContent = 'Could not join. That room may be full.'
+.score {
+  display: inline-block;
+  margin: 6px 0 16px;
+  padding: 10px 22px;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--panel);
+  border: 1px solid rgba(34, 245, 160, 0.4);
+  border-radius: 999px;
 }
  
-authTabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    authTab = tab.dataset.tab
-    authTabs.forEach(t => t.classList.toggle('on', t === tab))
-    authTitle.textContent = AUTH_TEXT[authTab][0]
-    authSub.textContent = AUTH_TEXT[authTab][1]
-    renderGoogleButton()
-  })
-})
- 
-guestBtn.addEventListener('click', () => {
-  hideAuth()
-  setMode('computer')
-})
- 
-userChip.addEventListener('click', () => {
-  if (confirm('Log out of ' + (user ? user.name : 'your account') + '?')) {
-    logout()
-    showAuth('')
-  }
-})
- 
-async function startAuth() {
-  const online = await checkServer()
- 
-  if (token && online) {
-    try {
-      const res = await fetch(API + '/me?token=' + encodeURIComponent(token))
-      if (res.ok) {
-        setUser((await res.json()).user)
-        return
-      }
-    } catch (error) {}
-    token = null
-    try { localStorage.removeItem('token') } catch (error) {}
-  }
- 
-  showAuth(
-    online === true ? '' :
-    online === false ? '🔴 The server is switched off right now. You can still play the computer.' :
-    '⚠️ Cannot reach the server. Check the worker is deployed and ALLOWED_ORIGIN matches this site.'
-  )
-  googleBtn.hidden = online !== true
+.reset-score-button,
+.auto-play-button {
+  display: block;
+  margin: 0 auto;
+  padding: 10px 22px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--green);
+  background: transparent;
+  border: 2px solid var(--green);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
 }
  
-startAuth()
+.reset-score-button:hover,
+.auto-play-button:hover {
+  color: var(--black);
+  background-color: var(--green);
+  box-shadow: 0 0 20px rgba(34, 245, 160, 0.7);
+}
+ 
+/* ---------- Short phones (iPhone SE / landscape) ---------- */
+ 
+@media (max-height: 700px) {
+  .title { margin-bottom: 12px; }
+  .online-box { margin-bottom: 16px; padding: 14px; }
+  .result { margin-top: 16px; }
+  .js-moves { min-height: 50px; }
+  .score { margin: 12px 0 10px; }
+}
+ 
+/* ---------- Mode buttons (online / computer) ---------- */
+ 
+.mode-switch {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 16px;
+}
+ 
+.mode-button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 6px;
+  font-family: inherit;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.55);
+  border: 3px solid rgba(var(--c), 0.5);
+  border-radius: 18px;
+  box-shadow: 0 0 12px rgba(var(--c), 0.3);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s, background-color 0.2s, border-color 0.2s;
+}
+ 
+#mode-online { --c: 59, 130, 246; }
+#mode-computer { --c: 34, 245, 160; }
+ 
+.mode-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+ 
+.mode-text {
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+ 
+.mode-button:hover {
+  transform: translateY(-3px);
+  border-color: rgb(var(--c));
+  box-shadow: 0 0 24px rgba(var(--c), 0.8);
+}
+ 
+.mode-button:active {
+  transform: scale(0.95);
+}
+ 
+.mode-button.active {
+  border-color: rgb(var(--c));
+  background-color: rgba(var(--c), 0.18);
+  box-shadow: 0 0 22px rgba(var(--c), 0.85), inset 0 0 18px rgba(var(--c), 0.25);
+  animation: modePulse 2.2s ease-in-out infinite;
+}
+ 
+@keyframes modePulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(var(--c), 0.7), inset 0 0 14px rgba(var(--c), 0.2); }
+  50% { box-shadow: 0 0 32px rgba(var(--c), 1), inset 0 0 22px rgba(var(--c), 0.35); }
+}
+ 
+/* ---------- Computer box ---------- */
+ 
+.computer-title {
+  margin: 0 0 14px;
+  font-weight: bold;
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(34, 245, 160, 0.5);
+}
+ 
+.level-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+ 
+.level-button {
+  padding: 10px 2px;
+  font-size: 13px;
+  font-weight: bold;
+  font-family: inherit;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid var(--green);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+ 
+.level-button[data-level="medium"] { border-color: var(--blue); }
+.level-button[data-level="hard"] { border-color: var(--purple); }
+ 
+.level-button[data-level="insane"] {
+  border-color: transparent;
+  background:
+    linear-gradient(#0b0a12, #0b0a12) padding-box,
+    linear-gradient(135deg, var(--purple), var(--blue), var(--green)) border-box;
+}
+ 
+.level-button:active {
+  transform: scale(0.95);
+}
+ 
+.level-button.active {
+  color: var(--black);
+  background: var(--green);
+  box-shadow: 0 0 16px rgba(34, 245, 160, 0.8);
+}
+ 
+.level-button[data-level="medium"].active {
+  background: var(--blue);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.8);
+}
+ 
+.level-button[data-level="hard"].active {
+  background: var(--purple);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.8);
+}
+ 
+.level-button[data-level="insane"].active {
+  color: white;
+  background:
+    linear-gradient(135deg, var(--purple), var(--blue), var(--green)) padding-box,
+    linear-gradient(135deg, var(--purple), var(--blue), var(--green)) border-box;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.8);
+}
+ 
+#level-description {
+  min-height: 2.4em;
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+}
+ 
+/* ---------- Score label ---------- */
+ 
+.score-label {
+  margin: 22px 0 0;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+ 
+@media (max-height: 700px) {
+  .mode-switch { margin-bottom: 10px; }
+  .mode-button { padding: 8px 6px; }
+  .mode-icon { font-size: 22px; }
+  .score-label { margin-top: 10px; }
+  #level-description { margin-top: 10px; min-height: 2.4em; }
+}
+ 
+/* ---------- Accounts, menu, owner dashboard ---------- */
+ 
+.ui-layer {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  background: rgba(7, 6, 13, 0.94); backdrop-filter: blur(8px);
+}
+ 
+.card {
+  position: relative; width: min(100%, 360px); max-height: 88vh; overflow-y: auto; padding: 22px 18px;
+  background: var(--panel); border: 1px solid rgba(168, 85, 247, 0.5); border-radius: 18px;
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.25);
+}
+ 
+.card h2 {
+  margin: 0 0 14px; font-size: 24px;
+  background: linear-gradient(90deg, var(--purple), var(--blue), var(--green));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+ 
+.card input:not([type="color"]) {
+  display: block; width: 100%; margin: 0 0 10px; padding: 11px 12px; font-size: 16px; font-family: inherit; color: white;
+  background: rgba(0, 0, 0, 0.6); border: 2px solid var(--purple); border-radius: 10px; outline: none; -webkit-user-select: text; user-select: text;
+}
+ 
+.card input:focus { border-color: var(--blue); box-shadow: 0 0 14px rgba(59, 130, 246, 0.7); }
+ 
+.big, .tab, .icon, .x {
+  font-family: inherit; font-weight: bold; color: white; cursor: pointer; border-radius: 12px; transition: transform 0.15s, box-shadow 0.15s;
+}
+ 
+.big {
+  display: block; width: 100%; margin: 0 0 10px; padding: 13px; font-size: 16px; border: none;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+}
+ 
+.big.alt { background: transparent; border: 2px solid var(--green); color: var(--green); }
+.big.lv-easy { background: var(--green); color: var(--black); }
+.big.lv-medium { background: var(--blue); }
+.big.lv-hard { background: var(--purple); }
+.big:hover, .tab:hover { box-shadow: 0 0 18px rgba(168, 85, 247, 0.8); }
+.big:active, .tab:active, .icon:active { transform: scale(0.96); }
+ 
+.icon { margin: 4px 0; padding: 8px 22px; font-size: 24px; background: rgba(0, 0, 0, 0.5); border: 2px solid var(--blue); box-shadow: 0 0 14px rgba(59, 130, 246, 0.5); }
+.card small { display: block; color: rgba(255, 255, 255, 0.6); }
+.msg { min-height: 1.3em; margin: 0 0 8px; color: var(--green); font-size: 14px; }
+ 
+.x { position: absolute; top: 10px; right: 10px; padding: 4px 9px; background: transparent; border: 1px solid rgba(255, 255, 255, 0.3); }
+ 
+.tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.tab { flex: 1; padding: 8px 4px; font-size: 13px; background: rgba(0, 0, 0, 0.6); border: 2px solid var(--blue); }
+.tab.on { background: var(--blue); }
+ 
+.row { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; padding: 9px 12px; text-align: left; background: var(--panel); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; }
+.row span { flex: 1; }
+.row em { font-style: normal; color: var(--green); font-weight: bold; }
+.row.me { border-color: var(--green); box-shadow: 0 0 14px rgba(34, 245, 160, 0.5); }
+.dots { margin: 2px 0 6px; color: rgba(255, 255, 255, 0.5); }
+.code { font-size: 38px; font-weight: 800; letter-spacing: 6px; margin: 6px 0; color: var(--green); text-shadow: 0 0 14px rgba(34, 245, 160, 0.7); }
+.tc[type="color"] { width: 50px; height: 32px; border: none; background: none; }
+ 
+#wheel {
+  width: 150px; height: 150px; margin: 14px auto; border-radius: 50%; border: 4px solid white;
+  background: conic-gradient(var(--purple) 0 25%, var(--blue) 0 50%, var(--green) 0 75%, #111 0);
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.7); transition: transform 3s cubic-bezier(0.1, 0.7, 0.2, 1);
+}
+ 
+.ui-fab {
+  position: fixed; top: calc(10px + env(safe-area-inset-top)); z-index: 40; padding: 9px 14px; font-size: 14px; font-weight: bold; font-family: inherit; color: white; cursor: pointer;
+  background: rgba(0, 0, 0, 0.65); border: 2px solid var(--blue); border-radius: 12px; box-shadow: 0 0 14px rgba(59, 130, 246, 0.6);
+}
+ 
+#menu-btn { right: 12px; }
+#owner-btn { left: 12px; border-color: var(--purple); box-shadow: 0 0 14px rgba(168, 85, 247, 0.7); }
+#badge { position: absolute; top: -6px; right: -6px; min-width: 18px; padding: 1px 5px; font-size: 11px; font-style: normal; background: var(--green); color: var(--black); border-radius: 9px; }
+ 
+.card h3 { margin: 14px 0 8px; font-size: 15px; color: var(--green); }
+ 
+/* ---------- Login / register ---------- */
+ 
+.title { margin-top: 30px; }
+ 
+.auth-logo { margin: 0 0 6px; font-size: 34px; letter-spacing: 6px; }
+.auth-sub { margin: 0 0 16px; font-size: 14px; color: rgba(255, 255, 255, 0.7); }
+#google-btn { display: flex; justify-content: center; min-height: 44px; margin: 0 0 8px; }
+#user-chip { right: 12px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-card .big.alt { margin-top: 6px; }
+.auth-card .msg { color: #ff7a7a; }
+ 
+.auth-or { margin: 4px 0 12px; font-size: 13px; color: rgba(255, 255, 255, 0.5); }
+.auth-card .big { margin-bottom: 8px; }
  
