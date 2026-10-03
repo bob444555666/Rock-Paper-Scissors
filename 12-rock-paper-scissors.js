@@ -722,6 +722,7 @@ let setupToken = null
 let pendingEmail = ''
 let view = 'login'
 let googleStarted = false
+let kicked = false
 
 const $ = selector => document.querySelector(selector)
 const authLayer = $('#auth-layer')
@@ -945,6 +946,7 @@ async function startAuth() {
     '⚠️ Cannot reach the server. Check the worker is deployed.'
   )
   if (online !== true) {
+    kicked = true
     $('#auth-body').hidden = true
     $('#guest-btn').hidden = true
   }
@@ -1097,3 +1099,27 @@ document.querySelectorAll('[data-close]').forEach(button => {
     button.closest('.ui-layer').hidden = true
   })
 })
+
+
+
+/* ================= Server turned off: send everyone back out ================= */
+
+function kickOut() {
+  kicked = true
+  disconnect()
+  computerBusy = false
+  movesElement.innerHTML = ''
+  resultElement.textContent = 'Join a room to play'
+  $('#profile-layer').hidden = true
+  $('#lb-layer').hidden = true
+  showAuth('🔴 The server was switched off.')
+  $('#auth-body').hidden = true
+  $('#guest-btn').hidden = true
+}
+
+// check every 3 seconds: off means leave the game, back on means start fresh
+setInterval(async () => {
+  const online = await checkServer()
+  if (online === false && !kicked) kickOut()
+  if (online === true && kicked) location.reload()
+}, 3000)
