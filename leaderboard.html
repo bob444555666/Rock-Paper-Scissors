@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#07060d">
+    <title>Leaderboard - Rock Paper Scissors</title>
+    <link rel="stylesheet" href="12-rock-paper-scissors.css?v=9">
+    <style>
+      body { justify-content: flex-start; }
+      .lb-page { width: 100%; max-width: 520px; }
+      .lb-back {
+        display: inline-block; margin-bottom: 4px; padding: 9px 14px; font-size: 14px; font-weight: bold;
+        color: white; text-decoration: none; background: rgba(0, 0, 0, 0.65);
+        border: 2px solid var(--blue); border-radius: 12px; box-shadow: 0 0 14px rgba(59, 130, 246, 0.6);
+      }
+      .lb-page .title { margin-top: 10px; }
+      .lb-note { min-height: 1.4em; margin: 10px 0; font-size: 14px; color: var(--green); }
+      .lb-head, .lb-row {
+        display: grid; grid-template-columns: 46px 1fr 40px 40px 40px 52px; gap: 6px;
+        align-items: center; padding: 10px 12px; text-align: center;
+      }
+      .lb-head { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+      .lb-row { margin: 0 0 6px; background: var(--panel); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 10px; }
+      .lb-row.me { border-color: var(--green); box-shadow: 0 0 14px rgba(34, 245, 160, 0.5); }
+      .lb-row.r1 { border-color: #fbbf24; }
+      .lb-row.r2 { border-color: #cbd5e1; }
+      .lb-row.r3 { border-color: #d97706; }
+      .lb-name { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; text-align: left; }
+      .lb-name .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .lb-pic {
+        display: flex; align-items: center; justify-content: center; flex: none; width: 28px; height: 28px;
+        overflow: hidden; font-size: 13px; font-weight: bold; background: rgba(168, 85, 247, 0.35); border-radius: 50%;
+      }
+      .lb-pic img { width: 100%; height: 100%; object-fit: cover; }
+      .lb-win { color: var(--green); font-weight: bold; }
+      .lb-head span:nth-child(2) { text-align: left; }
+    </style>
+  </head>
+
+  <body>
+    <div class="lb-page">
+      <a class="lb-back" href="index.html">← Back to game</a>
+      <p class="title">Leaderboard</p>
+
+      <div class="tabs">
+        <button class="tab on" data-lb="online" type="button">Online</button>
+        <button class="tab" data-lb="computer" type="button">Computer</button>
+      </div>
+
+      <p class="lb-note" id="lb-note"></p>
+
+      <div class="lb-head"><span>Rank</span><span>Player</span><span>W</span><span>L</span><span>T</span><span>Win %</span></div>
+      <div id="lb-list">Loading...</div>
+    </div>
+
+    <script>
+      const API = 'https://rps-server.heyboernathan.workers.dev'
+      let which = 'online'
+      let me = null
+
+      const list = document.querySelector('#lb-list')
+      const note = document.querySelector('#lb-note')
+
+      async function findMe() {
+        let token = null
+        try { token = localStorage.getItem('token') } catch (error) {}
+        if (!token) return
+        try {
+          const res = await fetch(API + '/me?token=' + encodeURIComponent(token))
+          if (res.ok) me = (await res.json()).user.name
+        } catch (error) {}
+      }
+
+      function cell(text, className) {
+        const span = document.createElement('span')
+        span.textContent = text
+        if (className) span.className = className
+        return span
+      }
+
+      function nameCell(r) {
+        const box = document.createElement('span')
+        box.className = 'lb-name'
+
+        const pic = document.createElement('span')
+        pic.className = 'lb-pic'
+        pic.textContent = r.name[0].toUpperCase()
+
+        if (r.av) {
+          const img = document.createElement('img')
+          img.alt = ''
+          img.src = `${API}/avatar/${encodeURIComponent(r.name)}?v=${r.av}`
+          img.onload = () => { pic.textContent = ''; pic.append(img) }
+        }
+
+        const text = document.createElement('span')
+        text.className = 't'
+        text.textContent = r.name
+
+        box.append(pic, text)
+        return box
+      }
+
+      function render(rows) {
+        list.textContent = ''
+
+        if (!rows.length) {
+          list.textContent = 'No scores yet. Be the first!'
+          note.textContent = ''
+          return
+        }
+
+        const medals = ['🥇', '🥈', '🥉']
+
+        rows.forEach((r, i) => {
+          const total = r.wins + r.losses + r.ties
+          const percent = total ? Math.round((r.wins / total) * 100) + '%' : '-'
+
+          const row = document.createElement('div')
+          row.className = 'lb-row' + (i < 3 ? ' r' + (i + 1) : '') + (r.name === me ? ' me' : '')
+          row.append(
+            cell(i < 3 ? medals[i] : '#' + (i + 1)),
+            nameCell(r),
+            cell(r.wins, 'lb-win'),
+            cell(r.losses),
+            cell(r.ties),
+            cell(percent)
+          )
+          list.append(row)
+        })
+
+        const mine = rows.findIndex(r => r.name === me)
+        note.textContent =
+          mine >= 0 ? `You are ranked #${mine + 1}` :
+          me ? 'Play some games to get on the board!' :
+          'Log in on the game page to see your rank.'
+      }
+
+      async function load() {
+        try {
+          const res = await fetch(API + '/leaderboard?mode=' + which, { cache: 'no-store' })
+          render((await res.json()).rows || [])
+        } catch (error) {
+          list.textContent = 'Could not load the leaderboard.'
+        }
+      }
+
+      document.querySelectorAll('.tab[data-lb]').forEach(tab => {
+        tab.addEventListener('click', () => {
+          which = tab.dataset.lb
+          document.querySelectorAll('.tab[data-lb]').forEach(t => t.classList.toggle('on', t === tab))
+          load()
+        })
+      })
+
+      findMe().then(load)
+      setInterval(load, 15000) // refresh by itself every 15 seconds
+    </script>
+  </body>
+</html>
