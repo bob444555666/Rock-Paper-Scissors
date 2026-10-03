@@ -1023,6 +1023,7 @@ function renderProfile() {
 function openProfile() {
   $('#profile-layer').hidden = false
   pfMsg('')
+  picMsg('')
   renderProfile()
 }
 
@@ -1168,25 +1169,45 @@ function pictureToJpeg(file) {
   })
 }
 
+function picMsg(text) {
+  $('#pf-pic-msg').textContent = text
+}
+
 async function savePicture(image) {
-  pfMsg('Saving picture...')
+  if (image) {
+    // show it straight away while it saves
+    $('#pf-avatar').style.backgroundImage = `url("${image}")`
+    $('#pf-avatar').textContent = ''
+  }
+
+  picMsg('Saving picture...')
   const r = await account('avatar', { image })
-  if (!r.ok) return pfMsg(r.data.error || 'Something went wrong.')
+
+  if (!r.ok) {
+    renderProfile()
+    picMsg(r.data.error === 'Unknown request'
+      ? 'The server is out of date. Deploy the newest index.js.'
+      : (r.data.error || 'Could not save the picture.'))
+    return
+  }
+
   profile = profile || {}
   profile.avatarAt = r.data.avatarAt
   renderProfile()
   setChip()
-  pfMsg(image ? 'Picture saved.' : 'Picture removed.')
+  picMsg(image ? 'Picture saved!' : 'Picture removed.')
 }
 
 async function pickPicture(input) {
   const file = input.files[0]
   input.value = ''
   if (!file) return
+
+  picMsg('Reading picture...')
   try {
     await savePicture(await pictureToJpeg(file))
   } catch (error) {
-    pfMsg('Could not read that picture.')
+    picMsg('Could not read that picture. Try a different one.')
   }
 }
 
