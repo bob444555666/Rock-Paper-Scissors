@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="RPS">
     <meta name="theme-color" content="#07060d">
     <title>Rock Paper Scissors</title>
-    <link rel="stylesheet" href="12-rock-paper-scissors.css?v=8">
+    <link rel="stylesheet" href="12-rock-paper-scissors.css?v=9">
   </head>
 
   <body>
@@ -23,6 +23,14 @@
     <div class="ui-layer" id="profile-layer" hidden>
       <div class="card">
         <button class="x" data-close type="button">✕</button>
+        <div class="avatar" id="pf-avatar"></div>
+        <div class="tabs">
+          <button class="tab" id="pf-cam-btn" type="button">📷 Take photo</button>
+          <button class="tab" id="pf-lib-btn" type="button">🖼️ Library</button>
+        </div>
+        <button class="link" id="pf-remove-pic" type="button">Remove picture</button>
+        <input id="pf-cam" type="file" accept="image/*" capture="user" hidden>
+        <input id="pf-lib" type="file" accept="image/*" hidden>
         <h2 id="pf-name">Profile</h2>
         <small id="pf-email"></small>
 
@@ -42,17 +50,7 @@
       </div>
     </div>
 
-    <div class="ui-layer" id="lb-layer" hidden>
-      <div class="card">
-        <button class="x" data-close type="button">✕</button>
-        <h2>Leaderboard</h2>
-        <div class="tabs">
-          <button class="tab on" data-lb="online" type="button">Online</button>
-          <button class="tab" data-lb="computer" type="button">Computer</button>
-        </div>
-        <div id="lb-list"></div>
-      </div>
-    </div>
+    
 
     <div class="ui-layer" id="auth-layer" hidden>
       <div class="card auth-card">
@@ -222,7 +220,7 @@
 
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="12-rock-paper-scissors.js?v=10"></script>
+    <script src="12-rock-paper-scissors.js?v=12"></script>
 
   </body>
 </html>
