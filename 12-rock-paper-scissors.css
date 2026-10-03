@@ -522,3 +522,10 @@ body {
 #lb-list { margin-top: 6px; }
 
 .link { display: block; margin: 0 auto 6px; padding: 6px; font-family: inherit; font-size: 14px; color: var(--blue); background: none; border: 0; cursor: pointer; }
+
+.avatar {
+  display: flex; align-items: center; justify-content: center; width: 96px; height: 96px; margin: 0 auto 12px;
+  font-size: 40px; font-weight: 800; color: white; background: #15131f center / cover no-repeat;
+  border: 3px solid var(--purple); border-radius: 50%; box-shadow: 0 0 18px rgba(168, 85, 247, 0.6);
+}
+.chip-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; vertical-align: middle; }
