@@ -795,7 +795,7 @@ async function checkServer() {
 function setUser(u) {
   user = u
   userChip.hidden = !u
-  if (u) userChip.textContent = '👤 ' + u.name
+  setChip()
 }
 
 function logout() {
@@ -998,6 +998,7 @@ async function loadProfile() {
   const r = await account('profile', {})
   if (!r.ok) return
   profile = r.data.user
+  setChip()
   Object.assign(scores.online, profile.stats.online)
   Object.assign(scores.computer, profile.stats.computer)
   updateScoreElement()
@@ -1010,6 +1011,10 @@ function pfMsg(text) {
 function renderProfile() {
   const line = s => `W ${s.wins}, L ${s.losses}, T ${s.ties}`
   $('#pf-name').textContent = user ? user.name : 'Profile'
+
+  const pic = user && profile && avatarUrl(user.name, profile.avatarAt)
+  $('#pf-avatar').style.backgroundImage = pic ? `url("${pic}")` : ''
+  $('#pf-avatar').textContent = pic ? '' : (user ? user.name[0].toUpperCase() : '?')
   $('#pf-email').textContent = profile && profile.email ? profile.email : ''
   $('#pf-online').textContent = 'Online: ' + line(scores.online)
   $('#pf-computer').textContent = 'Computer: ' + line(scores.computer)
@@ -1063,39 +1068,8 @@ $('#pf-delete').addEventListener('click', async () => {
   showAuth('Your account was deleted.')
 })
 
-async function openLeaderboard(which) {
-  $('#lb-layer').hidden = false
-  document.querySelectorAll('.tab[data-lb]').forEach(tab => {
-    tab.classList.toggle('on', tab.dataset.lb === which)
-  })
-
-  const list = $('#lb-list')
-  list.textContent = 'Loading...'
-
-  try {
-    const res = await fetch(API + '/leaderboard?mode=' + which, { cache: 'no-store' })
-    const rows = (await res.json()).rows || []
-    list.textContent = rows.length ? '' : 'No scores yet. Be the first!'
-
-    rows.forEach((r, i) => {
-      const row = document.createElement('div')
-      row.className = 'row' + (user && r.name === user.name ? ' me' : '')
-      const name = document.createElement('span')
-      name.textContent = `${i + 1}. ${r.name}`
-      const record = document.createElement('em')
-      record.textContent = `${r.wins}W ${r.losses}L`
-      row.append(name, record)
-      list.append(row)
-    })
-  } catch (error) {
-    list.textContent = 'Could not load the leaderboard.'
-  }
-}
-
-$('#lb-btn').addEventListener('click', () => openLeaderboard('online'))
-
-document.querySelectorAll('.tab[data-lb]').forEach(tab => {
-  tab.addEventListener('click', () => openLeaderboard(tab.dataset.lb))
+$('#lb-btn').addEventListener('click', () => {
+  location.href = 'leaderboard.html'
 })
 
 document.querySelectorAll('[data-close]').forEach(button => {
@@ -1115,7 +1089,6 @@ function kickOut() {
   movesElement.innerHTML = ''
   resultElement.textContent = 'Join a room to play'
   $('#profile-layer').hidden = true
-  $('#lb-layer').hidden = true
   showAuth('🔴 The server was switched off.')
   $('#auth-body').hidden = true
   $('#guest-btn').hidden = true
@@ -1152,3 +1125,73 @@ $('#rs-go').addEventListener('click', () => {
     newPassword: $('#rs-pw').value
   }, finishLogin)
 })
+
+
+
+/* ================= Profile picture (camera or library) ================= */
+
+function avatarUrl(name, version) {
+  return version ? `${API}/avatar/${encodeURIComponent(name)}?v=${version}` : ''
+}
+
+function setChip() {
+  userChip.textContent = ''
+  if (!user) return
+  if (profile && profile.avatarAt) {
+    const img = document.createElement('img')
+    img.className = 'chip-avatar'
+    img.src = avatarUrl(user.name, profile.avatarAt)
+    userChip.append(img)
+  } else {
+    userChip.append('👤')
+  }
+  userChip.append(' ' + user.name)
+}
+
+// crop to a square and shrink to 128x128, so uploads are tiny
+function pictureToJpeg(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = canvas.height = 128
+      const side = Math.min(img.width, img.height)
+      canvas.getContext('2d').drawImage(
+        img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 128, 128
+      )
+      URL.revokeObjectURL(url)
+      resolve(canvas.toDataURL('image/jpeg', 0.8))
+    }
+    img.onerror = () => reject(new Error('bad image'))
+    img.src = url
+  })
+}
+
+async function savePicture(image) {
+  pfMsg('Saving picture...')
+  const r = await account('avatar', { image })
+  if (!r.ok) return pfMsg(r.data.error || 'Something went wrong.')
+  profile = profile || {}
+  profile.avatarAt = r.data.avatarAt
+  renderProfile()
+  setChip()
+  pfMsg(image ? 'Picture saved.' : 'Picture removed.')
+}
+
+async function pickPicture(input) {
+  const file = input.files[0]
+  input.value = ''
+  if (!file) return
+  try {
+    await savePicture(await pictureToJpeg(file))
+  } catch (error) {
+    pfMsg('Could not read that picture.')
+  }
+}
+
+$('#pf-cam-btn').addEventListener('click', () => $('#pf-cam').click())
+$('#pf-lib-btn').addEventListener('click', () => $('#pf-lib').click())
+$('#pf-cam').addEventListener('change', event => pickPicture(event.target))
+$('#pf-lib').addEventListener('change', event => pickPicture(event.target))
+$('#pf-remove-pic').addEventListener('click', () => savePicture(''))
