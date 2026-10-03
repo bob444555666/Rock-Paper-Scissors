@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="RPS">
     <meta name="theme-color" content="#07060d">
     <title>Rock Paper Scissors</title>
-    <link rel="stylesheet" href="12-rock-paper-scissors.css?v=7">
+    <link rel="stylesheet" href="12-rock-paper-scissors.css?v=8">
   </head>
 
   <body>
@@ -76,6 +76,7 @@
             <input id="login-id" type="text" placeholder="Username or email" autocomplete="username" autocapitalize="none">
             <input id="login-pw" type="password" placeholder="Password" autocomplete="current-password">
             <button class="big" id="login-go" type="button">Log in</button>
+            <button class="link" id="forgot-link" type="button">Forgot password?</button>
           </div>
 
           <div id="view-register" hidden>
@@ -88,6 +89,18 @@
           <div id="view-code" hidden>
             <input id="code-in" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code">
             <button class="big" id="code-go" type="button">Verify and create account</button>
+          </div>
+
+          <div id="view-forgot" hidden>
+            <input id="fg-email" type="email" placeholder="Your account email" autocomplete="email">
+            <button class="big" id="fg-go" type="button">Send reset code</button>
+            <button class="link" data-back type="button">Back to log in</button>
+          </div>
+
+          <div id="view-reset" hidden>
+            <input id="rs-code" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code">
+            <input id="rs-pw" type="password" placeholder="New password (8+ characters)" autocomplete="new-password">
+            <button class="big" id="rs-go" type="button">Reset password and log in</button>
           </div>
 
           <div id="view-setup" hidden>
@@ -209,7 +222,7 @@
 
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="12-rock-paper-scissors.js?v=9"></script>
+    <script src="12-rock-paper-scissors.js?v=10"></script>
 
   </body>
 </html>
