@@ -3,28 +3,16 @@ let myPlayerId = null
 let currentRoom = null
 let connected = false
 let myMove = null
- 
+
 let mode = 'online'
 let computerBusy = false
 let level = 'easy'
 let playerHistory = []
- 
- 
-const BEATS = {
-  rock: 'scissors',
-  paper: 'rock',
-  scissors: 'paper'
-}
- 
-const COUNTER = {
-  rock: 'paper',
-  paper: 'scissors',
-  scissors: 'rock'
-}
- 
+
+
 const MOVES = ['rock', 'paper', 'scissors']
- 
- 
+
+
 const LEVELS = {
   easy: {
     smart: 0,
@@ -43,18 +31,18 @@ const LEVELS = {
     text: 'Hunts for patterns in your last moves. Good luck.'
   }
 }
- 
- 
+
+
 const SCORE_KEYS = {
   online: 'score',
   computer: 'computerScore'
 }
- 
- 
+
+
 function loadScore(key) {
- 
+
   try {
- 
+
     return JSON.parse(
       localStorage.getItem(key)
     ) || {
@@ -62,673 +50,533 @@ function loadScore(key) {
       losses: 0,
       ties: 0
     }
- 
+
   } catch (error) {
- 
+
     return {
       wins: 0,
       losses: 0,
       ties: 0
     }
- 
+
   }
- 
+
 }
- 
- 
+
+
 // online and computer games each keep their own score
 const scores = {
   online: loadScore(SCORE_KEYS.online),
   computer: loadScore(SCORE_KEYS.computer)
 }
- 
- 
+
+
 try {
- 
+
   const savedLevel =
     localStorage.getItem('level')
- 
+
   if (LEVELS[savedLevel]) {
     level = savedLevel
   }
- 
+
 } catch (error) {}
- 
- 
+
+
 const roomInput =
   document.querySelector('#room-code')
- 
+
 const joinButton =
   document.querySelector('#join-button')
- 
+
 const connectionStatus =
   document.querySelector('#connection-status')
- 
+
 const playerCount =
   document.querySelector('#player-count')
- 
- 
+
+
 const onlineBox =
   document.querySelector('#online-box')
- 
+
 const computerBox =
   document.querySelector('#computer-box')
- 
+
 const modeOnlineButton =
   document.querySelector('#mode-online')
- 
+
 const modeComputerButton =
   document.querySelector('#mode-computer')
- 
+
 const levelButtons =
   document.querySelectorAll('.level-button')
- 
+
 const levelDescription =
   document.querySelector('#level-description')
- 
+
 const scoreLabel =
   document.querySelector('.js-score-label')
- 
+
 const resetButton =
   document.querySelector('#reset-button')
- 
- 
+
+
 const resultElement =
   document.querySelector('.js-result')
- 
+
 const movesElement =
   document.querySelector('.js-moves')
- 
- 
+
+
 const rockButton =
   document.querySelector('.js-rock-button')
- 
+
 const paperButton =
   document.querySelector('.js-paper-button')
- 
+
 const scissorsButton =
   document.querySelector('.js-scissors-button')
- 
- 
+
+
 updateScoreElement()
 updateLevelButtons()
- 
- 
+
+
 rockButton.addEventListener(
   'click',
   () => makeMove('rock')
 )
- 
- 
+
+
 paperButton.addEventListener(
   'click',
   () => makeMove('paper')
 )
- 
- 
+
+
 scissorsButton.addEventListener(
   'click',
   () => makeMove('scissors')
 )
- 
- 
+
+
 joinButton.addEventListener(
   'click',
   joinGame
 )
- 
- 
+
+
 modeOnlineButton.addEventListener(
   'click',
   () => setMode('online')
 )
- 
- 
+
+
 modeComputerButton.addEventListener(
   'click',
   () => setMode('computer')
 )
- 
- 
+
+
 levelButtons.forEach(button => {
- 
+
   button.addEventListener('click', () => {
- 
+
     level = button.dataset.level
- 
+
     // fresh start so the computer forgets your old moves
     playerHistory = []
- 
+
     try {
       localStorage.setItem('level', level)
     } catch (error) {}
- 
+
     updateLevelButtons()
     updateScoreElement()
- 
+
     resultElement.textContent =
       'Pick a move to play the computer.'
- 
+
     movesElement.innerHTML = ''
- 
+
   })
- 
+
 })
- 
- 
+
+
 resetButton.addEventListener('click', () => {
- 
+
   const score = scores[mode]
- 
+
   score.wins = 0
   score.losses = 0
   score.ties = 0
- 
+
   localStorage.removeItem(SCORE_KEYS[mode])
- 
+
   updateScoreElement()
- 
+
 })
- 
- 
+
+
 document.body.addEventListener(
   'keydown',
   event => {
- 
+
     if (event.target.tagName === 'INPUT') {
       return
     }
- 
+
     if (event.key === 'r') {
       makeMove('rock')
     }
- 
+
     if (event.key === 'p') {
       makeMove('paper')
     }
- 
+
     if (event.key === 's') {
       makeMove('scissors')
     }
- 
+
   }
 )
- 
- 
+
+
 function setMode(newMode) {
- 
+
   if (newMode === mode) {
     return
   }
- 
+
   mode = newMode
- 
+
   movesElement.innerHTML = ''
- 
+
   modeOnlineButton.classList
     .toggle('active', mode === 'online')
- 
+
   modeComputerButton.classList
     .toggle('active', mode === 'computer')
- 
+
   onlineBox.hidden = mode !== 'online'
   computerBox.hidden = mode !== 'computer'
- 
- 
+
+
   if (mode === 'computer') {
- 
+
     disconnect()
- 
+
     resultElement.textContent =
       'Pick a move to play the computer.'
- 
+
   }
- 
+
   else {
- 
+
     resultElement.textContent =
       'Join a room to play'
- 
+
   }
- 
- 
+
+
   updateScoreElement()
- 
+
 }
- 
- 
+
+
 function disconnect() {
- 
+
   if (socket) {
- 
+
     const oldSocket = socket
- 
+
     socket = null
- 
+
     oldSocket.close()
- 
+
   }
- 
+
   connected = false
   myMove = null
- 
+
   connectionStatus.textContent =
     'Not connected'
- 
+
   playerCount.textContent =
     'Players: 0/2'
- 
+
 }
- 
- 
+
+
 function joinGame() {
- 
+
   if (!token) {
     showAuth('Log in to play online.')
     return
   }
- 
+
   const room =
     roomInput.value
       .trim()
       .toUpperCase()
- 
- 
+
+
   if (!room) {
- 
+
     resultElement.textContent =
       'Enter a room code.'
- 
+
     return
   }
- 
- 
+
+
   if (socket) {
- 
+
     const oldSocket = socket
- 
+
     socket = null
- 
+
     oldSocket.close()
- 
+
   }
- 
- 
+
+
   myMove = null
   connected = false
- 
- 
+
+
   currentRoom = room
- 
- 
+
+
   /*
     CHANGE THIS TO YOUR
     CLOUDFLARE WORKER ADDRESS
   */
- 
+
   const server =
     'wss://rps-server.heyboernathan.workers.dev'
- 
- 
+
+
   const ws = new WebSocket(
     `${server}/room?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}`
   )
- 
+
   socket = ws
- 
- 
+
+
   connectionStatus.textContent =
     'Connecting...'
- 
- 
+
+
   ws.addEventListener(
     'open',
     () => {
- 
+
       connected = true
- 
+
       connectionStatus.textContent =
         `Connected to room ${room}`
- 
+
       resultElement.textContent =
         'Waiting for another player...'
- 
+
     }
   )
- 
- 
+
+
   ws.addEventListener(
     'message',
     event => {
- 
+
       const data =
         JSON.parse(event.data)
- 
- 
+
+
       if (data.type === 'welcome') {
- 
+
         myPlayerId =
           data.playerId
- 
+
       }
- 
- 
+
+
       if (data.type === 'players') {
- 
+
         playerCount.textContent =
           `Players: ${data.count}/2`
- 
- 
+
+
         if (data.count === 1) {
- 
+
           resultElement.textContent =
             'Waiting for another player...'
- 
+
         }
- 
- 
+
+
         if (data.count === 2) {
- 
+
           resultElement.textContent =
             'Both players connected. Choose your move.'
- 
+
         }
- 
+
       }
- 
- 
+
+
       if (data.type === 'opponent-move') {
- 
+
         movesElement.innerHTML =
           'Your opponent has chosen a move.'
- 
+
       }
- 
- 
+
+
       if (data.type === 'result') {
- 
+
         showResult(data)
- 
+
       }
- 
- 
+
+
       if (data.type === 'error') {
- 
+
         resultElement.textContent =
           data.message
- 
+
       }
- 
+
     }
   )
- 
- 
+
+
   ws.addEventListener(
     'close',
     () => {
- 
+
       // ignore sockets we already replaced or closed on purpose
       if (socket !== ws) {
         return
       }
- 
+
       // never opened: login expired, room full or server off
       if (!connected) {
         handleConnectFail()
         return
       }
- 
+
       connected = false
       myMove = null
- 
+
       connectionStatus.textContent =
         'Disconnected'
- 
+
       playerCount.textContent =
         'Players: 0/2'
- 
+
     }
   )
- 
+
 }
- 
- 
+
+
 function makeMove(move) {
- 
+
   if (mode === 'computer') {
- 
+
     playComputer(move)
- 
+
     return
- 
+
   }
- 
- 
+
+
   if (!connected) {
- 
+
     resultElement.textContent =
       'Join a room first.'
- 
+
     return
- 
+
   }
- 
- 
+
+
   if (myMove !== null) {
- 
+
     resultElement.textContent =
       'You already chose a move.'
- 
+
     return
- 
+
   }
- 
- 
+
+
   myMove = move
- 
- 
+
+
   resultElement.textContent =
     `You chose ${move}. Waiting for opponent...`
- 
- 
+
+
   socket.send(
     JSON.stringify({
       type: 'move',
       move: move
     })
   )
- 
+
 }
- 
- 
-function playComputer(move) {
- 
+
+
+async function playComputer(move) {
+
   if (computerBusy) {
     return
   }
- 
+
   computerBusy = true
- 
   movesElement.innerHTML = ''
- 
-  resultElement.textContent =
-    'Computer is choosing...'
- 
- 
-  setTimeout(() => {
- 
-    computerBusy = false
- 
-    // player left computer mode while waiting
-    if (mode !== 'computer') {
+  resultElement.textContent = 'Computer is choosing...'
+
+  // the server picks the computer's move and decides who won
+  try {
+    const res = await fetch(API + '/play', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ move, level, token, history: playerHistory.slice(-50) })
+    })
+    const data = await res.json()
+
+    if (res.status === 401) {
+      logout()
+      showAuth('Please log in again.')
       return
     }
- 
- 
-    // the computer picks BEFORE it sees your move
-    const computerMove =
-      computerChoose()
- 
-    playerHistory.push(move)
- 
- 
-    let result = 'loss'
- 
-    if (move === computerMove) {
-      result = 'tie'
+
+    if (!res.ok) {
+      resultElement.textContent = data.error || 'Something went wrong.'
+      return
     }
- 
-    else if (BEATS[move] === computerMove) {
-      result = 'win'
+
+    playerHistory.push(move) // only sent for guests; accounts keep their own history
+
+    if (mode === 'computer') {
+      applyResult('computer', data.result, move, data.computerMove, 'Computer')
     }
- 
- 
-    applyResult(
-      'computer',
-      result,
-      move,
-      computerMove,
-      'Computer'
-    )
- 
-  }, 400)
- 
-}
- 
- 
-function randomMove() {
- 
-  return MOVES[
-    Math.floor(Math.random() * MOVES.length)
-  ]
- 
-}
- 
- 
-function computerChoose() {
- 
-  const smart = LEVELS[level].smart
- 
-  if (
-    playerHistory.length > 0 &&
-    Math.random() < smart
-  ) {
- 
-    const predicted = predictPlayerMove()
- 
-    if (predicted) {
-      return COUNTER[predicted]
-    }
- 
+  } catch (error) {
+    resultElement.textContent = 'Cannot reach the server.'
+  } finally {
+    computerBusy = false
   }
- 
-  return randomMove()
- 
+
 }
- 
- 
-function mostCommon(counts) {
- 
-  const best =
-    Math.max(...MOVES.map(m => counts[m]))
- 
-  const tied =
-    MOVES.filter(m => counts[m] === best)
- 
-  return tied[
-    Math.floor(Math.random() * tied.length)
-  ]
- 
-}
- 
- 
-function predictPlayerMove() {
- 
-  const h = playerHistory
- 
-  const counts = {
-    rock: 0,
-    paper: 0,
-    scissors: 0
-  }
- 
-  let total = 0
- 
- 
-  // insane: look at your last 2 moves
-  if (level === 'insane' && h.length >= 3) {
- 
-    const a = h[h.length - 2]
-    const b = h[h.length - 1]
- 
-    for (let i = 0; i < h.length - 2; i++) {
- 
-      if (h[i] === a && h[i + 1] === b) {
- 
-        counts[h[i + 2]]++
-        total++
- 
-      }
- 
-    }
- 
-    if (total > 0) {
-      return mostCommon(counts)
-    }
- 
-  }
- 
- 
-  // hard + insane: look at your last move
-  if (
-    (level === 'hard' || level === 'insane') &&
-    h.length >= 2
-  ) {
- 
-    const last = h[h.length - 1]
- 
-    counts.rock = 0
-    counts.paper = 0
-    counts.scissors = 0
-    total = 0
- 
-    for (let i = 0; i < h.length - 1; i++) {
- 
-      if (h[i] === last) {
- 
-        counts[h[i + 1]]++
-        total++
- 
-      }
- 
-    }
- 
-    if (total > 0) {
-      return mostCommon(counts)
-    }
- 
-  }
- 
- 
-  // everyone: your most used move
-  counts.rock = 0
-  counts.paper = 0
-  counts.scissors = 0
- 
-  const recent =
-    level === 'medium' ? h.slice(-10) : h
- 
-  recent.forEach(m => counts[m]++)
- 
-  return mostCommon(counts)
- 
-}
- 
- 
+
+
 function showResult(data) {
- 
+
   myMove = null
- 
+
   applyResult(
     'online',
     data.result,
@@ -736,10 +584,10 @@ function showResult(data) {
     data.opponentMove,
     data.opponentName || 'Opponent'
   )
- 
+
 }
- 
- 
+
+
 function applyResult(
   which,
   result,
@@ -747,10 +595,10 @@ function applyResult(
   opponentMove,
   opponentName
 ) {
- 
+
   const score = scores[which]
- 
- 
+
+
   movesElement.innerHTML =
     `You
      <img
@@ -762,119 +610,119 @@ function applyResult(
        class="move-icon"
      >
      ${opponentName}`
- 
- 
+
+
   if (result === 'win') {
- 
+
     score.wins++
- 
+
     resultElement.textContent =
       'You win!'
- 
+
   }
- 
- 
+
+
   else if (result === 'loss') {
- 
+
     score.losses++
- 
+
     resultElement.textContent =
       'You lose.'
- 
+
   }
- 
- 
+
+
   else {
- 
+
     score.ties++
- 
+
     resultElement.textContent =
       'Tie.'
- 
+
   }
- 
- 
+
+
   localStorage.setItem(
     SCORE_KEYS[which],
     JSON.stringify(score)
   )
- 
- 
+
+
   window.dispatchEvent(new CustomEvent('rps-result', {
     detail: { which, result, level }
   }))
- 
+
   updateScoreElement()
 }
- 
- 
+
+
 function updateLevelButtons() {
- 
+
   levelButtons.forEach(button => {
- 
+
     button.classList.toggle(
       'active',
       button.dataset.level === level
     )
- 
+
   })
- 
+
   levelDescription.textContent =
     LEVELS[level].text
- 
+
 }
- 
- 
+
+
 function updateScoreElement() {
- 
+
   const score = scores[mode]
- 
+
   if (mode === 'computer') {
- 
+
     const name =
       level.charAt(0).toUpperCase() +
       level.slice(1)
- 
+
     scoreLabel.textContent =
       'Computer score'
- 
+
     resetButton.textContent =
       'Reset Computer Score'
- 
+
   }
- 
+
   else {
- 
+
     scoreLabel.textContent =
       'Online score'
- 
+
     resetButton.textContent =
       'Reset Online Score'
- 
+
   }
- 
+
   document.querySelector('.js-score')
     .textContent =
       `Wins: ${score.wins}, ` +
       `Losses: ${score.losses}, ` +
       `Ties: ${score.ties}`
- 
+
 }
- 
- 
- 
+
+
+
 /* ================= Accounts: Google, email + code, username + password ================= */
- 
+
 const GOOGLE_CLIENT_ID = '673440193252-jv6q8cop00g3jkq4dd6953bc24fifb0c.apps.googleusercontent.com'
 const API = 'https://rps-server.heyboernathan.workers.dev'
- 
+
 let token = null
 let user = null
 let setupToken = null
 let pendingEmail = ''
 let view = 'login'
 let googleStarted = false
- 
+
 const $ = selector => document.querySelector(selector)
 const authLayer = $('#auth-layer')
 const authTitle = $('#auth-title')
@@ -882,53 +730,54 @@ const authSub = $('#auth-sub')
 const authMsg = $('#auth-msg')
 const googleBtn = $('#google-btn')
 const userChip = $('#user-chip')
- 
+
 const views = {
   login: $('#view-login'),
   register: $('#view-register'),
   code: $('#view-code'),
   setup: $('#view-setup')
 }
- 
+
 const VIEW_TEXT = {
   login: ['Welcome back', 'Log in with Google, or with your username and password.'],
   register: ['Create your account', 'Register with Google or with your email.'],
   code: ['Check your email', ''],
   setup: ['Almost done', 'Choose a username and password for your account.']
 }
- 
+
 try { token = localStorage.getItem('token') } catch (error) {}
- 
+
 function setView(v, message) {
   view = v
   for (const name in views) views[name].hidden = name !== v
- 
+
   const tabbed = v === 'login' || v === 'register'
   $('#auth-tabs').hidden = !tabbed
   $('#google-wrap').hidden = !tabbed
   document.querySelectorAll('.tab[data-tab]').forEach(tab => {
     tab.classList.toggle('on', tab.dataset.tab === v)
   })
- 
+
   authTitle.textContent = VIEW_TEXT[v][0]
   authSub.textContent = v === 'code'
     ? `We sent a 6-digit code to ${pendingEmail}.`
     : VIEW_TEXT[v][1]
   authMsg.textContent = message || ''
- 
+
   if (tabbed) renderGoogleButton()
 }
- 
+
 function showAuth(message) {
   authLayer.hidden = false
   $('#auth-body').hidden = false
+  $('#guest-btn').hidden = false
   setView('login', message)
 }
- 
+
 function hideAuth() {
   authLayer.hidden = true
 }
- 
+
 async function checkServer() {
   try {
     const res = await fetch(API + '/status', { cache: 'no-store' })
@@ -937,13 +786,13 @@ async function checkServer() {
     return null // could not reach the server at all
   }
 }
- 
+
 function setUser(u) {
   user = u
   userChip.hidden = !u
   if (u) userChip.textContent = '👤 ' + u.name
 }
- 
+
 function logout() {
   token = null
   try { localStorage.removeItem('token') } catch (error) {}
@@ -951,7 +800,7 @@ function logout() {
   clearScores()
   disconnect()
 }
- 
+
 function renderGoogleButton() {
   if (!window.google || !google.accounts) {
     setTimeout(renderGoogleButton, 300)
@@ -973,7 +822,7 @@ function renderGoogleButton() {
     width: 260
   })
 }
- 
+
 async function send(path, body, onOk) {
   authMsg.textContent = 'Please wait...'
   try {
@@ -993,7 +842,7 @@ async function send(path, body, onOk) {
     authMsg.textContent = 'Could not reach the server. Try again.'
   }
 }
- 
+
 function finishLogin(data) {
   token = data.token
   try { localStorage.setItem('token', token) } catch (error) {}
@@ -1002,7 +851,7 @@ function finishLogin(data) {
   loadProfile()
   resultElement.textContent = `Welcome, ${data.user.name}!`
 }
- 
+
 function handleGoogle(response) {
   send('/auth/google', { credential: response.credential }, data => {
     if (data.needsSetup) {
@@ -1013,11 +862,11 @@ function handleGoogle(response) {
     }
   })
 }
- 
+
 $('#login-go').addEventListener('click', () => {
   send('/auth/login', { id: $('#login-id').value, password: $('#login-pw').value }, finishLogin)
 })
- 
+
 $('#reg-go').addEventListener('click', () => {
   pendingEmail = $('#reg-email').value.trim().toLowerCase()
   send('/auth/register', {
@@ -1026,11 +875,11 @@ $('#reg-go').addEventListener('click', () => {
     password: $('#reg-pw').value
   }, () => setView('code', 'Code sent. It expires in 10 minutes.'))
 })
- 
+
 $('#code-go').addEventListener('click', () => {
   send('/auth/verify', { email: pendingEmail, code: $('#code-in').value }, finishLogin)
 })
- 
+
 $('#setup-go').addEventListener('click', () => {
   send('/auth/setup', {
     token: setupToken,
@@ -1038,22 +887,22 @@ $('#setup-go').addEventListener('click', () => {
     password: $('#setup-pw').value
   }, finishLogin)
 })
- 
+
 document.querySelectorAll('.tab[data-tab]').forEach(tab => {
   tab.addEventListener('click', () => setView(tab.dataset.tab))
 })
- 
+
 $('#guest-btn').addEventListener('click', () => {
   hideAuth()
   setMode('computer')
 })
- 
+
 userChip.addEventListener('click', openProfile)
- 
+
 async function handleConnectFail() {
   connectionStatus.textContent = 'Could not connect'
   playerCount.textContent = 'Players: 0/2'
- 
+
   const status = await checkServer()
   if (status !== true) {
     resultElement.textContent = status === null
@@ -1061,7 +910,7 @@ async function handleConnectFail() {
       : '🔴 The server is offline right now.'
     return
   }
- 
+
   try {
     const res = await fetch(API + '/me?token=' + encodeURIComponent(token))
     if (res.status === 401) {
@@ -1070,13 +919,13 @@ async function handleConnectFail() {
       return
     }
   } catch (error) {}
- 
+
   resultElement.textContent = 'Could not join. That room may be full.'
 }
- 
+
 async function startAuth() {
   const online = await checkServer()
- 
+
   if (token && online) {
     try {
       const res = await fetch(API + '/me?token=' + encodeURIComponent(token))
@@ -1089,23 +938,26 @@ async function startAuth() {
     token = null
     try { localStorage.removeItem('token') } catch (error) {}
   }
- 
+
   showAuth(
     online === true ? '' :
-    online === false ? '🔴 The server is switched off right now. You can still play the computer.' :
+    online === false ? '🔴 The server is switched off right now. Come back soon!' :
     '⚠️ Cannot reach the server. Check the worker is deployed.'
   )
-  if (online !== true) $('#auth-body').hidden = true
+  if (online !== true) {
+    $('#auth-body').hidden = true
+    $('#guest-btn').hidden = true
+  }
 }
- 
+
 startAuth()
- 
- 
- 
+
+
+
 /* ================= Profile, scores kept in the account, leaderboard ================= */
- 
+
 let profile = null
- 
+
 async function account(action, body) {
   try {
     const res = await fetch(API + '/account/' + action, {
@@ -1124,7 +976,7 @@ async function account(action, body) {
     return { ok: false, data: { error: 'Could not reach the server.' } }
   }
 }
- 
+
 function clearScores() {
   profile = null
   for (const key of ['online', 'computer']) {
@@ -1135,7 +987,7 @@ function clearScores() {
   }
   updateScoreElement()
 }
- 
+
 async function loadProfile() {
   const r = await account('profile', {})
   if (!r.ok) return
@@ -1144,11 +996,11 @@ async function loadProfile() {
   Object.assign(scores.computer, profile.stats.computer)
   updateScoreElement()
 }
- 
+
 function pfMsg(text) {
   $('#pf-msg').textContent = text
 }
- 
+
 function renderProfile() {
   const line = s => `W ${s.wins}, L ${s.losses}, T ${s.ties}`
   $('#pf-name').textContent = user ? user.name : 'Profile'
@@ -1156,24 +1008,19 @@ function renderProfile() {
   $('#pf-online').textContent = 'Online: ' + line(scores.online)
   $('#pf-computer').textContent = 'Computer: ' + line(scores.computer)
 }
- 
+
 function openProfile() {
   $('#profile-layer').hidden = false
   pfMsg('')
   renderProfile()
 }
- 
-// computer games are reported by the page; online games are recorded by the server
-window.addEventListener('rps-result', event => {
-  if (token && event.detail.which === 'computer') {
-    account('score', { result: event.detail.result })
-  }
-})
- 
+
+// every score (online and computer) is recorded by the server
+
 resetButton.addEventListener('click', () => {
   if (token) account('reset-score', { mode })
 })
- 
+
 $('#pf-user-go').addEventListener('click', async () => {
   pfMsg('Please wait...')
   const r = await account('username', { username: $('#pf-user').value.trim(), password: $('#pf-cur').value })
@@ -1185,7 +1032,7 @@ $('#pf-user-go').addEventListener('click', async () => {
   $('#pf-user').value = ''
   pfMsg('Username changed.')
 })
- 
+
 $('#pf-pw-go').addEventListener('click', async () => {
   pfMsg('Please wait...')
   const r = await account('password', { password: $('#pf-cur').value, newPassword: $('#pf-new').value })
@@ -1193,13 +1040,13 @@ $('#pf-pw-go').addEventListener('click', async () => {
   $('#pf-new').value = ''
   pfMsg('Password changed.')
 })
- 
+
 $('#pf-logout').addEventListener('click', () => {
   $('#profile-layer').hidden = true
   logout()
   showAuth('')
 })
- 
+
 $('#pf-delete').addEventListener('click', async () => {
   if (!confirm('Delete your account and all your scores? This cannot be undone.')) return
   pfMsg('Please wait...')
@@ -1209,21 +1056,21 @@ $('#pf-delete').addEventListener('click', async () => {
   logout()
   showAuth('Your account was deleted.')
 })
- 
+
 async function openLeaderboard(which) {
   $('#lb-layer').hidden = false
   document.querySelectorAll('.tab[data-lb]').forEach(tab => {
     tab.classList.toggle('on', tab.dataset.lb === which)
   })
- 
+
   const list = $('#lb-list')
   list.textContent = 'Loading...'
- 
+
   try {
     const res = await fetch(API + '/leaderboard?mode=' + which, { cache: 'no-store' })
     const rows = (await res.json()).rows || []
     list.textContent = rows.length ? '' : 'No scores yet. Be the first!'
- 
+
     rows.forEach((r, i) => {
       const row = document.createElement('div')
       row.className = 'row' + (user && r.name === user.name ? ' me' : '')
@@ -1238,16 +1085,15 @@ async function openLeaderboard(which) {
     list.textContent = 'Could not load the leaderboard.'
   }
 }
- 
+
 $('#lb-btn').addEventListener('click', () => openLeaderboard('online'))
- 
+
 document.querySelectorAll('.tab[data-lb]').forEach(tab => {
   tab.addEventListener('click', () => openLeaderboard(tab.dataset.lb))
 })
- 
+
 document.querySelectorAll('[data-close]').forEach(button => {
   button.addEventListener('click', () => {
     button.closest('.ui-layer').hidden = true
   })
 })
- 
