@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#07060d">
     <title>Leaderboard - Rock Paper Scissors</title>
-    <link rel="stylesheet" href="12-rock-paper-scissors.css?v=9">
+    <link rel="stylesheet" href="12-rock-paper-scissors.css?v=10">
     <style>
       body { justify-content: flex-start; }
       .lb-page { width: 100%; max-width: 520px; }
@@ -140,6 +140,13 @@
       async function load() {
         try {
           const res = await fetch(API + '/leaderboard?mode=' + which, { cache: 'no-store' })
+          if (!res.ok) {
+            list.textContent = res.status === 503
+              ? '🔴 The server is offline, so the leaderboard is unavailable.'
+              : 'Could not load the leaderboard.'
+            note.textContent = ''
+            return
+          }
           render((await res.json()).rows || [])
         } catch (error) {
           list.textContent = 'Could not load the leaderboard.'
