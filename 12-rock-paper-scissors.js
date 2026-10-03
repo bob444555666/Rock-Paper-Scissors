@@ -287,6 +287,9 @@ function setMode(newMode) {
 
 function disconnect() {
 
+  chatStop()
+
+
   if (socket) {
 
     const oldSocket = socket
@@ -400,8 +403,14 @@ function joinGame() {
 
       }
 
+      if (data.type === 'welcome') {
+        chatStart()
+      }
+
 
       if (data.type === 'players') {
+
+        chatPlayers(data.names)
 
         playerCount.textContent =
           `Players: ${data.count}/2`
@@ -439,6 +448,10 @@ function joinGame() {
 
       }
 
+      if (data.type === 'chat') {
+        addChat(data)
+      }
+
 
       if (data.type === 'error') {
 
@@ -465,6 +478,8 @@ function joinGame() {
         handleConnectFail()
         return
       }
+
+      chatStop()
 
       connected = false
       myMove = null
@@ -795,6 +810,7 @@ async function checkServer() {
 function setUser(u) {
   user = u
   userChip.hidden = !u
+  $('#friends-btn').hidden = !u
   setChip()
 }
 
@@ -803,6 +819,7 @@ function logout() {
   try { localStorage.removeItem('token') } catch (error) {}
   setUser(null)
   clearScores()
+  $('#friends-layer').hidden = true
   disconnect()
 }
 
@@ -1090,6 +1107,7 @@ function kickOut() {
   movesElement.innerHTML = ''
   resultElement.textContent = 'Join a room to play'
   $('#profile-layer').hidden = true
+  $('#friends-layer').hidden = true
   showAuth('🔴 The server was switched off.')
   $('#auth-body').hidden = true
   $('#guest-btn').hidden = true
@@ -1216,3 +1234,175 @@ $('#pf-lib-btn').addEventListener('click', () => $('#pf-lib').click())
 $('#pf-cam').addEventListener('change', event => pickPicture(event.target))
 $('#pf-lib').addEventListener('change', event => pickPicture(event.target))
 $('#pf-remove-pic').addEventListener('click', () => savePicture(''))
+
+
+
+/* ================= Chat sidebar (talk to whoever you are playing) ================= */
+
+let chatUnread = 0
+const chatBtn = $('#chat-btn')
+const chatPanel = $('#chat-panel')
+const chatLog = $('#chat-log')
+const chatInput = $('#chat-input')
+
+function setChatBadge() {
+  $('#chat-badge').hidden = !chatUnread
+  $('#chat-badge').textContent = chatUnread
+}
+
+function chatStart() {
+  chatLog.textContent = ''
+  chatUnread = 0
+  setChatBadge()
+  chatBtn.hidden = false
+}
+
+function chatStop() {
+  chatBtn.hidden = true
+  chatPanel.hidden = true
+}
+
+function chatPlayers(names) {
+  const others = (names || []).filter(n => !user || n !== user.name)
+  $('#chat-title').textContent = others.length ? 'Chat with ' + others.join(', ') : 'Chat (waiting for a player)'
+}
+
+function addChat(data) {
+  const mine = user && data.from === user.name
+  const row = document.createElement('div')
+  row.className = 'chat-msg ' + (mine ? 'me' : 'them')
+  const who = document.createElement('small')
+  who.textContent = mine ? 'You' : data.from
+  const text = document.createElement('span')
+  text.textContent = data.text
+  row.append(who, text)
+  chatLog.append(row)
+  while (chatLog.children.length > 60) chatLog.firstChild.remove()
+  chatLog.scrollTop = chatLog.scrollHeight
+  if (chatPanel.hidden && !mine) {
+    chatUnread++
+    setChatBadge()
+  }
+}
+
+function sendChat() {
+  const text = chatInput.value.trim()
+  if (!text || !socket || !connected) return
+  socket.send(JSON.stringify({ type: 'chat', text }))
+  chatInput.value = ''
+}
+
+chatBtn.addEventListener('click', () => {
+  chatPanel.hidden = false
+  chatUnread = 0
+  setChatBadge()
+  chatInput.focus()
+})
+$('#chat-close').addEventListener('click', () => { chatPanel.hidden = true })
+$('#chat-go').addEventListener('click', sendChat)
+chatInput.addEventListener('keydown', event => { if (event.key === 'Enter') sendChat() })
+
+
+/* ================= Friends ================= */
+
+const friendsLayer = $('#friends-layer')
+
+function frMsg(text) {
+  $('#fr-msg').textContent = text
+}
+
+function miniAvatar(name, version) {
+  const box = document.createElement('span')
+  box.className = 'mini'
+  box.textContent = name[0].toUpperCase()
+  if (version) {
+    const img = new Image()
+    img.alt = ''
+    img.onload = () => { box.textContent = ''; box.append(img) }
+    img.src = avatarUrl(name, version)
+  }
+  return box
+}
+
+function miniButton(label, color, onClick) {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'mini-btn ' + color
+  button.textContent = label
+  button.addEventListener('click', onClick)
+  return button
+}
+
+function friendRow(f, buttons) {
+  const row = document.createElement('div')
+  row.className = 'row'
+  const name = document.createElement('span')
+  name.textContent = f.name + (f.waiting ? ' 🟢 waiting' : '')
+  row.append(miniAvatar(f.name, f.avatarAt), name, ...buttons)
+  return row
+}
+
+async function loadFriends() {
+  if (!token) return
+  const r = await account('friends', {})
+  if (!r.ok) return
+
+  const { friends, requests } = r.data
+  $('#fr-badge').hidden = !requests.length
+  $('#fr-badge').textContent = requests.length
+  $('#fr-req-title').hidden = !requests.length
+
+  const requestBox = $('#fr-requests')
+  const list = $('#fr-list')
+  requestBox.textContent = ''
+  list.textContent = friends.length ? '' : 'No friends yet. Add one by username!'
+
+  requests.forEach(q => requestBox.append(friendRow(q, [
+    miniButton('Accept', 'green', () => friendAction('friend-accept', q.name)),
+    miniButton('Decline', 'red', () => friendAction('friend-decline', q.name))
+  ])))
+
+  friends.forEach(f => list.append(friendRow(f, [
+    miniButton(f.waiting ? 'Join' : 'Play', 'green', () => playFriend(f.name)),
+    miniButton('✕', 'red', () => {
+      if (confirm('Remove ' + f.name + ' from your friends?')) friendAction('friend-remove', f.name)
+    })
+  ])))
+}
+
+async function friendAction(action, name) {
+  await account(action, { username: name })
+  loadFriends()
+}
+
+async function playFriend(name) {
+  frMsg('Opening your private room...')
+  const r = await account('friend-room', { username: name })
+  if (!r.ok) return frMsg(r.data.error || 'Could not open the room.')
+  friendsLayer.hidden = true
+  setMode('online')
+  roomInput.value = r.data.room
+  joinGame()
+}
+
+$('#friends-btn').addEventListener('click', () => {
+  friendsLayer.hidden = false
+  frMsg('')
+  loadFriends()
+})
+
+$('#fr-add').addEventListener('click', async () => {
+  frMsg('Please wait...')
+  const r = await account('friend-add', { username: $('#fr-name').value.trim() })
+  frMsg(r.ok ? r.data.message : (r.data.error || 'Something went wrong.'))
+  if (r.ok) $('#fr-name').value = ''
+  loadFriends()
+})
+
+// refresh quickly while the friends screen is open, slowly otherwise (for the request badge)
+let friendTick = 0
+setInterval(() => {
+  friendTick++
+  if (!token || kicked) return
+  if (!friendsLayer.hidden || friendTick % 4 === 0) loadFriends()
+}, 5000)
