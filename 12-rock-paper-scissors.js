@@ -736,14 +736,18 @@ const views = {
   login: $('#view-login'),
   register: $('#view-register'),
   code: $('#view-code'),
-  setup: $('#view-setup')
+  setup: $('#view-setup'),
+  forgot: $('#view-forgot'),
+  reset: $('#view-reset')
 }
 
 const VIEW_TEXT = {
   login: ['Welcome back', 'Log in with Google, or with your username and password.'],
   register: ['Create your account', 'Register with Google or with your email.'],
   code: ['Check your email', ''],
-  setup: ['Almost done', 'Choose a username and password for your account.']
+  setup: ['Almost done', 'Choose a username and password for your account.'],
+  forgot: ['Forgot password', 'Enter your account email and we will send you a code.'],
+  reset: ['Reset password', '']
 }
 
 try { token = localStorage.getItem('token') } catch (error) {}
@@ -760,7 +764,7 @@ function setView(v, message) {
   })
 
   authTitle.textContent = VIEW_TEXT[v][0]
-  authSub.textContent = v === 'code'
+  authSub.textContent = (v === 'code' || v === 'reset')
     ? `We sent a 6-digit code to ${pendingEmail}.`
     : VIEW_TEXT[v][1]
   authMsg.textContent = message || ''
@@ -1123,3 +1127,28 @@ setInterval(async () => {
   if (online === false && !kicked) kickOut()
   if (online === true && kicked) location.reload()
 }, 3000)
+
+
+
+/* ================= Forgot password ================= */
+
+$('#forgot-link').addEventListener('click', () => setView('forgot'))
+
+document.querySelectorAll('[data-back]').forEach(button => {
+  button.addEventListener('click', () => setView('login'))
+})
+
+$('#fg-go').addEventListener('click', () => {
+  pendingEmail = $('#fg-email').value.trim().toLowerCase()
+  send('/auth/forgot', { email: pendingEmail }, () => {
+    setView('reset', 'If that email has an account, a code is on its way.')
+  })
+})
+
+$('#rs-go').addEventListener('click', () => {
+  send('/auth/reset', {
+    email: pendingEmail,
+    code: $('#rs-code').value,
+    newPassword: $('#rs-pw').value
+  }, finishLogin)
+})
