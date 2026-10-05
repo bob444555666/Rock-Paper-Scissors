@@ -898,26 +898,38 @@ function logout() {
   disconnect()
 }
 
+let googleTries = 0
+
 function renderGoogleButton() {
-  if (!window.google || !google.accounts) {
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    // the Google script loads separately, so wait for it (about 15 seconds at most)
+    if (++googleTries > 50) {
+      googleBtn.textContent = 'Google sign-in could not load. Use your username and password instead.'
+      return
+    }
     setTimeout(renderGoogleButton, 300)
     return
   }
-  if (!googleStarted) {
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogle
+  googleTries = 0
+  try {
+    if (!googleStarted) {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogle
+      })
+      googleStarted = true
+    }
+    googleBtn.innerHTML = ''
+    google.accounts.id.renderButton(googleBtn, {
+      theme: 'filled_black',
+      size: 'large',
+      shape: 'pill',
+      text: view === 'register' ? 'signup_with' : 'signin_with',
+      width: 260
     })
-    googleStarted = true
+  } catch (error) {
+    googleBtn.textContent = 'Google sign-in is unavailable right now. Use your username and password instead.'
   }
-  googleBtn.innerHTML = ''
-  google.accounts.id.renderButton(googleBtn, {
-    theme: 'filled_black',
-    size: 'large',
-    shape: 'pill',
-    text: view === 'register' ? 'signup_with' : 'signin_with',
-    width: 260
-  })
 }
 
 async function send(path, body, onOk) {
