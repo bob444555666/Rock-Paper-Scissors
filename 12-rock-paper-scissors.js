@@ -802,7 +802,7 @@ function updateScoreElement() {
 
 /* ================= Accounts: Google, email + code, username + password ================= */
 
-const GOOGLE_CLIENT_ID = '673440193252-jv6q8cop00g3jkq4dd6953bc24fifb0c.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = '673440193252-afoh2lbjqrduu3buqrt6lppnl89q8ogt.apps.googleusercontent.com'
 const API = 'https://rps-server.heyboernathan.workers.dev'
 
 let token = null
