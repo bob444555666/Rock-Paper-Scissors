@@ -112,7 +112,7 @@
 
         const text = document.createElement('span')
         text.className = 't'
-        text.textContent = r.name
+        text.textContent = r.name + (r.prem ? ' ⭐' : '')
 
         box.append(pic, text)
         return box
