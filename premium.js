@@ -4,7 +4,7 @@
      🎨 colour themes for the whole game
      👁️ Peek: in "Play Computer" you can see what the computer will play before you choose.
          (Peeked rounds are practice and do not count on the computer leaderboard.)
-     🔎 Scout: in tournaments you see how your opponent has played so far (done in tournament.js)
+     🔎 Scout + 👁️ see opponent's pick (optional switch): in tournaments (done in tournament.js)
    Self-contained: it cannot break the main game. */
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev'
@@ -99,7 +99,7 @@
       return
     }
 
-    info.textContent = `⭐ You have Premium (${status.source === 'tournament' ? 'won in a tournament' : 'given by the staff'}). Perks: themes, 👁️ Peek in Play Computer, 🔎 Scout in tournaments.`
+    info.textContent = `⭐ You have Premium (${status.source === 'tournament' ? 'won in a tournament' : 'given by the staff'}). Perks: themes, 👁️ Peek in Play Computer, and in tournaments 🔎 Scout plus an option to 👁️ see your opponent's pick.`
     badgeBtn.disabled = false
     badgeBtn.textContent = status.badge ? '⭐ Leaderboard badge: ON (tap to hide)' : '⭐ Leaderboard badge: OFF (tap to show)'
     Object.entries(THEMES).forEach(([id, t]) => {
