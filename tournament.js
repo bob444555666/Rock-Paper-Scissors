@@ -144,6 +144,20 @@
     return box
   }
 
+  // Premium only: how your opponent has played so far in this tournament (never their current hidden pick)
+  function scoutBox(m) {
+    const sc = m.scout
+    const box = make('div', { className: 'to-note' })
+    if (!sc.total) {
+      box.textContent = `🔎 Scout: ${m.opp} has not played a round yet.`
+      return box
+    }
+    const parts = ['rock', 'paper', 'scissors'].map(k => `${EMOJI[k]} ${Math.round((sc.counts[k] / sc.total) * 100)}%`).join('   ')
+    const top = ['rock', 'paper', 'scissors'].sort((a, b) => sc.counts[b] - sc.counts[a])[0]
+    box.textContent = `🔎 Scout: ${m.opp} played ${parts} (${sc.total} rounds). Favourite: ${EMOJI[top]}. Recent: ${sc.recent.map(x => EMOJI[x]).join(' ')}`
+    return box
+  }
+
   function timerText(m) {
     if (!m.deadline) return ''
     const s = Math.max(0, Math.ceil((m.deadline - Date.now()) / 1000))
@@ -239,6 +253,7 @@
       text = `Last round: You ${EMOJI[m.last.you] || ''}  vs  ${m.opp} ${EMOJI[m.last.opp] || ''}\n${word}` + (m.youMoved ? '\nMove sent. Waiting for your opponent...' : '')
       cls = m.last.result
     }
+    if (m.scout) body.append(scoutBox(m))
     body.append(make('p', { className: 'to-line to-last ' + cls, textContent: text }), bracket(v))
     schedule(1200)
   }
