@@ -4,7 +4,7 @@
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev'
   const KEY = 'challengeToken'
-  const EMOJI = { rock: '✊', paper: '✋', scissors: '✌️' }
+  const EMOJI = { rock: '🪨', paper: '📰', scissors: '✂' }
   const LEVELS = ['Easy', 'Medium', 'Hard', 'Insane']
 
   let token = null
