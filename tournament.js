@@ -10,8 +10,10 @@
   let view = null
   let busy = false
   let pollTimer = null
+  let peekOn = false
 
   try { token = localStorage.getItem(KEY) } catch (error) {}
+  try { peekOn = localStorage.getItem('tournamentPeek') === '1' } catch (error) {}
   const session = () => { try { return localStorage.getItem('token') } catch (error) { return null } }
 
   // ---------- styles ----------
@@ -253,7 +255,18 @@
       text = `Last round: You ${EMOJI[m.last.you] || ''}  vs  ${m.opp} ${EMOJI[m.last.opp] || ''}\n${word}` + (m.youMoved ? '\nMove sent. Waiting for your opponent...' : '')
       cls = m.last.result
     }
-    if (m.scout) body.append(scoutBox(m))
+    if (m.scout) { // Premium extras
+      const tg = make('button', { className: 'big alt', type: 'button', textContent: peekOn ? "👁️ See opponent's pick: ON" : "👁️ See opponent's pick: OFF" })
+      tg.addEventListener('click', () => {
+        peekOn = !peekOn
+        try { localStorage.setItem('tournamentPeek', peekOn ? '1' : '0') } catch (error) {}
+        refresh()
+      })
+      body.append(tg)
+      if (peekOn && m.oppPick) body.append(make('p', { className: 'to-line to-last win', textContent: `👁️ ${m.opp} has picked ${EMOJI[m.oppPick]}` }))
+      else if (peekOn && !m.youMoved) body.append(make('p', { className: 'to-note', textContent: '👁️ Waiting for your opponent to pick...' }))
+      body.append(scoutBox(m))
+    }
     body.append(make('p', { className: 'to-line to-last ' + cls, textContent: text }), bracket(v))
     schedule(1200)
   }
@@ -274,7 +287,7 @@
 
   async function refresh() {
     if (layer.hidden || !token) return
-    const r = await call('/tournament/state', { token })
+    const r = await call('/tournament/state', { token, peek: peekOn })
     if (layer.hidden) return
     if (r.ok) return render(r.data.state)
     if (r.status === 404) { saveToken(null); return showJoin('That tournament was ended. Join a new one.') }
@@ -320,7 +333,7 @@
     if (busy || !token) return
     busy = true
     moveButtons.forEach(b => { b.disabled = true })
-    const r = await call('/tournament/move', { token, move })
+    const r = await call('/tournament/move', { token, move, peek: peekOn })
     busy = false
     if (r.status === 404) { saveToken(null); return showJoin('That tournament was ended.') }
     if (r.status === 410) return refresh()
