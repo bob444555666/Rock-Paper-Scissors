@@ -287,9 +287,6 @@ function setMode(newMode) {
 
 function disconnect() {
 
-  chatStop()
-
-
   if (socket) {
 
     const oldSocket = socket
@@ -403,14 +400,7 @@ function joinGame() {
 
       }
 
-      if (data.type === 'welcome') {
-        chatStart()
-      }
-
-
       if (data.type === 'players') {
-
-        chatPlayers(data.names)
 
         playerCount.textContent =
           `Players: ${data.count}/2`
@@ -448,11 +438,6 @@ function joinGame() {
 
       }
 
-      if (data.type === 'chat') {
-        addChat(data)
-      }
-
-
       if (data.type === 'error') {
 
         resultElement.textContent =
@@ -478,8 +463,6 @@ function joinGame() {
         handleConnectFail()
         return
       }
-
-      chatStop()
 
       connected = false
       myMove = null
@@ -686,6 +669,10 @@ function applyResult(
 ) {
 
   const score = scores[which]
+
+  // keep a short log of rounds so the AI coach can see how you are playing
+  ;(window.rpsLog = window.rpsLog || []).push({ mode: which, you: yourMove, opp: opponentMove, result, level: which === 'computer' ? level : '' })
+  if (window.rpsLog.length > 60) window.rpsLog.shift()
 
 
   movesElement.innerHTML =
@@ -1324,72 +1311,6 @@ $('#pf-cam').addEventListener('change', event => pickPicture(event.target))
 $('#pf-lib').addEventListener('change', event => pickPicture(event.target))
 $('#pf-remove-pic').addEventListener('click', () => savePicture(''))
 
-
-
-/* ================= Chat sidebar (talk to whoever you are playing) ================= */
-
-let chatUnread = 0
-const chatBtn = $('#chat-btn')
-const chatPanel = $('#chat-panel')
-const chatLog = $('#chat-log')
-const chatInput = $('#chat-input')
-
-function setChatBadge() {
-  $('#chat-badge').hidden = !chatUnread
-  $('#chat-badge').textContent = chatUnread
-}
-
-function chatStart() {
-  chatLog.textContent = ''
-  chatUnread = 0
-  setChatBadge()
-  chatBtn.hidden = false
-}
-
-function chatStop() {
-  chatBtn.hidden = true
-  chatPanel.hidden = true
-}
-
-function chatPlayers(names) {
-  const others = (names || []).filter(n => !user || n !== user.name)
-  $('#chat-title').textContent = others.length ? 'Chat with ' + others.join(', ') : 'Chat (waiting for a player)'
-}
-
-function addChat(data) {
-  const mine = user && data.from === user.name
-  const row = document.createElement('div')
-  row.className = 'chat-msg ' + (mine ? 'me' : 'them')
-  const who = document.createElement('small')
-  who.textContent = mine ? 'You' : data.from
-  const text = document.createElement('span')
-  text.textContent = data.text
-  row.append(who, text)
-  chatLog.append(row)
-  while (chatLog.children.length > 60) chatLog.firstChild.remove()
-  chatLog.scrollTop = chatLog.scrollHeight
-  if (chatPanel.hidden && !mine) {
-    chatUnread++
-    setChatBadge()
-  }
-}
-
-function sendChat() {
-  const text = chatInput.value.trim()
-  if (!text || !socket || !connected) return
-  socket.send(JSON.stringify({ type: 'chat', text }))
-  chatInput.value = ''
-}
-
-chatBtn.addEventListener('click', () => {
-  chatPanel.hidden = false
-  chatUnread = 0
-  setChatBadge()
-  chatInput.focus()
-})
-$('#chat-close').addEventListener('click', () => { chatPanel.hidden = true })
-$('#chat-go').addEventListener('click', sendChat)
-chatInput.addEventListener('keydown', event => { if (event.key === 'Enter') sendChat() })
 
 
 /* ================= Friends ================= */
