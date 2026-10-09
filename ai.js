@@ -1,4 +1,5 @@
-/* AI Coach (v4). Now with live voice: tap the mic to talk, or use Live talk for a hands-free back-and-forth.
+/* AI Coach (v5). Voice now works on iPhone/iPad Safari too (see the iOS notes in the voice section).
+   v4 notes:  Now with live voice: tap the mic to talk, or use Live talk for a hands-free back-and-forth.
    (Uses the browser's built-in speech recognition and speech synthesis. No extra server needed.)
    v3 notes:  Talks to the real AI on the server (/ai/chat), so the Voice Control settings really apply.
    Two tabs: Coach (strategy, everyone) and Chat (talk about anything, Premium only; the server checks this).
@@ -65,11 +66,14 @@
     #ai-input { flex: 1; min-width: 0; padding: 10px; font-size: 16px; font-family: inherit; color: white; outline: none; background: rgba(0, 0, 0, 0.6); border: 2px solid var(--ai, #22f5a0); border-radius: 10px; -webkit-user-select: text; user-select: text; }
     #ai-go { padding: 0 14px; font-family: inherit; font-size: 14px; font-weight: bold; color: #07060d; cursor: pointer; background: var(--ai, #22f5a0); border: 0; border-radius: 10px; }
     #ai-go:disabled { opacity: 0.5; }
-    #ai-panel .ai-voice { display: flex; gap: 6px; padding: 4px 0 0; }
-    #ai-panel .ai-vbtn { flex: 1; padding: 6px 4px; font-family: inherit; font-size: 12px; font-weight: bold; color: white; cursor: pointer; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 12px; }
+    #ai-panel, #ai-panel button, #ai-btn { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    @supports (height: 100dvh) { #ai-panel { height: 100dvh; bottom: auto; } }
+    #ai-panel .ai-hint { flex: 1 1 100%; margin: 2px 0 0; font-size: 12px; line-height: 1.35; color: #fbbf24; }
+    #ai-panel .ai-voice { flex-wrap: wrap; display: flex; gap: 6px; padding: 4px 0 0; }
+    #ai-panel .ai-vbtn { flex: 1; min-height: 40px; padding: 6px 4px; font-family: inherit; font-size: 12px; font-weight: bold; color: white; cursor: pointer; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 12px; }
     #ai-panel .ai-vbtn.on { color: #07060d; background: var(--ai, #22f5a0); border-color: var(--ai, #22f5a0); }
     #ai-panel .ai-vbtn:disabled, #ai-mic:disabled { opacity: 0.4; cursor: default; }
-    #ai-mic { width: 46px; padding: 0; font-size: 18px; color: white; cursor: pointer; background: rgba(255, 255, 255, 0.1); border: 2px solid var(--ai, #22f5a0); border-radius: 10px; }
+    #ai-mic { width: 48px; min-height: 44px; padding: 0; font-size: 18px; color: white; cursor: pointer; background: rgba(255, 255, 255, 0.1); border: 2px solid var(--ai, #22f5a0); border-radius: 10px; }
     #ai-mic.on { background: #ff5a5a; border-color: #ff5a5a; animation: ai-pulse 1s infinite; }
     @keyframes ai-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 90, 90, 0.6); } 50% { box-shadow: 0 0 0 8px rgba(255, 90, 90, 0); } }
 
@@ -346,6 +350,7 @@
     if (!text || busy) return
     const mode = aiMode
     if (mode === 'chat' && !isPremium) { updateLock(); return }
+    unlockSpeech()
     const spoken = !!opts.voice
     const willSpeak = canSpeak && (speakOn || live || spoken)
     stopSpeaking()
@@ -408,7 +413,10 @@
   }
 
   // ---------- live voice (the browser's own speech recognition + speech synthesis) ----------
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  // iOS notes: Safari on iPhone/iPad supports listening (needs iOS 14.5+ with Siri & Dictation switched on),
+  // but the home-screen (standalone) app does not, so there we only offer spoken replies.
+  const iosStandalone = navigator.standalone === true
+  const SR = iosStandalone ? null : (window.SpeechRecognition || window.webkitSpeechRecognition)
   const canSpeak = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'
   const SPEAK_KEY = 'aiSpeak'
   let speakOn = false
@@ -423,7 +431,23 @@
   micBtn.hidden = !SR
   liveBtn.hidden = !SR
   speakBtn.hidden = !canSpeak
-  if (!SR && !canSpeak) voiceRow.hidden = true
+  if (iosStandalone && canSpeak) {
+    voiceRow.append(make('p', { className: 'ai-hint', textContent: '🎙️ Listening does not work in the home-screen app on iPhone. Open the site in Safari to talk to me. I can still read my answers out loud here.' }))
+  } else if (!SR && !canSpeak) {
+    voiceRow.hidden = true
+  }
+
+  // iOS only lets speech start from a tap. Speaking one silent word on the first tap unlocks it for later replies.
+  let speechUnlocked = false
+  function unlockSpeech() {
+    if (speechUnlocked || !canSpeak) return
+    speechUnlocked = true
+    try {
+      const u = new SpeechSynthesisUtterance(' ')
+      u.volume = 0
+      speechSynthesis.speak(u)
+    } catch (error) {}
+  }
 
   function voiceUi() {
     micBtn.classList.toggle('on', listening)
@@ -435,15 +459,17 @@
     input.placeholder = listening ? 'Listening...' : aiMode === 'chat' ? 'Say anything...' : 'Ask the coach...'
   }
 
+  const NOVELTY = /bahh|bells|boing|bubbles|cellos|deranged|good news|bad news|hysterical|organ|trinoids|whisper|zarvox|albert|jester|superstar|wobble|fred|junior|kathy|ralph|grandma|grandpa|rocko|shelley|flo|eddy|sandy|reed/i
   function pickVoice() {
     let voices = []
     try { voices = speechSynthesis.getVoices() || [] } catch (error) {}
+    voices = voices.filter(v => !NOVELTY.test(v.name))
     if (!voices.length) return null
     const lang = (navigator.language || 'en-US').toLowerCase()
-    const same = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(lang.slice(0, 2)))
+    const same = voices.filter(v => v.lang && v.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2)))
     const pool = same.length ? same : voices
-    const nice = pool.find(v => /natural|premium|enhanced|google|samantha|aria|jenny/i.test(v.name))
-    return nice || pool.find(v => v.lang && v.lang.toLowerCase() === lang) || pool[0]
+    const nice = pool.find(v => /enhanced|premium|natural|siri|google|samantha|ava|allison|daniel|karen|moira|aria|jenny/i.test(v.name))
+    return nice || pool.find(v => v.lang && v.lang.replace('_', '-').toLowerCase() === lang) || pool[0]
   }
 
   function stopSpeaking() {
@@ -469,6 +495,7 @@
       voiceUi()
       if (done) done()
     }
+    setTimeout(() => { if (myId === speakId && speaking) finish() }, 2500 + clean.length * 95) // iOS sometimes never reports the end
     parts.forEach(p => {
       const u = new SpeechSynthesisUtterance(p)
       if (voice) { u.voice = voice; u.lang = voice.lang } else u.lang = navigator.language || 'en-US'
@@ -501,9 +528,12 @@
       input.value = (finalText + ' ' + interim).trim() // shows what you are saying as you say it
     }
     rec.onerror = e => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      if (e.error === 'service-not-allowed') {
         live = false
-        addMsg('err', 'The microphone is blocked. Allow the mic for this site in your browser settings, then try again.')
+        addMsg('err', 'Speech recognition is switched off. On iPhone: Settings > General > Keyboard > turn on Enable Dictation (and Siri). Then try again.')
+      } else if (e.error === 'not-allowed') {
+        live = false
+        addMsg('err', 'The microphone is blocked. Allow it for this site (iPhone: Settings > Safari > Microphone, or tap the "aA" icon in the address bar > Website Settings), then try again.')
       } else if (e.error === 'audio-capture') {
         live = false
         addMsg('err', 'I could not find a microphone.')
@@ -541,12 +571,14 @@
   }
 
   micBtn.addEventListener('click', () => {
+    unlockSpeech()
     if (listening) { try { rec.stop() } catch (error) {} return } // stop and send what was heard
     live = false
     idleTries = 0
     startListening()
   })
   liveBtn.addEventListener('click', () => {
+    unlockSpeech()
     if (live) { stopVoice(); return }
     live = true
     idleTries = 0
@@ -554,12 +586,13 @@
     startListening()
   })
   speakBtn.addEventListener('click', () => {
+    unlockSpeech()
     speakOn = !speakOn
     try { localStorage.setItem(SPEAK_KEY, speakOn ? '1' : '0') } catch (error) {}
     if (!speakOn) stopSpeaking()
     voiceUi()
   })
-  if (canSpeak) { try { speechSynthesis.getVoices() } catch (error) {} } // some browsers load voices lazily
+  if (canSpeak) { try { speechSynthesis.getVoices(); speechSynthesis.addEventListener('voiceschanged', () => speechSynthesis.getVoices()) } catch (error) {} } // some browsers load voices lazily
   voiceUi()
 
   // ---------- secret Voice Control panel ----------
