@@ -1,4 +1,8 @@
-/* AI Coach (v1). Replaces the old player-to-player chat.
+/* AI Coach (v4). Now with live voice: tap the mic to talk, or use Live talk for a hands-free back-and-forth.
+   (Uses the browser's built-in speech recognition and speech synthesis. No extra server needed.)
+   v3 notes:  Talks to the real AI on the server (/ai/chat), so the Voice Control settings really apply.
+   Two tabs: Coach (strategy, everyone) and Chat (talk about anything, Premium only; the server checks this).
+   Older note:  Replaces the old player-to-player chat.
    A moving, color-changing orb in the bottom-right corner opens a chat with an AI that helps with strategy.
    Type the secret code into the chat box to open the Voice Control panel (the code is checked by the server,
    it is NOT stored in this file).
@@ -15,7 +19,10 @@
   try { color = localStorage.getItem(COLOR_KEY) || color } catch (error) {}
   let busy = false
   let thinking = false
-  let history = []        // what we send to the AI: [{ role, content }]
+  let aiMode = 'coach'     // 'coach' or 'chat'
+  const histories = { coach: [], chat: [] } // what we send to the AI: [{ role, content }]
+  let isPremium = false
+  let premiumChecked = false
   let panelCode = null    // the secret code, kept in memory only while Voice Control is open
   let settings = null
 
@@ -40,7 +47,11 @@
     #ai-panel .ai-sw.on { border-color: white; box-shadow: 0 0 8px currentColor; }
     #ai-panel .ai-sw.custom { position: relative; overflow: hidden; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
     #ai-panel .ai-sw.custom input { position: absolute; inset: -6px; width: 40px; height: 40px; opacity: 0; cursor: pointer; }
-    #ai-log { flex: 1; overflow-y: auto; padding: 6px 2px; }
+    #ai-panel .ai-tabs { display: flex; gap: 6px; padding-bottom: 6px; }
+    #ai-panel .ai-tab { flex: 1; padding: 8px 4px; font-family: inherit; font-size: 13px; font-weight: bold; color: rgba(255, 255, 255, 0.7); cursor: pointer; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; }
+    #ai-panel .ai-tab.on { color: #07060d; background: var(--ai, #22f5a0); border-color: var(--ai, #22f5a0); }
+    #ai-panel .ai-lock { margin: 4px 0; padding: 10px 12px; font-size: 13px; line-height: 1.4; color: #fbbf24; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.5); border-radius: 10px; }
+    .ai-log { flex: 1; overflow-y: auto; padding: 6px 2px; }
     .ai-msg { display: block; width: fit-content; max-width: 88%; margin: 0 0 8px; padding: 8px 11px; text-align: left; white-space: pre-wrap; word-break: break-word; line-height: 1.4; font-size: 14px; border-radius: 12px; -webkit-user-select: text; user-select: text; }
     .ai-msg.me { margin-left: auto; background: rgba(59, 130, 246, 0.35); }
     .ai-msg.bot { margin-right: auto; background: rgba(255, 255, 255, 0.09); }
@@ -54,6 +65,13 @@
     #ai-input { flex: 1; min-width: 0; padding: 10px; font-size: 16px; font-family: inherit; color: white; outline: none; background: rgba(0, 0, 0, 0.6); border: 2px solid var(--ai, #22f5a0); border-radius: 10px; -webkit-user-select: text; user-select: text; }
     #ai-go { padding: 0 14px; font-family: inherit; font-size: 14px; font-weight: bold; color: #07060d; cursor: pointer; background: var(--ai, #22f5a0); border: 0; border-radius: 10px; }
     #ai-go:disabled { opacity: 0.5; }
+    #ai-panel .ai-voice { display: flex; gap: 6px; padding: 4px 0 0; }
+    #ai-panel .ai-vbtn { flex: 1; padding: 6px 4px; font-family: inherit; font-size: 12px; font-weight: bold; color: white; cursor: pointer; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 12px; }
+    #ai-panel .ai-vbtn.on { color: #07060d; background: var(--ai, #22f5a0); border-color: var(--ai, #22f5a0); }
+    #ai-panel .ai-vbtn:disabled, #ai-mic:disabled { opacity: 0.4; cursor: default; }
+    #ai-mic { width: 46px; padding: 0; font-size: 18px; color: white; cursor: pointer; background: rgba(255, 255, 255, 0.1); border: 2px solid var(--ai, #22f5a0); border-radius: 10px; }
+    #ai-mic.on { background: #ff5a5a; border-color: #ff5a5a; animation: ai-pulse 1s infinite; }
+    @keyframes ai-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 90, 90, 0.6); } 50% { box-shadow: 0 0 0 8px rgba(255, 90, 90, 0); } }
 
     #ai-ctl { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom)); overflow-y: auto; text-align: left; background: rgba(7, 6, 13, 0.99); }
     #ai-ctl h2 { margin: 0; font-size: 18px; color: #fbbf24; }
@@ -133,7 +151,7 @@
   function frame(ms) {
     requestAnimationFrame(frame)
     if (document.hidden) return
-    const target = thinking ? 1 : 0
+    const target = thinking || speaking ? 1 : listening ? 0.55 : 0
     energy += (target - energy) * 0.08
     const t = (ms / 1000) * (reduced ? 0.2 : 1)
     drawOrb(btnCanvas, t, energy)
@@ -163,17 +181,28 @@
   customInput.addEventListener('input', () => setColor(customInput.value))
   colorRow.append(make('span', { className: 'ai-sw custom', title: 'Pick any color' }, customInput))
 
-  const log = make('div', { id: 'ai-log' })
+  const logs = { coach: make('div', { className: 'ai-log' }), chat: make('div', { className: 'ai-log' }) }
+  logs.chat.hidden = true
+  let log = logs.coach
+  const lock = make('div', { className: 'ai-lock' })
+  lock.hidden = true
   const chips = make('div', { className: 'ai-chips' })
   ;['Give me strategy tips', 'How do I beat Insane?', 'Look at my last moves'].forEach(text => {
     const c = make('button', { className: 'ai-chip', type: 'button', textContent: text })
     c.addEventListener('click', () => send(text))
     chips.append(c)
   })
+  const tabCoach = make('button', { className: 'ai-tab on', type: 'button', textContent: '🎯 Coach' })
+  const tabChat = make('button', { className: 'ai-tab', type: 'button', textContent: '💬 Chat ⭐' })
+  const tabs = make('div', { className: 'ai-tabs' }, tabCoach, tabChat)
   const input = make('input', { id: 'ai-input', type: 'text', maxLength: 400, placeholder: 'Ask the coach...', autocomplete: 'off' })
   const goBtn = make('button', { id: 'ai-go', type: 'button', textContent: 'Send' })
-  const sendRow = make('div', { className: 'ai-send' }, input, goBtn)
-  const panel = make('div', { id: 'ai-panel' }, head, colorRow, log, chips, sendRow)
+  const micBtn = make('button', { id: 'ai-mic', type: 'button', textContent: '🎙️', title: 'Tap to talk' })
+  const liveBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '🎧 Live talk' })
+  const speakBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '🔇 Voice off' })
+  const voiceRow = make('div', { className: 'ai-voice' }, liveBtn, speakBtn)
+  const sendRow = make('div', { className: 'ai-send' }, micBtn, input, goBtn)
+  const panel = make('div', { id: 'ai-panel' }, head, tabs, colorRow, logs.coach, logs.chat, lock, chips, voiceRow, sendRow)
   panel.hidden = true
 
   document.body.append(btn, panel)
@@ -199,7 +228,7 @@
   function setBusy(on) {
     busy = on
     thinking = on
-    goBtn.disabled = on
+    goBtn.disabled = on || (aiMode === 'chat' && !isPremium)
   }
 
   // "make it red", "turn the orb purple" ... handled here, no AI needed
@@ -209,7 +238,7 @@
   }
   function colorCommand(text) {
     const t = text.toLowerCase()
-    if (!/(color|colour|orb|circle|turn|make|change|switch)/.test(t)) return null
+    if (!/\b(color|colour|orb|circle)\b/.test(t)) return null
     for (const [word, hex] of Object.entries(colorWords)) {
       if (new RegExp('\\b' + word + '\\b').test(t)) return { word, hex }
     }
@@ -254,14 +283,76 @@
     }
   }
 
-  async function send(raw) {
+  // ---------- Coach / Chat tabs ----------
+  const INTRO = {
+    coach: "Hey! I'm Coach. Ask me how to beat the computer, how to read an opponent, or what your last moves say about you. You can also tell me to change my orb color.",
+    chat: "Premium chat is on. Talk to me about anything, game or not. What's up?"
+  }
+
+  function updateLock() {
+    const locked = aiMode === 'chat' && !isPremium
+    lock.hidden = !locked
+    input.disabled = locked
+    goBtn.disabled = locked || busy
+    micBtn.disabled = locked
+    liveBtn.disabled = locked
+    if (locked) stopVoice()
+    if (locked) {
+      lock.textContent = session()
+        ? '⭐ Chat mode is for Premium members. Coach mode is free for everyone. Premium is won in Premium tournaments.'
+        : '⭐ Chat mode is for Premium members. Log in with a Premium account to chat about anything. Coach mode is free.'
+    }
+    const showChips = aiMode === 'coach' && !log.querySelector('.ai-msg.me')
+    chips.hidden = !showChips
+  }
+
+  async function refreshPremium() {
+    const token = session()
+    if (!token) { isPremium = false; premiumChecked = true; return }
+    const r = await call('/account/premium', { token })
+    isPremium = !!(r.ok && r.data && r.data.premium)
+    premiumChecked = true
+  }
+
+  async function setMode(m) {
+    stopVoice()
+    aiMode = m
+    tabCoach.classList.toggle('on', m === 'coach')
+    tabChat.classList.toggle('on', m === 'chat')
+    logs.coach.hidden = m !== 'coach'
+    logs.chat.hidden = m !== 'chat'
+    log = logs[m]
+    titleBox.firstChild.textContent = m === 'chat' ? 'AI Chat' : 'AI Coach'
+    titleBox.querySelector('small').textContent = m === 'chat' ? 'Talk about anything' : 'Ask me about strategy'
+    voiceUi()
+    if (m === 'chat') await refreshPremium()
+    if (m === 'chat' && isPremium && !log.children.length) addMsg('bot', INTRO.chat)
+    if (m === 'coach' && !log.children.length) addMsg('bot', INTRO.coach)
+    updateLock()
+    log.scrollTop = log.scrollHeight
+    if (!input.disabled) input.focus()
+  }
+  tabCoach.addEventListener('click', () => setMode('coach'))
+  tabChat.addEventListener('click', () => setMode('chat'))
+
+  // after the coach answers (or does a color change): speak it if needed, then listen again in Live mode
+  function afterReply(text, willSpeak) {
+    if (willSpeak && canSpeak) speak(text, () => { if (live) startListening() })
+    else if (live) startListening()
+  }
+
+  async function send(raw, opts = {}) {
     const text = String(raw || '').trim()
     if (!text || busy) return
+    const mode = aiMode
+    if (mode === 'chat' && !isPremium) { updateLock(); return }
+    const spoken = !!opts.voice
+    const willSpeak = canSpeak && (speakOn || live || spoken)
+    stopSpeaking()
     input.value = ''
-    chips.hidden = true
 
-    // secret code? the server decides if it is right
-    if (/^\d{6}$/.test(text)) {
+    // secret code? the server decides if it is right (never accepted by voice)
+    if (!spoken && /^\d{6}$/.test(text)) {
       setBusy(true)
       const r = await call('/ai/panel-open', { code: text })
       setBusy(false)
@@ -279,80 +370,197 @@
     }
 
     addMsg('me', text)
+    updateLock()
 
     const cmd = colorCommand(text)
     if (cmd) {
       setColor(cmd.hex)
-      addMsg('bot', `Done, the orb is ${cmd.word} now.`)
+      const done = `Done, the orb is ${cmd.word} now.`
+      addMsg('bot', done)
+      afterReply(done, willSpeak)
       return
     }
 
-    history.push({ role: 'user', content: text })
-    history = history.slice(-12)
+    const hist = histories[mode]
+    hist.push({ role: 'user', content: text })
+    while (hist.length > 12) hist.shift()
 
     const dots = make('div', { className: 'ai-msg bot ai-dots' }, make('span'), make('span'), make('span'))
     log.append(dots)
     log.scrollTop = log.scrollHeight
     setBusy(true)
-    // Local, API-free assistant. Replies are generated in this browser from
-    // built-in rules and the current game context; no chat request is sent.
-    await new Promise(resolve => setTimeout(resolve, 250 + Math.random() * 350))
-    const reply = localAnswer(text, gameContext(), history)
+    const r = await call('/ai/chat', { token: session(), mode, voice: willSpeak, messages: hist, context: gameContext() })
     setBusy(false)
     dots.remove()
-    history.push({ role: 'assistant', content: reply })
-    history = history.slice(-12)
-    addMsg('bot', reply)
+
+    if (!r.ok || !r.data.reply) {
+      hist.pop() // the failed question is not part of the conversation
+      live = false // do not loop on errors
+      voiceUi()
+      if (r.data && r.data.premiumRequired) { isPremium = false; updateLock() }
+      addMsg('err', (r.data && r.data.error) || 'Something went wrong. Try again.')
+      return
+    }
+    hist.push({ role: 'assistant', content: r.data.reply })
+    while (hist.length > 12) hist.shift()
+    addMsg('bot', r.data.reply)
+    afterReply(r.data.reply, willSpeak)
   }
 
-  // ---------- offline response engine ----------
-  function localAnswer(text, ctx, chatHistory) {
-    const q = text.toLowerCase().replace(/[^\w\s'-]/g, ' ').replace(/\s+/g, ' ').trim()
-    const mode = ctx.mode || ''
-    const score = ctx.score || { wins: 0, losses: 0, ties: 0 }
-    const rounds = Array.isArray(ctx.rounds) ? ctx.rounds : []
-    const counts = { rock: 0, paper: 0, scissors: 0 }
-    rounds.forEach(r => { if (counts[r.you] !== undefined) counts[r.you]++ })
-    const total = counts.rock + counts.paper + counts.scissors
-    const most = total ? Object.keys(counts).sort((a,b) => counts[b]-counts[a])[0] : ''
-    const last = rounds[rounds.length - 1]
-    const pick = arr => arr[Math.floor(Math.random() * arr.length)]
-    const replies = {
-      hello: ['Hey. What do you want to know about the game?', 'Hi! I can help with Rock Paper Scissors, strategy, and the game controls.'],
-      strategy: ['Mix up your moves instead of repeating a predictable pattern. Against people, watch for habits; against the computer, vary your choices.', 'A simple strategy is to avoid predictable sequences. If your opponent repeats a move, choose the move that beats it.'],
-      rules: ['Rock beats scissors, scissors beats paper, and paper beats rock. Matching moves are a tie.', 'The rules are simple: rock crushes scissors, scissors cuts paper, and paper covers rock. Same move means a tie.'],
-      help: ['I work locally in your browser using built-in responses and the current game stats. Ask about rules, strategy, your score, or the game modes.', 'Try asking “what are the rules?”, “how can I improve?”, “show my score”, or “analyze my moves”.']
-    }
-    if (/^(hi|hello|hey|yo|sup)\b/.test(q)) return pick(replies.hello)
-    if (/\b(thanks|thank you|thx)\b/.test(q)) return 'You’re welcome. Keep mixing up your moves.'
-    if (/\b(your name|who are you|what are you)\b/.test(q)) return 'I’m the game’s built-in local assistant. I don’t use a hosted language-model API, so my replies come from local rules and game context.'
-    if (/\b(help|what can you do|commands)\b/.test(q)) return pick(replies.help)
-    if (/\b(rule|how to play|how do you play)\b/.test(q)) return pick(replies.rules)
-    if (/\b(strategy|tips|improve|win more|how to win|beat the computer)\b/.test(q)) return pick(replies.strategy)
-    if (/\b(score|wins|losses|ties|record|stats)\b/.test(q)) {
-      return `Your ${mode === 'computer' ? 'computer' : mode === 'online' ? 'online' : 'current'} score is ${score.wins || 0} wins, ${score.losses || 0} losses, and ${score.ties || 0} ties.`
-    }
-    if (/\b(analy[sz]e|pattern|my moves|my history|what do i usually|habits)\b/.test(q)) {
-      if (!total) return 'There aren’t any recent rounds for me to analyze yet. Play a few rounds, then ask again.'
-      const pct = Math.round(counts[most] / total * 100)
-      let out = `In your last ${total} logged rounds, you used rock ${counts.rock} time(s), paper ${counts.paper}, and scissors ${counts.scissors}. Your most common move is ${most} (${pct}%).`
-      if (last) out += ` Your latest round was ${last.you} versus ${last.opp}, recorded as a ${last.result}.`
-      if (pct >= 50) out += ' Consider mixing in other moves so your pattern is harder to predict.'
-      return out
-    }
-    if (/\b(rock|paper|scissors)\b/.test(q) && /\b(choose|pick|play|throw|should)\b/.test(q)) {
-      const m = q.match(/\b(rock|paper|scissors)\b/)
-      const counter = { rock: 'paper', paper: 'scissors', scissors: 'rock' }
-      return `If you think your opponent will choose ${m[1]}, choose ${counter[m[1]]} to beat it. If you’re unsure, randomizing your move is less predictable.`
-    }
-    if (/\b(easy|medium|hard|insane|difficulty|level)\b/.test(q)) return 'Easy is mostly random. Medium starts using your most common moves. Hard looks at what you tend to play after a previous move, and Insane also checks short sequences.'
-    if (/\b(online|friend|room|multiplayer)\b/.test(q)) return 'Choose Play Online, enter the same room code as your friend, and join. Both players need to be connected before the round can finish.'
-    if (/\b(orb|color|colour)\b/.test(q)) return 'You can change the orb color by asking me to make it green, blue, purple, pink, gold, red, cyan, or white.'
-    if (/\b(time|date)\b/.test(q)) return 'I don’t have access to a live clock in this offline mode.'
-    const followups = chatHistory.filter(m => m.role === 'user').length
-    if (followups > 1) return 'I can help with game rules, move strategy, score, difficulty levels, and patterns in your recent rounds. This offline version has limited conversational understanding, so try asking one of those directly.'
-    return 'I’m running locally without a chat API. I can answer questions about Rock Paper Scissors rules, strategy, scores, difficulty levels, and your recent moves. What would you like to check?'
+  // ---------- live voice (the browser's own speech recognition + speech synthesis) ----------
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  const canSpeak = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'
+  const SPEAK_KEY = 'aiSpeak'
+  let speakOn = false
+  try { speakOn = localStorage.getItem(SPEAK_KEY) === '1' } catch (error) {}
+  let live = false       // hands-free conversation: listen, answer out loud, listen again
+  let listening = false
+  let speaking = false
+  let rec = null
+  let speakId = 0
+  let idleTries = 0
+
+  micBtn.hidden = !SR
+  liveBtn.hidden = !SR
+  speakBtn.hidden = !canSpeak
+  if (!SR && !canSpeak) voiceRow.hidden = true
+
+  function voiceUi() {
+    micBtn.classList.toggle('on', listening)
+    micBtn.textContent = listening ? '⏹' : '🎙️'
+    liveBtn.classList.toggle('on', live)
+    liveBtn.textContent = live ? '🎧 Live: on' : '🎧 Live talk'
+    speakBtn.classList.toggle('on', speakOn)
+    speakBtn.textContent = speakOn ? '🔊 Voice on' : '🔇 Voice off'
+    input.placeholder = listening ? 'Listening...' : aiMode === 'chat' ? 'Say anything...' : 'Ask the coach...'
   }
+
+  function pickVoice() {
+    let voices = []
+    try { voices = speechSynthesis.getVoices() || [] } catch (error) {}
+    if (!voices.length) return null
+    const lang = (navigator.language || 'en-US').toLowerCase()
+    const same = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(lang.slice(0, 2)))
+    const pool = same.length ? same : voices
+    const nice = pool.find(v => /natural|premium|enhanced|google|samantha|aria|jenny/i.test(v.name))
+    return nice || pool.find(v => v.lang && v.lang.toLowerCase() === lang) || pool[0]
+  }
+
+  function stopSpeaking() {
+    speakId++
+    speaking = false
+    try { if (canSpeak) speechSynthesis.cancel() } catch (error) {}
+  }
+
+  function speak(text, done) {
+    if (!canSpeak) { if (done) done(); return }
+    stopSpeaking()
+    const clean = String(text || '').replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/\s+/g, ' ').trim()
+    if (!clean) { if (done) done(); return }
+    const parts = clean.match(/[^.!?]+[.!?]*\s*/g) || [clean] // short pieces keep Chrome from cutting long speech off
+    const myId = speakId
+    const voice = pickVoice()
+    let left = parts.length
+    speaking = true
+    voiceUi()
+    const finish = () => {
+      if (myId !== speakId) return // interrupted or replaced
+      speaking = false
+      voiceUi()
+      if (done) done()
+    }
+    parts.forEach(p => {
+      const u = new SpeechSynthesisUtterance(p)
+      if (voice) { u.voice = voice; u.lang = voice.lang } else u.lang = navigator.language || 'en-US'
+      u.rate = 1.05
+      u.onend = u.onerror = () => { if (--left <= 0) finish() }
+      speechSynthesis.speak(u)
+    })
+  }
+
+  function startListening() {
+    if (!SR) return
+    if (aiMode === 'chat' && !isPremium) { live = false; voiceUi(); updateLock(); return }
+    if (listening || busy) return
+    stopSpeaking()
+    let finalText = ''
+    let interim = ''
+    try { rec = new SR() } catch (error) { rec = null; live = false; voiceUi(); return }
+    rec.lang = navigator.language || 'en-US'
+    rec.interimResults = true
+    rec.continuous = false
+    rec.maxAlternatives = 1
+    rec.onstart = () => { listening = true; voiceUi() }
+    rec.onresult = e => {
+      interim = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript
+        if (e.results[i].isFinal) finalText += t
+        else interim += t
+      }
+      input.value = (finalText + ' ' + interim).trim() // shows what you are saying as you say it
+    }
+    rec.onerror = e => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        live = false
+        addMsg('err', 'The microphone is blocked. Allow the mic for this site in your browser settings, then try again.')
+      } else if (e.error === 'audio-capture') {
+        live = false
+        addMsg('err', 'I could not find a microphone.')
+      } else if (e.error === 'network') {
+        live = false
+        addMsg('err', 'Voice recognition needs an internet connection.')
+      }
+    }
+    rec.onend = () => {
+      listening = false
+      rec = null
+      const text = (finalText + ' ' + interim).trim()
+      input.value = ''
+      voiceUi()
+      if (text) { idleTries = 0; send(text, { voice: true }); return }
+      if (!live) return
+      if (++idleTries >= 3) {
+        live = false
+        voiceUi()
+        addMsg('bot', 'I did not hear anything, so I stopped listening. Tap Live talk to start again.')
+      } else {
+        setTimeout(() => { if (live) startListening() }, 300)
+      }
+    }
+    try { rec.start() } catch (error) { listening = false; rec = null; voiceUi() }
+  }
+
+  function stopVoice() {
+    live = false
+    if (rec) { rec.onend = null; try { rec.abort() } catch (error) {} rec = null }
+    listening = false
+    stopSpeaking()
+    if (typeof input !== 'undefined') input.value = ''
+    voiceUi()
+  }
+
+  micBtn.addEventListener('click', () => {
+    if (listening) { try { rec.stop() } catch (error) {} return } // stop and send what was heard
+    live = false
+    idleTries = 0
+    startListening()
+  })
+  liveBtn.addEventListener('click', () => {
+    if (live) { stopVoice(); return }
+    live = true
+    idleTries = 0
+    voiceUi()
+    startListening()
+  })
+  speakBtn.addEventListener('click', () => {
+    speakOn = !speakOn
+    try { localStorage.setItem(SPEAK_KEY, speakOn ? '1' : '0') } catch (error) {}
+    if (!speakOn) stopSpeaking()
+    voiceUi()
+  })
+  if (canSpeak) { try { speechSynthesis.getVoices() } catch (error) {} } // some browsers load voices lazily
+  voiceUi()
 
   // ---------- secret Voice Control panel ----------
   const ctl = make('div', { id: 'ai-ctl' })
@@ -408,7 +616,7 @@
     save.addEventListener('click', async () => {
       note.textContent = 'Saving...'
       const r = await call('/ai/panel-save', { code: panelCode, settings: read() })
-      if (r.ok) { settings = r.data.settings; note.textContent = 'Saved. Everyone now gets this voice.' }
+      if (r.ok) { settings = r.data.settings; note.textContent = 'Saved. Everyone gets this voice from their next message.' }
       else note.textContent = r.data.error || 'Could not save.'
     })
     const reset = make('button', { className: 'alt', type: 'button', textContent: 'Defaults' })
@@ -421,7 +629,7 @@
 
     ctl.append(
       make('h2', { textContent: '🎛️ Voice Control' }),
-      make('p', { className: 'ai-sub', textContent: 'Staff only. These settings are saved on the server and change how the coach talks to every player.' }),
+      make('p', { className: 'ai-sub', textContent: 'Staff only. Saved on the server. They change how the AI talks to every player, in both Coach and Chat.' }),
       rude.el, sarc.el, swearRow, swearAmt.el, human.el,
       make('label', { textContent: '📏 Reply length' }, lengthSel),
       note,
@@ -439,15 +647,16 @@
   // ---------- open / close ----------
   function openPanel() {
     panel.hidden = false
-    if (!log.children.length) {
-      addMsg('bot', 'Hey! I\'m your RPS coach. Ask me how to beat the computer, how to read an opponent, or what your last moves say about you. You can also tell me to change my color.')
-    }
-    input.focus()
+    if (!logs.coach.children.length) addMsg('bot', INTRO.coach)
+    updateLock()
+    if (!premiumChecked) refreshPremium().then(updateLock)
+    if (!input.disabled) input.focus()
   }
 
-  btn.addEventListener('click', () => { panel.hidden ? openPanel() : (panel.hidden = true) })
-  closeBtn.addEventListener('click', () => { panel.hidden = true; closeControl() })
+  btn.addEventListener('click', () => { if (panel.hidden) openPanel(); else { panel.hidden = true; stopVoice() } })
+  closeBtn.addEventListener('click', () => { panel.hidden = true; closeControl(); stopVoice() })
   goBtn.addEventListener('click', () => send(input.value))
+  window.addEventListener('storage', e => { if (e.key === 'token') { premiumChecked = false; isPremium = false; updateLock() } })
   input.addEventListener('keydown', e => { if (e.key === 'Enter') send(input.value) })
 
   requestAnimationFrame(frame)
