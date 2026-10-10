@@ -236,7 +236,7 @@
   function setBusy(on) {
     busy = on
     thinking = on
-    goBtn.disabled = on || (aiMode === 'chat' && !isPremium)
+    goBtn.disabled = on || (aiMode === 'coach' && !isPremium) || (aiMode === 'chat' && !isUltra)
   }
 
   // "make it red", "turn the orb purple" ... handled here, no AI needed
@@ -336,8 +336,8 @@
     titleBox.firstChild.textContent = m === 'chat' ? 'AI Chat' : 'AI Coach'
     titleBox.querySelector('small').textContent = m === 'chat' ? 'Talk about anything' : 'Ask me about strategy'
     voiceUi()
-    if (m === 'chat') await refreshPremium()
-    if (m === 'chat' && isPremium && !log.children.length) addMsg('bot', INTRO.chat)
+    await refreshPremium()
+    if (m === 'chat' && isUltra && !log.children.length) addMsg('bot', INTRO.chat)
     if (m === 'coach' && !log.children.length) addMsg('bot', INTRO.coach)
     updateLock()
     log.scrollTop = log.scrollHeight
@@ -356,7 +356,7 @@
     const text = String(raw || '').trim()
     if (!text || busy) return
     const mode = aiMode
-    if (mode === 'chat' && !isPremium) { updateLock(); return }
+    if ((mode === 'coach' && !isPremium) || (mode === 'chat' && !isUltra)) { updateLock(); return }
     unlockSpeech()
     const spoken = !!opts.voice
     const willSpeak = canSpeak && (speakOn || live || spoken)
@@ -989,7 +989,7 @@
   btn.addEventListener('click', () => { if (panel.hidden) openPanel(); else { panel.hidden = true; stopVoice() } })
   closeBtn.addEventListener('click', () => { panel.hidden = true; closeControl(); stopVoice() })
   goBtn.addEventListener('click', () => send(input.value))
-  window.addEventListener('storage', e => { if (e.key === 'token') { premiumChecked = false; isPremium = false; updateLock() } })
+  window.addEventListener('storage', e => { if (e.key === 'token') { premiumChecked = false; isPremium = false; isUltra = false; updateLock() } })
   input.addEventListener('keydown', e => { if (e.key === 'Enter') send(input.value) })
 
   requestAnimationFrame(frame)
