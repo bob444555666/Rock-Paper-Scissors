@@ -11,6 +11,7 @@
   const memberList = document.getElementById('member-list');
   const memberHelp = document.getElementById('member-help');
   const planButtons = [subscribe, duoPlan, familyPlan];
+  let checkoutBusy = false;
   const token = () => { try { return localStorage.getItem('token'); } catch { return null; } };
   const say = (message) => { statusEl.textContent = message; };
   async function call(path, body = {}) {
@@ -74,10 +75,12 @@
     try {
       const result = await call('/account/premium');
       if (result.premium) {
-        planButtons.forEach((button) => { button.disabled = true; });
-        subscribe.textContent = 'Premium is active';
-        duoPlan.textContent = 'Premium is active';
-        familyPlan.textContent = 'Premium is active';
+        // Keep plan choices tappable on mobile. The Worker remains the authority
+        // for whether an account can start or change a subscription.
+        planButtons.forEach((button) => { button.disabled = false; });
+        subscribe.textContent = 'Start 7-day free trial';
+        duoPlan.textContent = 'Choose Duo';
+        familyPlan.textContent = 'Choose Family';
         if (result.canManageMembers) {
           memberManager.hidden = false;
           say('Your ' + (result.plan === 'duo' ? 'Duo' : 'Family') + ' Premium plan is active. Manage members below.');
@@ -105,8 +108,9 @@
       say('Please log in to your game account first, then return here.');
       return;
     }
-    if (planButtons.some((item) => item.disabled)) return;
-    button.disabled = true;
+    if (checkoutBusy) return;
+    checkoutBusy = true;
+    planButtons.forEach((item) => { item.disabled = true; });
     say('Connecting securely to Stripe…');
     try {
       const result = await call('/account/stripe-checkout', { plan });
@@ -116,7 +120,8 @@
       window.location.assign(result.url);
     } catch (error) {
       say(error.message);
-      button.disabled = false;
+      checkoutBusy = false;
+      planButtons.forEach((item) => { item.disabled = false; });
     }
   }
   subscribe.addEventListener('click', () => startCheckout('individual', subscribe));
