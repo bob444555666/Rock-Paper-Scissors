@@ -108,7 +108,7 @@
         connectMessage.textContent = SPOTIFY_CLIENT_ID === ''
           ? 'Premium verified. Spotify account linking needs your Spotify Developer app Client ID before it can be enabled.'
           : 'Premium verified. Connect your Spotify account to continue.';
-        connectButton.disabled = SPOTIFY_CLIENT_ID === 'ADD_SPOTIFY_CLIENT_ID';
+        connectButton.disabled = !SPOTIFY_CLIENT_ID;
         connectButton.style.opacity = connectButton.disabled ? '.65' : '1';
         premiumLink.hidden = true;
       } else {
