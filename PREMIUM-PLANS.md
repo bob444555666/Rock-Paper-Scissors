@@ -12,11 +12,11 @@ All amounts are CAD and billed monthly. The public-facing names are Premium, Ult
 
 ## Benefits shown on the plan page
 
-- **Premium:** premium arcade modes and challenges, exclusive skins/themes, personal match stats and streaks, ranked-match access, private rooms, friend rematches, profile badge and emotes.
-- **Ultra:** everything in Premium; one additional account; advanced stats and match history; expanded cosmetics and victory animations; custom private-room settings; priority matchmaking; friend challenges; seasonal rewards and Ultra badge.
-- **Ultra Plus:** everything in Premium and Ultra; up to nine additional accounts; larger private rooms and group challenges; advanced leaderboard/performance breakdowns; exclusive frames, skins and effects; private tournaments; VIP status and top-tier customization.
+- **Premium:** ad-free play; exclusive themes, backgrounds and move styles; win animations, confetti and sound options; personal match history, win rate and streak records; profile badge/emotes; custom button, font and interface styling.
+- **Ultra:** everything in Premium; one additional account; competitive leagues and seasonal leaderboards; analytics by move, opponent and game mode; best-of-5/best-of-7/custom formats; friend challenges and custom room rules; daily missions, seasonal trophies, and exclusive Ultra profile effects.
+- **Ultra Plus:** everything in Premium and Ultra; up to nine additional accounts; private tournaments and larger group competitions; adjustable AI practice opponents; long-term performance trends; monthly cosmetics and rare collectibles; elite crown/name effects; priority support.
 
-Important: these are the intended tier benefits displayed to customers. A benefit only works in gameplay after its actual game UI, service logic, and server-side entitlement checks are implemented. The existing subscription backend handles plan billing, Premium status, and group-member limits; do not treat the feature list alone as proof that ranked matchmaking, video chat, tournaments, or every cosmetic feature has been shipped.
+Implementation status: the plan page now presents a deduplicated benefits list, but the list is not proof that every benefit is live in gameplay. The existing Worker currently handles checkout, subscription status, and group-member limits. New competitive leagues, detailed analytics, custom match lengths, adjustable AI practice, tournament hosting, monthly rewards, ad-free enforcement, and priority support still need their respective game UI/service logic and server-side entitlement checks before being advertised as active. Existing Premium cosmetics should be reused rather than duplicated.
 
 ## Current Stripe test-mode catalog
 
