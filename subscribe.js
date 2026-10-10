@@ -63,10 +63,8 @@
     try {
       const result = await call('/account/premium-members');
       memberList.replaceChildren();
-      const totalLimit = result.plan === 'duo' ? 2 : 10;
-      memberHelp.textContent = result.plan === 'duo'
-        ? 'Ultra includes you plus one member. Add an existing game account by username.'
-        : 'Ultra Plus includes you plus up to nine members. Add existing game accounts by username.';
+      const totalLimit = 1 + Number(result.memberLimit || 0);
+      memberHelp.textContent = 'Your ' + ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[result.plan] || 'Premium') + ' plan includes one account plus ' + Number(result.memberLimit || 0) + ' paid extra account(s). Add existing game accounts by username.';
       if (!result.members.length) {
         const empty = document.createElement('li');
         empty.textContent = 'No members added yet.';
@@ -117,8 +115,7 @@
         if (familyPlan) familyPlan.textContent = 'Choose Ultra Plus';
         if (result.canManageMembers && memberManager) {
           memberManager.hidden = false;
-          say('Your ' + (result.plan === 'duo' ? 'Ultra' : 'Ultra Plus') +
-            ' plan is active. Manage members below.');
+          say('Your ' + ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[result.plan] || 'Premium') + ' plan is active. Manage extra accounts below.');
           await refreshMembers();
         } else {
           if (memberManager) memberManager.hidden = true;
@@ -144,10 +141,6 @@
   async function startCheckout(plan) {
     updateSeatEstimate(plan);
     const requestedExtraSeats = getExtraSeatCount();
-    if (requestedExtraSeats > 0) {
-      say('Extra-account checkout is not enabled on the subscription server yet. Set extra accounts to 0 so you are not charged the wrong amount. Rates shown: Premium $3, Ultra $5, Ultra Plus $7 CAD per extra account monthly.');
-      return;
-    }
     if (!token()) {
       say('Please log in to your game account first, then return here.');
       return;
@@ -157,7 +150,7 @@
     planButtons.forEach(button => { button.disabled = true; });
     say('Connecting securely to Stripe…');
     try {
-      const result = await call('/account/stripe-checkout', { plan });
+      const result = await call('/account/stripe-checkout', { plan, extraAccounts: requestedExtraSeats });
       if (!result.url || !/^https:\/\/checkout\.stripe\.com\//.test(result.url)) {
         throw new Error('Stripe did not return a valid checkout link.');
       }
