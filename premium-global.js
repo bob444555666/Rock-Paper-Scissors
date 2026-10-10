@@ -36,6 +36,14 @@
       #rps-site-nav .rps-nav-link[aria-current="page"]{background:rgba(34,245,160,.09);border-color:rgba(34,245,160,.22);color:var(--green,#22f5a0)}
       #rps-site-nav .rps-nav-icon{width:24px;display:inline-grid;place-items:center;font-size:17px;flex:none}
       #rps-site-nav .rps-nav-actions{padding-bottom:14px}
+      /* Header quick-action buttons often have fixed viewport positions on the game page.
+         Reset those styles when they are placed inside the drawer so they stack normally. */
+      #rps-site-nav .rps-nav-actions>.rps-nav-moved-action{
+        position:relative!important;inset:auto!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+        z-index:auto!important;float:none!important;transform:none!important;margin:0!important;
+        width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:44px!important;
+        flex:0 0 auto!important;white-space:normal!important;text-align:left!important;
+      }
       #rps-site-nav #user-chip{position:static!important;inset:auto!important;display:flex!important;align-items:center;justify-content:flex-start;width:100%;min-height:44px;box-sizing:border-box;margin:0!important;padding:11px 13px!important;border:1px solid rgba(34,245,160,.25)!important;border-radius:12px!important;background:rgba(34,245,160,.08)!important;color:#eafff5!important;box-shadow:none!important;text-align:left;font:550 13px/1.35 system-ui,sans-serif!important;cursor:pointer}
       #rps-site-nav #user-chip[hidden]{display:none!important}
       #rps-site-nav .rps-account-fallback{width:100%;min-height:44px;display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid rgba(34,245,160,.25);border-radius:12px;background:rgba(34,245,160,.08);color:#eafff5;text-decoration:none;font:700 13px/1.25 system-ui,sans-serif}
