@@ -85,6 +85,7 @@
         <a class="rps-nav-link" href="/leaderboard.html"><span class="rps-nav-icon">🏆</span>Leaderboard</a>
         <a class="rps-nav-link" href="/multiplayer.html"><span class="rps-nav-icon">👥</span>3–4 Player Rooms</a>
         <a class="rps-nav-link" href="/arcade-hub.html"><span class="rps-nav-icon">🕹️</span>Arcade Hub</a>
+        <a class="rps-nav-link" href="/music.html"><span class="rps-nav-icon">🎵</span>Gaming Music</a>
         <a class="rps-nav-link" href="/quests.html"><span class="rps-nav-icon">🎯</span>Quests</a>
         <a class="rps-nav-link" href="/achievements.html"><span class="rps-nav-icon">🏅</span>Achievements</a>
         <a class="rps-nav-link" href="/vault.html"><span class="rps-nav-icon">🎨</span>Style Vault</a>
