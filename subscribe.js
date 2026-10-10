@@ -5,6 +5,12 @@
   const refresh = document.getElementById('refresh');
   const duoPlan = document.getElementById('duo-plan');
   const familyPlan = document.getElementById('family-plan');
+  const memberManager = document.getElementById('member-manager');
+  const memberUsername = document.getElementById('member-username');
+  const addMember = document.getElementById('add-member');
+  const memberList = document.getElementById('member-list');
+  const memberHelp = document.getElementById('member-help');
+  const planButtons = [subscribe, duoPlan, familyPlan];
   const token = () => { try { return localStorage.getItem('token'); } catch { return null; } };
   const say = (message) => { statusEl.textContent = message; };
   async function call(path, body = {}) {
@@ -17,43 +23,126 @@
     if (!res.ok) throw new Error(data.error || 'Request failed. Please try again.');
     return data;
   }
+  async function refreshMembers() {
+    try {
+      const result = await call('/account/premium-members');
+      memberList.replaceChildren();
+      const totalLimit = result.plan === 'duo' ? 2 : 10;
+      memberHelp.textContent = result.plan === 'duo'
+        ? 'Duo includes you plus one member. Add an existing game account by username.'
+        : 'Family includes you plus up to nine members. Add existing game accounts by username.';
+      if (!result.members.length) {
+        const empty = document.createElement('li');
+        empty.textContent = 'No members added yet.';
+        memberList.appendChild(empty);
+      } else {
+        for (const member of result.members) {
+          const item = document.createElement('li');
+          const name = document.createElement('span');
+          name.textContent = member.username;
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'remove-member';
+          remove.textContent = 'Remove';
+          remove.addEventListener('click', async () => {
+            remove.disabled = true;
+            try {
+              await call('/account/premium-invite', { username: member.username, action: 'remove' });
+              say(member.username + ' was removed from your Premium plan.');
+              await refreshMembers();
+            } catch (error) {
+              say(error.message);
+              remove.disabled = false;
+            }
+          });
+          item.append(name, remove);
+          memberList.appendChild(item);
+        }
+      }
+      const count = result.members.length + 1;
+      memberHelp.textContent += ' ' + count + ' of ' + totalLimit + ' total accounts currently on your plan.';
+    } catch (error) {
+      say(error.message);
+    }
+  }
   async function checkStatus() {
-    if (!token()) { say('Log in to your game account first, then return here to subscribe.'); return; }
+    if (!token()) {
+      memberManager.hidden = true;
+      say('Log in to your game account first, then return here to subscribe.');
+      return;
+    }
     try {
       const result = await call('/account/premium');
       if (result.premium) {
-        say('Your account already has Premium. Enjoy the game!');
+        planButtons.forEach((button) => { button.disabled = true; });
         subscribe.textContent = 'Premium is active';
-        subscribe.disabled = true;
+        duoPlan.textContent = 'Premium is active';
+        familyPlan.textContent = 'Premium is active';
+        if (result.canManageMembers) {
+          memberManager.hidden = false;
+          say('Your ' + (result.plan === 'duo' ? 'Duo' : 'Family') + ' Premium plan is active. Manage members below.');
+          await refreshMembers();
+        } else {
+          memberManager.hidden = true;
+          say(result.source === 'group'
+            ? 'Your Premium access is included in a ' + (result.plan || 'group') + ' plan.'
+            : 'Your account already has Premium. Enjoy the game!');
+        }
       } else {
+        planButtons.forEach((button) => { button.disabled = false; });
+        memberManager.hidden = true;
         const checkout = new URLSearchParams(location.search).get('checkout');
         say(checkout === 'success'
-          ? 'Stripe returned successfully. Premium activates as soon as the signed webhook confirms your trial; wait a few seconds and check again.'
-          : 'No active Premium membership was found for this account.');
+          ? 'Stripe returned successfully. Premium activates after the signed webhook confirms your subscription; check again in a few seconds.'
+          : checkout === 'cancelled'
+            ? 'Checkout was cancelled. You have not been charged.'
+            : 'No active Premium membership was found for this account.');
       }
     } catch (error) { say(error.message); }
   }
-  subscribe.addEventListener('click', async () => {
-    if (!token()) { say('Please log in to your game account first, then return here.'); return; }
-    subscribe.disabled = true;
+  async function startCheckout(plan, button) {
+    if (!token()) {
+      say('Please log in to your game account first, then return here.');
+      return;
+    }
+    if (planButtons.some((item) => item.disabled)) return;
+    button.disabled = true;
     say('Connecting securely to Stripe…');
     try {
-      const result = await call('/account/stripe-checkout');
-      if (!result.url || !/^https:\/\/checkout\.stripe\.com\//.test(result.url)) throw new Error('Stripe did not return a valid checkout link.');
+      const result = await call('/account/stripe-checkout', { plan });
+      if (!result.url || !/^https:\/\/checkout\.stripe\.com\//.test(result.url)) {
+        throw new Error('Stripe did not return a valid checkout link.');
+      }
       window.location.assign(result.url);
     } catch (error) {
       say(error.message);
-      subscribe.disabled = false;
+      button.disabled = false;
+    }
+  }
+  subscribe.addEventListener('click', () => startCheckout('individual', subscribe));
+  duoPlan.addEventListener('click', () => startCheckout('duo', duoPlan));
+  familyPlan.addEventListener('click', () => startCheckout('family', familyPlan));
+  addMember.addEventListener('click', async () => {
+    const username = memberUsername.value.trim();
+    if (!username) {
+      say('Enter the username of the account you want to add.');
+      memberUsername.focus();
+      return;
+    }
+    addMember.disabled = true;
+    try {
+      await call('/account/premium-invite', { username });
+      memberUsername.value = '';
+      say(username + ' was added to your Premium plan.');
+      await refreshMembers();
+    } catch (error) {
+      say(error.message);
+    } finally {
+      addMember.disabled = false;
     }
   });
-  // Do not route Duo or Family to the Individual checkout: the Worker currently
-  // exposes only the existing single-member checkout. These buttons explain the
-  // remaining server-side setup instead of risking charging the wrong amount.
-  duoPlan.addEventListener('click', () => {
-    say('Duo is $12.00 CAD/month for two people. It still needs its own Stripe price and secure server-side invitations before checkout can be enabled.');
-  });
-  familyPlan.addEventListener('click', () => {
-    say('Family is $32.00 CAD/month for up to 10 people total. It still needs its own Stripe price and secure server-side invitations before checkout can be enabled.');
+  memberUsername.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') addMember.click();
   });
   refresh.addEventListener('click', checkStatus);
   const params = new URLSearchParams(location.search);
