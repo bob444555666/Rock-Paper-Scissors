@@ -6,15 +6,21 @@ All amounts are CAD and billed monthly. The public-facing names are Premium, Ult
 
 | Public plan | Internal key | Price | Accounts included | Trial |
 | --- | --- | ---: | ---: | --- |
-| Premium | `individual` | $9.99/month | 1 total | 7 days |
-| Ultra | `duo` | $11.99/month | 2 total (owner + 1) | None |
-| Ultra Plus | `family` | $31.99/month | 10 total (owner + up to 9) | None |
+| Premium | `individual` | $9.99/month base + $3/month per extra account | 1 total included | 7 days |
+| Ultra | `duo` | $14.99/month base + $5/month per extra account | 1 total included | None |
+| Ultra Plus | `family` | $31.99/month base + $7/month per extra account | 1 total included | None |
+
+## Per-account pricing change requested
+
+The intended policy is that every tier includes only the subscribing account. Each additional account costs CAD $3/month on Premium, $5/month on Ultra, and $7/month on Ultra Plus, added to the selected tier's base price. There is no tier-specific default allowance for multiple accounts under the new policy.
+
+The checkout and entitlement Worker has been updated to validate up to 99 extra accounts, add the tier-specific recurring price to Stripe Checkout, store the purchased quantity in subscription metadata, and enforce that purchased quantity when managing member accounts. The plan page sends the selected extra-account quantity to the Worker. Test-mode recurring prices exist for Premium ($3/month, `price_1UP6ZN3FalmEL64xWXkZenqu`), Ultra ($5/month, `price_1UP6ZR3FalmEL64xNuq5DHNg`), and Ultra Plus ($7/month, `price_1UP6ZT3FalmEL64xWPQKUCoH`). The connected Stripe account is test mode only; live-mode prices and live credentials are not configured here, so do not treat this as ready to collect real payments.
 
 ## Benefits shown on the plan page
 
 - **Premium:** ad-free play; exclusive themes, backgrounds and move styles; win animations, confetti and sound options; personal match history, win rate and streak records; profile badge/emotes; custom button, font and interface styling.
-- **Ultra:** everything in Premium; one additional account; competitive leagues and seasonal leaderboards; analytics by move, opponent and game mode; best-of-5/best-of-7/custom formats; friend challenges and custom room rules; daily missions, seasonal trophies, and exclusive Ultra profile effects.
-- **Ultra Plus:** everything in Premium and Ultra; up to nine additional accounts; private tournaments and larger group competitions; adjustable AI practice opponents; long-term performance trends; monthly cosmetics and rare collectibles; elite crown/name effects; priority support.
+- **Ultra:** everything in Premium; extra accounts at $5 CAD per account per month; competitive leagues and seasonal leaderboards; analytics by move, opponent and game mode; best-of-5/best-of-7/custom formats; friend challenges and custom room rules; daily missions, seasonal trophies, and exclusive Ultra profile effects.
+- **Ultra Plus:** everything in Premium and Ultra; extra accounts at $7 CAD per account per month; private tournaments and larger group competitions; adjustable AI practice opponents; long-term performance trends; monthly cosmetics and rare collectibles; elite crown/name effects; priority support.
 
 Implementation status: the plan page now presents a deduplicated benefits list, but the list is not proof that every benefit is live in gameplay. The existing Worker currently handles checkout, subscription status, and group-member limits. New competitive leagues, detailed analytics, custom match lengths, adjustable AI practice, tournament hosting, monthly rewards, ad-free enforcement, and priority support still need their respective game UI/service logic and server-side entitlement checks before being advertised as active. Existing Premium cosmetics should be reused rather than duplicated.
 
@@ -33,12 +39,12 @@ The test-mode webhook is configured at `https://rps-server.heyboernathan.workers
 
 ## Worker behavior
 
-- `POST /account/stripe-checkout` accepts `plan: "individual" | "duo" | "family"`. Only `individual` receives the 7-day trial. The public labels are mapped to these existing keys in the browser.
-- Signed Stripe webhook events sync the owner's subscription status and plan.
-- `POST /account/premium` returns current Premium status and whether the account can manage group members.
-- `POST /account/premium-members` lists group members for an active Ultra/Ultra Plus owner.
-- `POST /account/premium-invite` accepts `{ username }` to add an existing account, or `{ username, action: "remove" }` to remove it. The Worker enforces plan limits and prevents an account with its own active Stripe subscription from being added.
-- When a group subscription becomes inactive, group-member Premium entitlements are removed.
+- `POST /account/stripe-checkout` accepts `plan: "individual" | "duo" | "family"` and `extraAccounts` (0–99). Only `individual` receives the 7-day trial. The Worker selects the plan-specific recurring add-on price and sets its quantity server-side.
+- Signed Stripe webhook events sync the owner's subscription status, plan, and purchased extra-account count.
+- `POST /account/premium` returns current Premium status and whether the account can manage purchased extra accounts.
+- `POST /account/premium-members` lists member accounts and returns the paid member limit for an active subscriber.
+- `POST /account/premium-invite` accepts `{ username }` to add an existing account, or `{ username, action: "remove" }` to remove it. The Worker enforces the purchased quantity and prevents an account with its own active Stripe subscription from being added.
+- When a subscription becomes inactive, group-member Premium entitlements are removed.
 
 ## Before taking real payments
 

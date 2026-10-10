@@ -1,4 +1,6 @@
 (() => {
+  'use strict';
+
   const API = 'https://rps-server.heyboernathan.workers.dev';
   const statusEl = document.getElementById('status');
   const subscribe = document.getElementById('subscribe');
@@ -10,10 +12,22 @@
   const addMember = document.getElementById('add-member');
   const memberList = document.getElementById('member-list');
   const memberHelp = document.getElementById('member-help');
-  const planButtons = [subscribe, duoPlan, familyPlan];
+  const extraSeats = document.getElementById('extra-seats');
+  const seatPrice = document.getElementById('seat-price');
+  const planButtons = [subscribe, duoPlan, familyPlan].filter(Boolean);
+  const BASE_PRICES = { individual: 9.99, duo: 14.99, family: 31.99 };
+  const EXTRA_ACCOUNT_PRICES = { individual: 3, duo: 5, family: 7 };
   let checkoutBusy = false;
-  const token = () => { try { return localStorage.getItem('token'); } catch { return null; } };
-  const say = (message) => { statusEl.textContent = message; };
+  let selectedPlan = 'individual';
+
+  const money = value => '$' + value.toFixed(2) + ' CAD/month';
+  const token = () => {
+    try { return localStorage.getItem('token'); } catch { return null; }
+  };
+  const say = message => {
+    if (statusEl) statusEl.textContent = message;
+  };
+
   async function call(path, body = {}) {
     const res = await fetch(API + path, {
       method: 'POST',
@@ -24,14 +38,33 @@
     if (!res.ok) throw new Error(data.error || 'Request failed. Please try again.');
     return data;
   }
+
+  function getExtraSeatCount() {
+    if (!extraSeats) return 0;
+    const value = Number(extraSeats.value);
+    const count = Number.isFinite(value) ? Math.max(0, Math.min(99, Math.floor(value))) : 0;
+    extraSeats.value = String(count);
+    return count;
+  }
+
+  function updateSeatEstimate(plan = selectedPlan) {
+    selectedPlan = Object.prototype.hasOwnProperty.call(BASE_PRICES, plan) ? plan : 'individual';
+    if (!seatPrice) return;
+    const count = getExtraSeatCount();
+    const perAccount = EXTRA_ACCOUNT_PRICES[selectedPlan];
+    const total = BASE_PRICES[selectedPlan] + count * perAccount;
+    seatPrice.textContent = 'Estimated total: ' + money(total) +
+      ' (' + count + ' extra account' + (count === 1 ? '' : 's') +
+      ' at $' + perAccount.toFixed(2) + ' each).';
+  }
+
   async function refreshMembers() {
+    if (!memberList || !memberHelp) return;
     try {
       const result = await call('/account/premium-members');
       memberList.replaceChildren();
-      const totalLimit = result.plan === 'duo' ? 2 : 10;
-      memberHelp.textContent = result.plan === 'duo'
-        ? 'Ultra includes you plus one member. Add an existing game account by username.'
-        : 'Ultra Plus includes you plus up to nine members. Add existing game accounts by username.';
+      const totalLimit = 1 + Number(result.memberLimit || 0);
+      memberHelp.textContent = 'Your ' + ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[result.plan] || 'Premium') + ' plan includes one account plus ' + Number(result.memberLimit || 0) + ' paid extra account(s). Add existing game accounts by username.';
       if (!result.members.length) {
         const empty = document.createElement('li');
         empty.textContent = 'No members added yet.';
@@ -49,7 +82,7 @@
             remove.disabled = true;
             try {
               await call('/account/premium-invite', { username: member.username, action: 'remove' });
-              say(member.username + ' was removed from your Premium plan.');
+              say(member.username + ' was removed from your plan.');
               await refreshMembers();
             } catch (error) {
               say(error.message);
@@ -60,40 +93,39 @@
           memberList.appendChild(item);
         }
       }
-      const count = result.members.length + 1;
-      memberHelp.textContent += ' ' + count + ' of ' + totalLimit + ' total accounts currently on your plan.';
+      memberHelp.textContent += ' ' + (result.members.length + 1) + ' of ' + totalLimit +
+        ' total accounts currently on your plan.';
     } catch (error) {
       say(error.message);
     }
   }
+
   async function checkStatus() {
     if (!token()) {
-      memberManager.hidden = true;
+      if (memberManager) memberManager.hidden = true;
       say('Log in to your game account first, then return here to subscribe.');
       return;
     }
     try {
       const result = await call('/account/premium');
       if (result.premium) {
-        // Keep plan choices tappable on mobile. The Worker remains the authority
-        // for whether an account can start or change a subscription.
-        planButtons.forEach((button) => { button.disabled = false; });
-        subscribe.textContent = 'Start 7-day free trial';
-        duoPlan.textContent = 'Choose Ultra';
-        familyPlan.textContent = 'Choose Ultra Plus';
-        if (result.canManageMembers) {
+        planButtons.forEach(button => { button.disabled = false; });
+        if (subscribe) subscribe.textContent = 'Start 7-day free trial';
+        if (duoPlan) duoPlan.textContent = 'Choose Ultra';
+        if (familyPlan) familyPlan.textContent = 'Choose Ultra Plus';
+        if (result.canManageMembers && memberManager) {
           memberManager.hidden = false;
-          say('Your ' + (result.plan === 'duo' ? 'Ultra' : 'Ultra Plus') + ' plan is active. Manage members below.');
+          say('Your ' + ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[result.plan] || 'Premium') + ' plan is active. Manage extra accounts below.');
           await refreshMembers();
         } else {
-          memberManager.hidden = true;
+          if (memberManager) memberManager.hidden = true;
           say(result.source === 'group'
             ? 'Your Premium access is included in a ' + (result.plan || 'group') + ' plan.'
             : 'Your account already has Premium. Enjoy the game!');
         }
       } else {
-        planButtons.forEach((button) => { button.disabled = false; });
-        memberManager.hidden = true;
+        planButtons.forEach(button => { button.disabled = false; });
+        if (memberManager) memberManager.hidden = true;
         const checkout = new URLSearchParams(location.search).get('checkout');
         say(checkout === 'success'
           ? 'Stripe returned successfully. Premium activates after the signed webhook confirms your subscription; check again in a few seconds.'
@@ -101,19 +133,24 @@
             ? 'Checkout was cancelled. You have not been charged.'
             : 'No active Premium membership was found for this account.');
       }
-    } catch (error) { say(error.message); }
+    } catch (error) {
+      say(error.message);
+    }
   }
-  async function startCheckout(plan, button) {
+
+  async function startCheckout(plan) {
+    updateSeatEstimate(plan);
+    const requestedExtraSeats = getExtraSeatCount();
     if (!token()) {
       say('Please log in to your game account first, then return here.');
       return;
     }
     if (checkoutBusy) return;
     checkoutBusy = true;
-    planButtons.forEach((item) => { item.disabled = true; });
+    planButtons.forEach(button => { button.disabled = true; });
     say('Connecting securely to Stripe…');
     try {
-      const result = await call('/account/stripe-checkout', { plan });
+      const result = await call('/account/stripe-checkout', { plan, extraAccounts: requestedExtraSeats });
       if (!result.url || !/^https:\/\/checkout\.stripe\.com\//.test(result.url)) {
         throw new Error('Stripe did not return a valid checkout link.');
       }
@@ -121,37 +158,44 @@
     } catch (error) {
       say(error.message);
       checkoutBusy = false;
-      planButtons.forEach((item) => { item.disabled = false; });
+      planButtons.forEach(button => { button.disabled = false; });
     }
   }
-  subscribe.addEventListener('click', () => startCheckout('individual', subscribe));
-  duoPlan.addEventListener('click', () => startCheckout('duo', duoPlan));
-  familyPlan.addEventListener('click', () => startCheckout('family', familyPlan));
-  addMember.addEventListener('click', async () => {
-    const username = memberUsername.value.trim();
-    if (!username) {
-      say('Enter the username of the account you want to add.');
-      memberUsername.focus();
-      return;
-    }
-    addMember.disabled = true;
-    try {
-      await call('/account/premium-invite', { username });
-      memberUsername.value = '';
-      say(username + ' was added to your Premium plan.');
-      await refreshMembers();
-    } catch (error) {
-      say(error.message);
-    } finally {
-      addMember.disabled = false;
-    }
-  });
-  memberUsername.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') addMember.click();
-  });
-  refresh.addEventListener('click', checkStatus);
+
+  if (subscribe) subscribe.addEventListener('click', () => startCheckout('individual'));
+  if (duoPlan) duoPlan.addEventListener('click', () => startCheckout('duo'));
+  if (familyPlan) familyPlan.addEventListener('click', () => startCheckout('family'));
+  if (extraSeats) extraSeats.addEventListener('input', () => updateSeatEstimate());
+
+  if (addMember && memberUsername) {
+    addMember.addEventListener('click', async () => {
+      const username = memberUsername.value.trim();
+      if (!username) {
+        say('Enter the username of the account you want to add.');
+        memberUsername.focus();
+        return;
+      }
+      addMember.disabled = true;
+      try {
+        await call('/account/premium-invite', { username });
+        memberUsername.value = '';
+        say(username + ' was added to your plan.');
+        await refreshMembers();
+      } catch (error) {
+        say(error.message);
+      } finally {
+        addMember.disabled = false;
+      }
+    });
+    memberUsername.addEventListener('keydown', event => {
+      if (event.key === 'Enter') addMember.click();
+    });
+  }
+
+  if (refresh) refresh.addEventListener('click', checkStatus);
   const params = new URLSearchParams(location.search);
   if (params.get('checkout') === 'success') say('Checkout returned successfully. Checking your Premium status…');
   if (params.get('checkout') === 'cancelled') say('Checkout was cancelled. You have not been charged.');
+  updateSeatEstimate('individual');
   checkStatus();
 })();

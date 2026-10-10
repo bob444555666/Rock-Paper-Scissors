@@ -1,6 +1,5 @@
-/* Premium (v3): 20 options just for Premium members.
-   Premium is won in a tournament that has Premium as the prize, or given by the staff.
-   Open them from your profile: tap "Premium options". Your choices are saved on your account.
+/* Membership customization: saved visual preferences for eligible members.
+   Profile messaging directs players to compare Premium, Ultra, and Ultra Plus upgrades.
    Self-contained: it cannot break the main game. */
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev'
@@ -332,7 +331,7 @@
   const panelBody = make('div')
   const panelMsg = make('p', { className: 'msg' })
   const panelClose = make('button', { className: 'x', type: 'button', textContent: '✕' })
-  const panelCard = make('div', { className: 'card' }, panelClose, make('h2', { textContent: '⭐ Premium options' }), panelBody, panelMsg)
+  const panelCard = make('div', { className: 'card' }, panelClose, make('h2', { textContent: '🎨 Membership customization' }), panelBody, panelMsg)
   const panel = make('div', { id: 'prem-layer', className: 'ui-layer' }, panelCard)
   panel.hidden = true
   document.body.append(panel)
@@ -406,11 +405,11 @@
   let info, openBtn
 
   if (layer && anchor) {
-    const head = make('h3', { textContent: 'Premium' })
+    const head = make('h3', { textContent: 'Membership upgrades' })
     info = make('p', { className: 'auth-sub' })
-    openBtn = make('button', { className: 'big', type: 'button', textContent: '⭐ Premium options' })
+    openBtn = make('button', { className: 'big', type: 'button', textContent: '⭐ Explore Premium · Ultra · Ultra Plus' })
     ;[head, info, openBtn].forEach(n => anchor.parentNode.insertBefore(n, anchor))
-    openBtn.addEventListener('click', () => { if (premiumNow()) { panelMsg.textContent = ''; renderPanel(); panel.hidden = false } })
+    openBtn.addEventListener('click', () => { if (premiumNow()) { panelMsg.textContent = ''; renderPanel(); panel.hidden = false } else { window.location.href = '/subscribe.html' } })
     new MutationObserver(() => { if (!layer.hidden) refresh() }).observe(layer, { attributes: true, attributeFilter: ['hidden'] })
   }
 
@@ -418,11 +417,13 @@
     if (!info) return
     if (!status) { info.textContent = session() ? 'Loading...' : 'Log in to see your Premium status.'; openBtn.disabled = true; return }
     if (!status.premium) {
-      info.textContent = '🔒 Locked. Win a tournament that has Premium as the prize to unlock 20 options: backgrounds, themes, effects, sounds and more.'
-      openBtn.disabled = true
+      info.textContent = '🔒 Compare Premium, Ultra, and Ultra Plus to find the membership upgrade that fits you. Membership perks include themes, backgrounds, effects, sounds, and more.'
+      openBtn.textContent = '⭐ Explore Premium · Ultra · Ultra Plus'
+      openBtn.disabled = false
       return
     }
-    info.textContent = `⭐ You have Premium (${status.source === 'tournament' ? 'won in a tournament' : 'given by the staff'}). Tap below to change your background and 19 more options.`
+    info.textContent = '⭐ Your membership customization is unlocked. Change your themes, backgrounds, effects, sounds, and more.'
+    openBtn.textContent = '🎨 Customize membership look'
     openBtn.disabled = false
   }
 
