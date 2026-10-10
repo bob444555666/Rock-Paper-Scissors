@@ -190,7 +190,10 @@
         const profileResponse = await fetch('https://api.spotify.com/v1/me', {
           headers:{Authorization:'Bearer ' + data.access_token}
         });
-        if (!profileResponse.ok) throw new Error('Could not read Spotify profile');
+        if (!profileResponse.ok) {
+          const details = await profileResponse.text().catch(() => '');
+          throw new Error('Spotify profile request returned HTTP ' + profileResponse.status + (details ? ': ' + details.slice(0, 220) : ''));
+        }
         const profile = await profileResponse.json();
         connectMessage.textContent = 'Connected to Spotify as ' + (profile.display_name || profile.id) + '. This browser session is connected; reconnect after the access token expires.';
         connectButton.textContent = 'Spotify connected ✓';
