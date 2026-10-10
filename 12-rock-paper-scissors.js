@@ -165,6 +165,77 @@ joinButton.addEventListener(
   joinGame
 )
 
+const quickPlayButton = document.querySelector('#quick-play-button')
+let quickPlayTimer = null
+let quickPlayStartedAt = 0
+
+quickPlayButton?.addEventListener('click', startQuickPlay)
+
+async function quickPlayRequest(action) {
+  const response = await fetch('https://rps-server.heyboernathan.workers.dev/quickplay', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, action })
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(data.error || 'Quick Play is unavailable right now.')
+  return data
+}
+
+async function startQuickPlay() {
+  if (!token) {
+    showAuth('Log in to use free Quick Play.')
+    return
+  }
+  if (quickPlayTimer) clearTimeout(quickPlayTimer)
+  quickPlayButton.disabled = true
+  quickPlayButton.textContent = 'Searching for an opponent…'
+  connectionStatus.textContent = 'Finding a random opponent…'
+  resultElement.textContent = 'Quick Play is free. Keep this page open while we find a match.'
+  quickPlayStartedAt = Date.now()
+  try {
+    const state = await quickPlayRequest('join')
+    if (state.status === 'matched' && state.room) return quickPlayMatched(state.room)
+    pollQuickPlay()
+  } catch (error) {
+    finishQuickPlay()
+    resultElement.textContent = error.message || 'Could not start Quick Play.'
+  }
+}
+
+async function pollQuickPlay() {
+  if (Date.now() - quickPlayStartedAt > 60000) {
+    try { await quickPlayRequest('leave') } catch (error) {}
+    finishQuickPlay()
+    resultElement.textContent = 'No opponent found yet. Try Quick Play again or play with a friend.'
+    return
+  }
+  try {
+    const state = await quickPlayRequest('status')
+    if (state.status === 'matched' && state.room) return quickPlayMatched(state.room)
+    connectionStatus.textContent = 'Searching for an opponent…'
+  } catch (error) {
+    finishQuickPlay()
+    resultElement.textContent = error.message || 'Quick Play disconnected.'
+    return
+  }
+  quickPlayTimer = setTimeout(pollQuickPlay, 1800)
+}
+
+function quickPlayMatched(room) {
+  finishQuickPlay()
+  roomInput.value = room
+  resultElement.textContent = 'Opponent found! Connecting to your match…'
+  joinGame()
+}
+
+function finishQuickPlay() {
+  if (quickPlayTimer) clearTimeout(quickPlayTimer)
+  quickPlayTimer = null
+  quickPlayButton.disabled = false
+  quickPlayButton.textContent = '⚡ Quick Play (Free)'
+}
+
 
 modeOnlineButton.addEventListener(
   'click',
