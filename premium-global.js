@@ -140,7 +140,9 @@
       if (!titleOriginal.has(title)) titleOriginal.set(title, title.textContent);
       title.textContent = typeof p.title === 'string' && p.title.trim() ? p.title.trim().slice(0, 24) : titleOriginal.get(title);
     }
-    startParticles(get('particles', ['none','stars','bubbles','snow','embers'], 'none'));\n    sparkleOn = p.sparkle === true;\n    document.documentElement.setAttribute('data-premium-look', 'on');
+    startParticles(get('particles', ['none','stars','bubbles','snow','embers'], 'none'));
+    sparkleOn = p.sparkle === true;
+    document.documentElement.setAttribute('data-premium-look', 'on');
   }
 
   async function refresh() {
