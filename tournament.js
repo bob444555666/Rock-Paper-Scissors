@@ -65,7 +65,7 @@
   const pwInput = make('input', { type: 'password', placeholder: 'Password', maxLength: 60, autocomplete: 'off' })
   const goBtn = make('button', { className: 'big', type: 'button', textContent: 'Join tournament' })
   const joinBox = make('div', {},
-    make('p', { className: 'to-note', textContent: 'You need to be logged in and have a profile picture. Enter the tournament ID and password you were given. The ID only works for your own account. 3-player and 4-player tournaments are for Premium members only.' }),
+    make('p', { className: 'to-note', textContent: 'You need to be logged in and have a profile picture. Enter the tournament ID and password you were given. The ID only works for your own account.' }),
     idInput, pwInput, goBtn)
 
   const body = make('div')
