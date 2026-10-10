@@ -1,7 +1,7 @@
 /* Shared Premium appearance for every page outside the main game page.
    premium.js owns the main game page; this file mirrors its visual preferences elsewhere. */
 (() => {
-  if (document.getElementById('prem-style')) return;
+  if (document.getElementById('prem-global-style')) return;
   const API = 'https://rps-server.heyboernathan.workers.dev';
   const CACHE = 'premiumPrefsCache';
   const token = () => { try { return localStorage.getItem('token'); } catch (e) { return null; } };
