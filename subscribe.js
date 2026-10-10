@@ -24,7 +24,10 @@
         subscribe.textContent = 'Premium is active';
         subscribe.disabled = true;
       } else {
-        say('No active Premium membership was found for this account.');
+        const checkout = new URLSearchParams(location.search).get('checkout');
+        say(checkout === 'success'
+          ? 'Stripe returned successfully. Premium activates as soon as the signed webhook confirms your trial; wait a few seconds and check again.'
+          : 'No active Premium membership was found for this account.');
       }
     } catch (error) { say(error.message); }
   }
