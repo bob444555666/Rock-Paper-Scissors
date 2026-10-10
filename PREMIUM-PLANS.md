@@ -14,7 +14,7 @@ All amounts are CAD and billed monthly. The public-facing names are Premium, Ult
 
 The intended policy is that every tier includes only the subscribing account. Each additional account costs CAD $3/month on Premium, $5/month on Ultra, and $7/month on Ultra Plus, added to the selected tier's base price. There is no tier-specific default allowance for multiple accounts under the new policy.
 
-The plan page now displays the intended policy and estimates the total, but it deliberately blocks checkout when extra accounts are selected. This is a safety guard: the current Worker checkout and entitlement endpoints still use the older `duo` limit of 2 accounts and `family` limit of 10 accounts, and do not yet calculate or collect the tier-specific recurring add-on ($3 Premium, $5 Ultra, $7 Ultra Plus per extra account). Do not remove that guard until the Worker validates the requested seat count, creates a Stripe subscription with the correct recurring add-on quantity, and enforces the purchased account limit server-side. The add-on recurring Stripe Price must be created in both test and live modes before enabling it.
+The checkout and entitlement Worker has been updated to validate up to 99 extra accounts, add the tier-specific recurring price to Stripe Checkout, store the purchased quantity in subscription metadata, and enforce that purchased quantity when managing member accounts. The plan page sends the selected extra-account quantity to the Worker. Test-mode recurring prices exist for Premium ($3/month, `price_1UP6ZN3FalmEL64xWXkZenqu`), Ultra ($5/month, `price_1UP6ZR3FalmEL64xNuq5DHNg`), and Ultra Plus ($7/month, `price_1UP6ZT3FalmEL64xWPQKUCoH`). The connected Stripe account is test mode only; live-mode prices and live credentials are not configured here, so do not treat this as ready to collect real payments.
 
 ## Benefits shown on the plan page
 
@@ -39,12 +39,12 @@ The test-mode webhook is configured at `https://rps-server.heyboernathan.workers
 
 ## Worker behavior
 
-- `POST /account/stripe-checkout` accepts `plan: "individual" | "duo" | "family"`. Only `individual` receives the 7-day trial. The public labels are mapped to these existing keys in the browser.
-- Signed Stripe webhook events sync the owner's subscription status and plan.
-- `POST /account/premium` returns current Premium status and whether the account can manage group members.
-- `POST /account/premium-members` lists group members for an active Ultra/Ultra Plus owner.
-- `POST /account/premium-invite` accepts `{ username }` to add an existing account, or `{ username, action: "remove" }` to remove it. The Worker enforces plan limits and prevents an account with its own active Stripe subscription from being added.
-- When a group subscription becomes inactive, group-member Premium entitlements are removed.
+- `POST /account/stripe-checkout` accepts `plan: "individual" | "duo" | "family"` and `extraAccounts` (0–99). Only `individual` receives the 7-day trial. The Worker selects the plan-specific recurring add-on price and sets its quantity server-side.
+- Signed Stripe webhook events sync the owner's subscription status, plan, and purchased extra-account count.
+- `POST /account/premium` returns current Premium status and whether the account can manage purchased extra accounts.
+- `POST /account/premium-members` lists member accounts and returns the paid member limit for an active subscriber.
+- `POST /account/premium-invite` accepts `{ username }` to add an existing account, or `{ username, action: "remove" }` to remove it. The Worker enforces the purchased quantity and prevents an account with its own active Stripe subscription from being added.
+- When a subscription becomes inactive, group-member Premium entitlements are removed.
 
 ## Before taking real payments
 
