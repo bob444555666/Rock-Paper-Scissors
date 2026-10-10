@@ -5,7 +5,7 @@
    v4 notes:  Now with live voice: tap the mic to talk, or use Live talk for a hands-free back-and-forth.
    (Uses the browser's built-in speech recognition and speech synthesis. No extra server needed.)
    v3 notes:  Talks to the real AI on the server (/ai/chat), so the Voice Control settings really apply.
-   Two tabs: Coach (strategy, everyone) and Chat (talk about anything, Premium only; the server checks this).
+   Two tabs: Coach (strategy, Premium and above) and Chat (talk about anything, Ultra and Ultra Plus only; the server must enforce this too).
    Older note:  Replaces the old player-to-player chat.
    A moving, color-changing orb in the bottom-right corner opens a chat with an AI that helps with strategy.
    Type the secret code into the chat box to open the Voice Control panel (the code is checked by the server,
@@ -26,6 +26,7 @@
   let aiMode = 'coach'     // 'coach' or 'chat'
   const histories = { coach: [], chat: [] } // what we send to the AI: [{ role, content }]
   let isPremium = false
+  let isUltra = false
   let premiumChecked = false
   let panelCode = null    // the secret code, kept in memory only while Voice Control is open
   let settings = null
@@ -297,7 +298,7 @@
   }
 
   function updateLock() {
-    const locked = aiMode === 'chat' && !isPremium
+    const locked = aiMode === 'coach' ? !isPremium : !isUltra
     lock.hidden = !locked
     input.disabled = locked
     goBtn.disabled = locked || busy
@@ -305,9 +306,9 @@
     liveBtn.disabled = locked
     if (locked) stopVoice()
     if (locked) {
-      lock.textContent = session()
-        ? '⭐ Chat mode is for Premium members. Coach mode is free for everyone. Premium is won in Premium tournaments.'
-        : '⭐ Chat mode is for Premium members. Log in with a Premium account to chat about anything. Coach mode is free.'
+      lock.textContent = aiMode === 'coach'
+        ? (session() ? '⭐ AI Coach is included with Premium, Ultra, and Ultra Plus. Upgrade your membership to unlock coaching.' : '⭐ Log in with a Premium, Ultra, or Ultra Plus account to use AI Coach.')
+        : (session() ? '💎 AI Chat is for Ultra and Ultra Plus members. Upgrade your membership to unlock conversational AI.' : '💎 Log in with an Ultra or Ultra Plus account to chat about anything.')
     }
     const showChips = aiMode === 'coach' && !log.querySelector('.ai-msg.me')
     chips.hidden = !showChips
@@ -315,9 +316,12 @@
 
   async function refreshPremium() {
     const token = session()
-    if (!token) { isPremium = false; premiumChecked = true; return }
+    if (!token) { isPremium = false; isUltra = false; premiumChecked = true; return }
     const r = await call('/account/premium', { token })
-    isPremium = !!(r.ok && r.data && r.data.premium)
+    const data = r.ok && r.data ? r.data : {}
+    const plan = String(data.plan || data.premiumPlan || '').toLowerCase().replace(/[_\s]+/g, '-')
+    isPremium = !!data.premium
+    isUltra = isPremium && (plan === 'ultra' || plan === 'ultra-plus' || plan === 'ultraplus' || plan.includes('ultra'))
     premiumChecked = true
   }
 
