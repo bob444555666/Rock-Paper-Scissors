@@ -13,8 +13,8 @@
 <main class="card">
 <div class="top"><div class="eyebrow">Rock Paper Scissors</div><span class="pill">Membership upgrades</span></div>
 <h1>Choose your power level.</h1>
-<p>Three membership tiers, more ways to play. All prices are in Canadian dollars and renew monthly.</p>
-<div class="trial"><strong>7-day free trial with Premium</strong><br><span>Premium includes a 7-day free trial. Ultra and Ultra Plus have no free trial. You can manage eligible members from this page.</span></div>
+<p>Three membership tiers, more ways to play. All prices are in Canadian dollars and renew monthly. Each plan includes one account; add extra accounts for $3 CAD per person per month.</p>
+<div class="trial"><strong>7-day free trial with Premium</strong><br><span>Premium includes a 7-day free trial. Ultra and Ultra Plus have no free trial. Every tier starts with one account. Additional accounts are $3 CAD each per month, on top of the selected plan price.</span></div>
 <section class="plans" aria-label="Subscription plans">
   <article class="plan">
     <div class="tier-art"><img class="tier-image" src="premium-card.webp" alt="Premium membership card" loading="lazy"></div>
@@ -28,22 +28,22 @@
   </article>
   <article class="plan featured">
     <div class="tier-art"><img class="tier-image" src="ultra-card.webp" alt="Ultra membership card" loading="lazy"></div>
-    <div class="eyebrow">2 accounts · advanced features</div><h2>Ultra</h2>
+    <div class="eyebrow">1 account included · advanced features</div><h2>Ultra</h2>
     <div class="price">$11.99 <small>CAD / month</small></div>
-    <p>Everything in Premium, plus expanded social and competitive tools. Owner + 1 member (2 accounts total).</p>
+    <p>Everything in Premium, plus expanded social and competitive tools. One account is included; add more accounts as needed.</p>
     <ul>
-      <li>Everything in Premium</li><li>Add one existing account by username (2 accounts total)</li><li>Competitive leagues and seasonal leaderboards</li><li>Advanced breakdowns by move, opponent and game mode</li><li>Best-of-5, best-of-7 and custom match formats</li><li>Private friend challenges and custom room rules</li><li>Daily missions and seasonal trophies</li><li>Exclusive Ultra badge, profile frame and victory effects</li>
+      <li>Everything in Premium</li><li>Add extra accounts for $3 CAD per person per month</li><li>Competitive leagues and seasonal leaderboards</li><li>Advanced breakdowns by move, opponent and game mode</li><li>Best-of-5, best-of-7 and custom match formats</li><li>Private friend challenges and custom room rules</li><li>Daily missions and seasonal trophies</li><li>Exclusive Ultra badge, profile frame and victory effects</li>
     </ul>
     <button id="duo-plan" class="button" type="button">Choose Ultra</button>
     <p class="setup-note">No free trial.</p>
   </article>
   <article class="plan ultimate">
     <div class="tier-art"><img class="tier-image" src="ultra-plus-card.webp" alt="Ultra Plus membership card" loading="lazy"></div>
-    <div class="eyebrow">10 accounts · VIP access</div><h2>Ultra Plus</h2>
+    <div class="eyebrow">1 account included · VIP access</div><h2>Ultra Plus</h2>
     <div class="price">$31.99 <small>CAD / month</small></div>
-    <p>The full Premium and Ultra experience with room for a group. Owner + up to 9 members (10 accounts total).</p>
+    <p>The full Premium and Ultra experience. One account is included; add more accounts as needed.</p>
     <ul>
-      <li>Everything in Premium and Ultra</li><li>Add up to nine existing accounts (10 accounts total)</li><li>Host private tournaments and larger group competitions</li><li>Practice against adjustable AI opponents</li><li>Long-term performance trends and personal records</li><li>Monthly exclusive cosmetic rewards and rare collectibles</li><li>Elite crown, animated name effects and Ultra Plus identity</li><li>Priority support</li>
+      <li>Everything in Premium and Ultra</li><li>Add extra accounts for $3 CAD per person per month</li><li>Host private tournaments and larger group competitions</li><li>Practice against adjustable AI opponents</li><li>Long-term performance trends and personal records</li><li>Monthly exclusive cosmetic rewards and rare collectibles</li><li>Elite crown, animated name effects and Ultra Plus identity</li><li>Priority support</li>
     </ul>
     <button id="family-plan" class="button" type="button">Choose Ultra Plus</button>
     <p class="setup-note">No free trial.</p>
@@ -51,7 +51,10 @@
 </section>
 <section id="member-manager" class="member-manager" hidden aria-label="Manage plan members">
   <h2>Manage your plan members</h2>
-  <p id="member-help">Add an existing game account by username. Members use their own accounts.</p>
+  <p id="member-help">Each plan includes one account. Extra accounts cost $3 CAD per person per month. Members use their own game accounts.</p>
+  <label for="extra-seats">Additional accounts (CAD $3/month each)</label>
+  <div class="member-row"><input id="extra-seats" type="number" min="0" max="99" step="1" value="0" inputmode="numeric" aria-label="Number of additional accounts"><p id="seat-price" aria-live="polite">Extra account total: $0.00 CAD/month</p></div>
+  <p class="fine">Extra-account pricing must be enabled by the subscription service before checkout. Do not purchase extra seats until the checkout page confirms the total.</p>
   <div class="member-row">
     <input id="member-username" type="text" maxlength="24" autocomplete="off" placeholder="Member username" aria-label="Member username">
     <button id="add-member" class="button" type="button">Add member</button>
