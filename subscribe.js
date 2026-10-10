@@ -30,8 +30,8 @@
       memberList.replaceChildren();
       const totalLimit = result.plan === 'duo' ? 2 : 10;
       memberHelp.textContent = result.plan === 'duo'
-        ? 'Duo includes you plus one member. Add an existing game account by username.'
-        : 'Family includes you plus up to nine members. Add existing game accounts by username.';
+        ? 'Ultra includes you plus one member. Add an existing game account by username.'
+        : 'Ultra Plus includes you plus up to nine members. Add existing game accounts by username.';
       if (!result.members.length) {
         const empty = document.createElement('li');
         empty.textContent = 'No members added yet.';
@@ -79,11 +79,11 @@
         // for whether an account can start or change a subscription.
         planButtons.forEach((button) => { button.disabled = false; });
         subscribe.textContent = 'Start 7-day free trial';
-        duoPlan.textContent = 'Choose Duo';
-        familyPlan.textContent = 'Choose Family';
+        duoPlan.textContent = 'Choose Ultra';
+        familyPlan.textContent = 'Choose Ultra Plus';
         if (result.canManageMembers) {
           memberManager.hidden = false;
-          say('Your ' + (result.plan === 'duo' ? 'Duo' : 'Family') + ' Premium plan is active. Manage members below.');
+          say('Your ' + (result.plan === 'duo' ? 'Ultra' : 'Ultra Plus') + ' plan is active. Manage members below.');
           await refreshMembers();
         } else {
           memberManager.hidden = true;
