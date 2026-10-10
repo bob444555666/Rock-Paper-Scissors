@@ -15,6 +15,16 @@
 <h1>Choose your power level.</h1>
 <p>Three membership tiers, more ways to play. All prices are in Canadian dollars and renew monthly. Each plan includes one account; add extra accounts for $3 CAD per person per month.</p>
 <div class="trial"><strong>7-day free trial with Premium</strong><br><span>Premium includes a 7-day free trial. Ultra and Ultra Plus have no free trial. Every tier starts with one account. Additional accounts are $3 CAD each per month, on top of the selected plan price.</span></div>
+<section class="member-manager" aria-label="Additional account pricing">
+  <h2>Need more accounts?</h2>
+  <p>Every plan includes one account. Each additional account costs $3 CAD per month, added to your selected plan price.</p>
+  <div class="member-row">
+    <label for="extra-seats">Extra accounts</label>
+    <input id="extra-seats" type="number" min="0" max="99" step="1" value="0" inputmode="numeric" aria-label="Number of additional accounts">
+  </div>
+  <p id="seat-price" role="status" aria-live="polite">Choose a plan to see your monthly total.</p>
+  <p class="fine">Extra-account checkout is not active until the subscription service is updated. If you choose more than zero extra accounts, the page will stop checkout rather than charge the wrong amount.</p>
+</section>
 <section class="plans" aria-label="Subscription plans">
   <article class="plan">
     <div class="tier-art"><img class="tier-image" src="premium-card.webp" alt="Premium membership card" loading="lazy"></div>
@@ -52,9 +62,6 @@
 <section id="member-manager" class="member-manager" hidden aria-label="Manage plan members">
   <h2>Manage your plan members</h2>
   <p id="member-help">Each plan includes one account. Extra accounts cost $3 CAD per person per month. Members use their own game accounts.</p>
-  <label for="extra-seats">Additional accounts (CAD $3/month each)</label>
-  <div class="member-row"><input id="extra-seats" type="number" min="0" max="99" step="1" value="0" inputmode="numeric" aria-label="Number of additional accounts"><p id="seat-price" aria-live="polite">Extra account total: $0.00 CAD/month</p></div>
-  <p class="fine">Extra-account pricing must be enabled by the subscription service before checkout. Do not purchase extra seats until the checkout page confirms the total.</p>
   <div class="member-row">
     <input id="member-username" type="text" maxlength="24" autocomplete="off" placeholder="Member username" aria-label="Member username">
     <button id="add-member" class="button" type="button">Add member</button>
