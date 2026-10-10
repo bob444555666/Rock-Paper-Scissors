@@ -55,8 +55,13 @@
     const userChip = document.getElementById('user-chip');
     const accountLink = nav.querySelector('#rps-account-link');
     if (userChip) {
-      accountLink.remove();
       nav.appendChild(userChip);
+      const syncAccountVisibility = () => { accountLink.hidden = !userChip.hidden; };
+      syncAccountVisibility();
+      new MutationObserver(syncAccountVisibility).observe(userChip, { attributes: true, attributeFilter: ['hidden'] });
+      accountLink.addEventListener('click', event => {
+        if (!userChip.hidden) { event.preventDefault(); userChip.click(); }
+      });
     }
     const rawPath = window.location.pathname;
     const path = rawPath.length > 1 && rawPath.endsWith('/') ? rawPath.slice(0, -1) : rawPath;
