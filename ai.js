@@ -1,4 +1,6 @@
-/* AI Coach (v6). Players can now pick their own voice, speed and pitch (the Voice button).
+/* AI Coach (v8). Human-sounding voices: pick a girl or boy voice (made on the server), with the device voice as backup.
+   v7 notes: Talking now also works in the iPhone home-screen app (records the mic, the server turns it into text).
+   v6 notes: Players can now pick their own voice, speed and pitch (the Voice button).
    v5 notes: Voice now works on iPhone/iPad Safari too (see the iOS notes in the voice section).
    v4 notes:  Now with live voice: tap the mic to talk, or use Live talk for a hands-free back-and-forth.
    (Uses the browser's built-in speech recognition and speech synthesis. No extra server needed.)
@@ -421,8 +423,19 @@
   const canSpeak = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'
   const SPEAK_KEY = 'aiSpeak'
   const VOICE_KEY = 'aiVoicePrefs'
-  const vp = { name: '', rate: 1.05, pitch: 1 } // the player's own voice choices (saved on their device)
+  const vp = { name: '', rate: 1.05, pitch: 1, human: true, gender: 'girl', speaker: 'asteria' } // the player's own voice choices (saved on their device)
+  // Human-sounding voices made on the server (Cloudflare Workers AI, Deepgram Aura). The device voice is the backup.
+  const HUMAN_VOICES = {
+    girl: [['asteria', 'Asteria · clear, confident'], ['luna', 'Luna · friendly, natural'], ['athena', 'Athena · British, calm'], ['hera', 'Hera · warm, smooth']],
+    boy: [['orion', 'Orion · calm, polite'], ['arcas', 'Arcas · natural, smooth'], ['perseus', 'Perseus · confident'], ['angus', 'Angus · Irish, warm'], ['orpheus', 'Orpheus · clear, confident'], ['helios', 'Helios · British, polite'], ['zeus', 'Zeus · deep, trustworthy']]
+  }
+  const SILENT = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
+  let player = null
+  try { player = new Audio() } catch (error) {}
+  let speakAbort = null
   try { Object.assign(vp, JSON.parse(localStorage.getItem(VOICE_KEY) || '{}')) } catch (error) {}
+  if (!HUMAN_VOICES[vp.gender]) vp.gender = 'girl'
+  if (!HUMAN_VOICES[vp.gender].some(v => v[0] === vp.speaker)) vp.speaker = HUMAN_VOICES[vp.gender][0][0]
   let speakOn = false
   try { speakOn = localStorage.getItem(SPEAK_KEY) === '1' } catch (error) {}
   let live = false       // hands-free conversation: listen, answer out loud, listen again
@@ -431,21 +444,32 @@
   let rec = null
   let speakId = 0
   let idleTries = 0
+  // Some browsers (the iPhone home-screen app) have no built-in speech recognition. There we record the
+  // microphone ourselves and the server turns the recording into text.
+  const useRec = !SR && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)
+  let recorder = null
+  let recStream = null
+  let recTimer = null
+  let audioCtx = null
+  let analyser = null
+  let transcribing = false
+  let recRun = 0
 
-  micBtn.hidden = !SR
-  liveBtn.hidden = !SR
+  micBtn.hidden = !SR && !useRec
+  liveBtn.hidden = !SR && !useRec
   speakBtn.hidden = !canSpeak
-  if (iosStandalone && canSpeak) {
+  if (iosStandalone && canSpeak && !useRec) {
     voiceRow.append(make('p', { className: 'ai-hint', textContent: '🎙️ Listening does not work in the home-screen app on iPhone. Open the site in Safari to talk to me. I can still read my answers out loud here.' }))
-  } else if (!SR && !canSpeak) {
+  } else if (!SR && !useRec && !canSpeak) {
     voiceRow.hidden = true
   }
 
   // iOS only lets speech start from a tap. Speaking one silent word on the first tap unlocks it for later replies.
   let speechUnlocked = false
   function unlockSpeech() {
-    if (speechUnlocked || !canSpeak) return
+    if (speechUnlocked || (!canSpeak && !player)) return
     speechUnlocked = true
+    try { if (player) { player.src = SILENT; const pr = player.play(); if (pr && pr.then) pr.then(() => player.pause()).catch(() => {}) } } catch (error) {}
     try {
       const u = new SpeechSynthesisUtterance(' ')
       u.volume = 0
@@ -460,7 +484,7 @@
     liveBtn.textContent = live ? '🎧 Live: on' : '🎧 Live talk'
     speakBtn.classList.toggle('on', speakOn)
     speakBtn.textContent = speakOn ? '🔊 Voice on' : '🔇 Voice off'
-    input.placeholder = listening ? 'Listening...' : aiMode === 'chat' ? 'Say anything...' : 'Ask the coach...'
+    input.placeholder = listening ? 'Listening...' : transcribing ? 'Working out what you said...' : aiMode === 'chat' ? 'Say anything...' : 'Ask the coach...'
   }
 
   const NOVELTY = /bahh|bells|boing|bubbles|cellos|deranged|good news|bad news|hysterical|organ|trinoids|whisper|zarvox|albert|jester|superstar|wobble|fred|junior|kathy|ralph|grandma|grandpa|rocko|shelley|flo|eddy|sandy|reed/i
@@ -480,10 +504,61 @@
   function stopSpeaking() {
     speakId++
     speaking = false
+    if (speakAbort) { try { speakAbort.abort() } catch (error) {} speakAbort = null }
+    if (player) { player.onended = null; player.onerror = null; try { player.pause() } catch (error) {} }
     try { if (canSpeak) speechSynthesis.cancel() } catch (error) {}
   }
 
   function speak(text, done) {
+    if (!vp.human || !player || typeof fetch !== 'function') { speakBrowser(text, done); return }
+    stopSpeaking()
+    let t = String(text || '').replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/\s+/g, ' ').trim()
+    if (!t) { if (done) done(); return }
+    if (t.length > 600) {
+      const cut = t.slice(0, 600)
+      const i = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '))
+      t = i > 200 ? cut.slice(0, i + 1) : cut
+    }
+    const myId = speakId
+    speaking = true
+    voiceUi()
+    const finish = () => {
+      if (myId !== speakId) return
+      speaking = false
+      voiceUi()
+      if (done) done()
+    }
+    const backup = () => { // the human voice did not work: use this device's voice instead
+      if (myId !== speakId) return
+      speaking = false
+      if (canSpeak) speakBrowser(text, done)
+      else finish()
+    }
+    setTimeout(() => { if (myId === speakId && speaking) finish() }, 20000 + t.length * 120)
+    const ctl = new AbortController()
+    speakAbort = ctl
+    fetch(API + '/ai/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: session(), text: t, speaker: vp.speaker }),
+      signal: ctl.signal
+    })
+      .then(res => { if (!res.ok) throw new Error('tts ' + res.status); return res.blob() })
+      .then(blob => {
+        if (myId !== speakId) return
+        if (!blob || !blob.size) throw new Error('empty audio')
+        const url = URL.createObjectURL(blob)
+        const clear = () => { try { URL.revokeObjectURL(url) } catch (error) {} }
+        player.onended = () => { clear(); finish() }
+        player.onerror = () => { clear(); backup() }
+        player.src = url
+        player.playbackRate = Math.min(1.5, Math.max(0.7, vp.rate / 1.05))
+        return player.play()
+      })
+      .catch(err => { if (err && err.name === 'AbortError') return; backup() })
+  }
+
+  function speakBrowser(text, done) {
     if (!canSpeak) { if (done) done(); return }
     stopSpeaking()
     const clean = String(text || '').replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/\s+/g, ' ').trim()
@@ -511,8 +586,139 @@
     })
   }
 
+  // ----- listening by recording (iPhone home-screen app and other browsers without built-in recognition) -----
+  const blobToBase64 = blob => new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(String(r.result).split(',')[1] || '')
+    r.onerror = reject
+    r.readAsDataURL(blob)
+  })
+
+  function releaseMic() {
+    if (recTimer) { clearInterval(recTimer); recTimer = null }
+    if (recStream) { try { recStream.getTracks().forEach(t => t.stop()) } catch (error) {} recStream = null }
+    if (audioCtx) { try { audioCtx.close() } catch (error) {} audioCtx = null }
+    analyser = null
+  }
+
+  function stopRecording() {
+    if (recorder && recorder.state !== 'inactive') { try { recorder.stop() } catch (error) {} }
+  }
+
+  function finishHeard(text) {
+    voiceUi()
+    if (text) { idleTries = 0; send(text, { voice: true }); return }
+    if (!live) return
+    if (++idleTries >= 3) {
+      live = false
+      releaseMic()
+      voiceUi()
+      addMsg('bot', 'I did not hear anything, so I stopped listening. Tap Live talk to start again.')
+    } else {
+      setTimeout(() => { if (live) startListening() }, 300)
+    }
+  }
+
+  async function startRecording() {
+    if (aiMode === 'chat' && !isPremium) { live = false; voiceUi(); updateLock(); return }
+    if (listening || busy || transcribing) return
+    stopSpeaking()
+    listening = true
+    voiceUi()
+    const myRun = ++recRun
+
+    try {
+      if (!recStream || !recStream.active) {
+        recStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+        const AC = window.AudioContext || window.webkitAudioContext
+        if (AC) {
+          try {
+            audioCtx = new AC()
+            analyser = audioCtx.createAnalyser()
+            analyser.fftSize = 1024
+            audioCtx.createMediaStreamSource(recStream).connect(analyser)
+          } catch (error) { analyser = null }
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume()
+    } catch (error) {
+      listening = false
+      live = false
+      releaseMic()
+      voiceUi()
+      addMsg('err', 'The microphone is blocked. Allow it for this site (iPhone: Settings > Safari > Microphone, or tap the "aA" icon in the address bar > Website Settings), then try again.')
+      return
+    }
+    if (myRun !== recRun) { listening = false; releaseMic(); voiceUi(); return } // stopped while the permission box was open
+
+    const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find(t => {
+      try { return MediaRecorder.isTypeSupported(t) } catch (error) { return false }
+    }) || ''
+    const chunks = []
+    let mr
+    try { mr = type ? new MediaRecorder(recStream, { mimeType: type }) : new MediaRecorder(recStream) }
+    catch (error) {
+      listening = false
+      live = false
+      releaseMic()
+      voiceUi()
+      addMsg('err', 'This device cannot record audio here.')
+      return
+    }
+    recorder = mr
+
+    let heard = !analyser // with no level meter we cannot tell, so just trust the tap
+    let quiet = 0
+    let ticks = 0
+    const buf = analyser ? new Uint8Array(analyser.fftSize) : null
+    const level = () => {
+      analyser.getByteTimeDomainData(buf)
+      let sum = 0
+      for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v }
+      return Math.sqrt(sum / buf.length)
+    }
+
+    mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data) }
+    mr.onstop = async () => {
+      if (recTimer) { clearInterval(recTimer); recTimer = null }
+      recorder = null
+      listening = false
+      if (myRun !== recRun) return // cancelled
+      const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' })
+      if (!heard || blob.size < 1500) { if (!live) releaseMic(); finishHeard(''); return }
+      transcribing = true
+      voiceUi()
+      let text = ''
+      try {
+        const audio = await blobToBase64(blob)
+        const r = await call('/ai/transcribe', { token: session(), audio, mime: blob.type, lang: (navigator.language || 'en').slice(0, 2).toLowerCase() })
+        if (r.ok) text = String((r.data && r.data.text) || '').trim()
+        else { live = false; addMsg('err', (r.data && r.data.error) || 'I could not hear that. Try again.') }
+      } catch (error) {
+        live = false
+        addMsg('err', 'I could not hear that. Try again.')
+      }
+      transcribing = false
+      if (myRun !== recRun) return
+      if (!live) releaseMic()
+      finishHeard(text)
+    }
+
+    // stop by itself: a moment of quiet after you spoke, nothing heard for 7 seconds, or 25 seconds in total
+    recTimer = setInterval(() => {
+      ticks++
+      if (analyser) {
+        if (level() > 0.02) { heard = true; quiet = 0 } else if (heard) quiet++
+      }
+      if ((analyser && heard && quiet >= 14) || (analyser && !heard && ticks >= 70) || ticks >= 250) stopRecording()
+    }, 100)
+
+    try { mr.start() } catch (error) { listening = false; recorder = null; live = false; releaseMic(); voiceUi() }
+  }
+
   function startListening() {
-    if (!SR) return
+    if (!SR && !useRec) return
+    if (!SR) { startRecording(); return }
     if (aiMode === 'chat' && !isPremium) { live = false; voiceUi(); updateLock(); return }
     if (listening || busy) return
     stopSpeaking()
@@ -569,6 +775,10 @@
 
   function stopVoice() {
     live = false
+    recRun++
+    if (recorder) { recorder.onstop = null; try { recorder.stop() } catch (error) {} recorder = null }
+    transcribing = false
+    releaseMic()
     if (rec) { rec.onend = null; try { rec.abort() } catch (error) {} rec = null }
     listening = false
     stopSpeaking()
@@ -578,7 +788,7 @@
 
   micBtn.addEventListener('click', () => {
     unlockSpeech()
-    if (listening) { try { rec.stop() } catch (error) {} return } // stop and send what was heard
+    if (listening) { if (recorder) stopRecording(); else { try { rec.stop() } catch (error) {} } return } // stop and send what was heard
     live = false
     idleTries = 0
     startListening()
@@ -607,6 +817,7 @@
       #ai-panel .ai-vset { display: block; flex: 1 1 100%; padding: 8px 0 2px; font-size: 13px; }
       #ai-panel .ai-vset[hidden] { display: none; }
       #ai-panel .ai-vset label { display: block; margin: 6px 0; }
+      #ai-panel .ai-vset label.ai-vrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       #ai-panel .ai-vset select, #ai-panel .ai-vset input[type=range] { display: block; width: 100%; margin-top: 4px; }
       #ai-panel .ai-vset select { padding: 8px; color: #fff; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; }
     `
@@ -620,16 +831,32 @@
     const pitchIn = make('input', { type: 'range', min: 0.6, max: 1.6, step: 0.05 })
     const testBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '▶ Test voice' })
     const resetBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: 'Reset' })
+    const humanOn = make('input', { type: 'checkbox', checked: vp.human !== false })
+    const humanRow = make('label', { className: 'ai-vrow' }, make('span', { textContent: '🧑 Human voice (AI)' }), humanOn)
+    const genderSel = make('select')
+    ;[['girl', '👩 Girl'], ['boy', '👨 Boy']].forEach(([v, t]) => genderSel.append(make('option', { value: v, textContent: t })))
+    const speakerSel = make('select')
     const box = make('div', { className: 'ai-vset' },
-      make('label', { textContent: '🗣️ Voice' }, voiceSel),
+      humanRow,
+      make('label', { textContent: 'Girl or boy' }, genderSel),
+      make('label', { textContent: 'Which voice' }, speakerSel),
       make('label', { textContent: '⏩ Speed ' }, rateVal, rateIn),
-      make('label', { textContent: '🎚️ Pitch ' }, pitchVal, pitchIn),
+      make('label', { textContent: '🗣️ Backup voice (this device, used if the human voice is unavailable)' }, voiceSel),
+      make('label', { textContent: '🎚️ Backup pitch ' }, pitchVal, pitchIn),
       testBtn, resetBtn
     )
     box.hidden = true
 
     const savePrefs = () => { try { localStorage.setItem(VOICE_KEY, JSON.stringify(vp)) } catch (error) {} }
+    function fillSpeakers() {
+      speakerSel.textContent = ''
+      HUMAN_VOICES[vp.gender].forEach(([v, t]) => speakerSel.append(make('option', { value: v, textContent: t, selected: v === vp.speaker })))
+    }
     const syncSliders = () => {
+      humanOn.checked = vp.human !== false
+      genderSel.value = vp.gender
+      fillSpeakers()
+      speakerSel.disabled = genderSel.disabled = !humanOn.checked
       rateIn.value = vp.rate
       pitchIn.value = vp.pitch
       rateVal.textContent = Number(vp.rate).toFixed(2) + 'x'
@@ -648,10 +875,13 @@
     }
 
     voiceSel.addEventListener('change', () => { vp.name = voiceSel.value; savePrefs() })
+    humanOn.addEventListener('change', () => { vp.human = humanOn.checked; speakerSel.disabled = genderSel.disabled = !vp.human; savePrefs() })
+    genderSel.addEventListener('change', () => { vp.gender = genderSel.value; vp.speaker = HUMAN_VOICES[vp.gender][0][0]; fillSpeakers(); savePrefs() })
+    speakerSel.addEventListener('change', () => { vp.speaker = speakerSel.value; savePrefs() })
     rateIn.addEventListener('input', () => { vp.rate = Number(rateIn.value); syncSliders(); savePrefs() })
     pitchIn.addEventListener('input', () => { vp.pitch = Number(pitchIn.value); syncSliders(); savePrefs() })
     testBtn.addEventListener('click', () => { unlockSpeech(); speak('Hey, this is how I sound. Rock beats scissors, every time.') })
-    resetBtn.addEventListener('click', () => { vp.name = ''; vp.rate = 1.05; vp.pitch = 1; savePrefs(); fillVoices(); syncSliders() })
+    resetBtn.addEventListener('click', () => { vp.name = ''; vp.rate = 1.05; vp.pitch = 1; vp.human = true; vp.gender = 'girl'; vp.speaker = 'asteria'; savePrefs(); fillVoices(); syncSliders() })
     vsBtn.addEventListener('click', () => {
       box.hidden = !box.hidden
       if (!box.hidden) { fillVoices(); syncSliders() }
