@@ -131,7 +131,7 @@
       profileFallback.innerHTML = '<span class="rps-nav-icon">👤</span>Profile / Sign in';
       accountActions.appendChild(profileFallback);
     }
-    const quickIds = ['lb-btn','mp-btn','arcade-hub-btn','premium-subscribe-btn','friends-btn'];
+    const quickIds = ['lb-btn','mp-btn','arcade-hub-btn','premium-subscribe-btn','friends-btn','ch-btn','to-btn','control-panel-btn'];
     quickIds.forEach(id => {
       const el = document.getElementById(id);
       if (el && !drawer.contains(el)) {
@@ -140,15 +140,26 @@
       }
     });
     // Move only header-level controls related to tournaments, subscription, or profile.
-    document.querySelectorAll('button,a').forEach(el => {
-      if (drawer.contains(el) || el.id === 'rps-menu-toggle' || el.closest('[role="dialog"],.modal,#profile-layer,#auth-layer')) return;
-      const label = (el.innerText || el.getAttribute('aria-label') || '').trim().toLowerCase();
-      if (!label || !/(tournament|subscription|subscribe|premium|profile|account|sign in|log in)/.test(label)) return;
-      if (el.closest('header,nav,.top-bar,.topbar,.toolbar,.header-actions,.ui-actions') || el.classList.contains('ui-fab')) {
-        quickActions.appendChild(el);
-        el.classList.add('rps-nav-moved-action');
-      }
-    });
+    const moveHeaderActions = () => {
+      document.querySelectorAll('button,a').forEach(el => {
+        if (drawer.contains(el) || el.id === 'rps-menu-toggle' || el.closest('[role="dialog"],.modal,#profile-layer,#auth-layer,#prem-layer,#ch-layer,#to-layer')) return;
+        const label = (el.innerText || el.getAttribute('aria-label') || el.textContent || '').trim().toLowerCase();
+        const isControlPanel = /control\\s*panel|premium options|settings panel/.test(label);
+        const isChallenge = /challenge/.test(label) || el.id === 'ch-btn';
+        const isTournament = /tournament/.test(label) || el.id === 'to-btn';
+        const isKnownAction = ['ch-btn','to-btn','control-panel-btn'].includes(el.id);
+        if (!isControlPanel && !isChallenge && !isTournament && !isKnownAction) return;
+        if (el.closest('header,nav,.top-bar,.topbar,.toolbar,.header-actions,.ui-actions') || el.classList.contains('ui-fab') || isKnownAction) {
+          quickActions.appendChild(el);
+          el.classList.add('rps-nav-moved-action');
+          el.style.setProperty('width','100%');
+          el.style.setProperty('box-sizing','border-box');
+        }
+      });
+    };
+    moveHeaderActions();
+    // Challenge, tournament, and premium/control-panel buttons may be created after this script runs.
+    new MutationObserver(() => moveHeaderActions()).observe(document.body, { childList:true, subtree:true });
     [accountActions,quickActions].forEach(group => {
       group.querySelectorAll('button,a').forEach(el => {
         if (el.id === 'user-chip') return;
