@@ -121,8 +121,8 @@
     if (th) css.push(`:root { --green: ${th[0]}; --blue: ${th[1]}; --purple: ${th[2]}; }`)
 
     const bg = g('bg')
-    if (BACKGROUNDS[bg]) css.push(`html { background: ${BACKGROUNDS[bg]} !important; background-attachment: fixed !important; }`)
-    if (bg === 'grid') css.push(`html { background-color: #07060d !important; background-image: linear-gradient(rgba(34, 245, 160, 0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 245, 160, 0.09) 1px, transparent 1px) !important; background-size: 34px 34px !important; background-attachment: fixed !important; }`)
+    if (BACKGROUNDS[bg]) css.push(`html, body { background: ${BACKGROUNDS[bg]} !important; background-image: ${BACKGROUNDS[bg].startsWith('linear-gradient') || BACKGROUNDS[bg].startsWith('radial-gradient') ? BACKGROUNDS[bg] : 'none'} !important; background-attachment: fixed !important; min-height: 100%; }`)
+    if (bg === 'grid') css.push(`html, body { background-color: #07060d !important; background-image: linear-gradient(rgba(34, 245, 160, 0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 245, 160, 0.09) 1px, transparent 1px) !important; background-size: 34px 34px !important; background-attachment: fixed !important; }`)
 
     if (FONTS[g('font')]) css.push(`body, button, input, select, textarea { font-family: ${FONTS[g('font')]} !important; }`)
     if (g('size') === 'small') css.push('body { zoom: 0.92; }')

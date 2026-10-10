@@ -1372,7 +1372,7 @@ async function loadFriends() {
     miniButton('Decline', 'red', () => friendAction('friend-decline', q.name))
   ])))
 
-  friends.forEach(f => list.append(friendRow(f, [
+  friends.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })).forEach(f => list.append(friendRow(f, [
     miniButton(f.waiting ? 'Join' : 'Play', 'green', () => playFriend(f.name)),
     miniButton('✕', 'red', () => {
       if (confirm('Remove ' + f.name + ' from your friends?')) friendAction('friend-remove', f.name)
