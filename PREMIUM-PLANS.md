@@ -20,7 +20,7 @@ Important: these are the intended tier benefits displayed to customers. A benefi
 
 ## Current Stripe test-mode catalog
 
-These objects were created in the connected Stripe sandbox. They are for testing only and do not collect live payments. Product names in Stripe may still use the previous names; the website shows the new public-facing names.
+These objects were created in the connected Stripe sandbox. They are for testing only and do not collect live payments. The Stripe test-mode product names have also been updated to Premium, Ultra, and Ultra Plus.
 
 - Premium / individual product: `prod_VPhVP1JAHjxtL9`
 - Premium / individual price: `price_1UOs6G3FalmEL64xoVuwHt5f`
