@@ -7,7 +7,7 @@ All amounts are CAD and billed monthly. The public-facing names are Premium, Ult
 | Public plan | Internal key | Price | Accounts included | Trial |
 | --- | --- | ---: | ---: | --- |
 | Premium | `individual` | $9.99/month base + $3/month per extra account | 1 total included | 7 days |
-| Ultra | `duo` | $11.99/month base + $3/month per extra account | 1 total included | None |
+| Ultra | `duo` | $14.99/month base + $3/month per extra account | 1 total included | None |
 | Ultra Plus | `family` | $31.99/month base + $3/month per extra account | 1 total included | None |
 
 ## Per-account pricing change requested
