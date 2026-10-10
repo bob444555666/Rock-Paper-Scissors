@@ -122,7 +122,7 @@
 
   function renderTabs() {
     tabsBox.textContent = ''
-    ;[['server', '🖥️ Server'], ['challenges', '🎯 Challenges'], ['tournaments', '🏟️ Tournaments'], ['premium', '⭐ Premium']].forEach(([id, label]) => {
+    ;[['server', '🖥️ Server'], ['users', '👤 Accounts'], ['challenges', '🎯 Challenges'], ['tournaments', '🏟️ Tournaments'], ['premium', '⭐ Premium']].forEach(([id, label]) => {
       const t = make('button', { className: 'tab' + (tab === id ? ' on' : ''), type: 'button', textContent: label })
       t.addEventListener('click', () => { tab = id; msg.textContent = ''; render() })
       tabsBox.append(t)
@@ -295,11 +295,43 @@
     })
   }
 
+  async function tabUsers() {
+    content.append(make('h3', { textContent: 'Account management' }), make('p', { className: 'st-small', textContent: 'Delete an account permanently. This also removes its staff access. This action cannot be undone.' }))
+    const load = make('button', { className: 'big', type: 'button', textContent: 'Refresh accounts' })
+    const listBox = make('div')
+    load.addEventListener('click', async () => {
+      load.disabled = true
+      const r = await api('users')
+      load.disabled = false
+      listBox.textContent = ''
+      if (!r.ok) { listBox.append(make('p', { className: 'msg', textContent: r.data.error || 'Could not load accounts.' })); return }
+      const users = r.data.users || []
+      listBox.append(make('p', { className: 'st-small', textContent: 'Accounts: ' + users.length }))
+      if (!users.length) listBox.append(make('p', { className: 'msg', textContent: 'No accounts found.' }))
+      users.forEach(u => {
+        const info = make('span', { className: 'st-grow' }, make('b', { textContent: u.username || '(no username)' }), make('small', { className: 'st-small', textContent: u.email || 'No email on file' }))
+        const del = make('button', { className: 'st-mini red', type: 'button', textContent: 'Delete account' })
+        del.addEventListener('click', async () => {
+          if (!confirm('Permanently delete account ' + (u.username || u.id) + '? This cannot be undone.')) return
+          del.disabled = true
+          const result = await api('user-delete', { id: u.id })
+          if (!result.ok) { del.disabled = false; msg.textContent = result.data.error || 'Account deletion failed.'; return }
+          msg.textContent = 'Account deleted.'
+          await load.click()
+        })
+        listBox.append(make('div', { className: 'st-box st-row' }, info, del))
+      })
+    })
+    content.append(load, listBox)
+    await load.click()
+  }
+
   function render() {
     renderTabs()
     content.textContent = ''
     if (!data) { content.append(make('p', { className: 'msg', textContent: 'Loading...' })); return }
     if (tab === 'server') tabServer()
+    else if (tab === 'users') { tabUsers() }
     else if (tab === 'challenges') tabChallenges()
     else if (tab === 'tournaments') tabTournaments()
     else tabPremium()
