@@ -1,4 +1,5 @@
-/* AI Coach (v5). Voice now works on iPhone/iPad Safari too (see the iOS notes in the voice section).
+/* AI Coach (v6). Players can now pick their own voice, speed and pitch (the Voice button).
+   v5 notes: Voice now works on iPhone/iPad Safari too (see the iOS notes in the voice section).
    v4 notes:  Now with live voice: tap the mic to talk, or use Live talk for a hands-free back-and-forth.
    (Uses the browser's built-in speech recognition and speech synthesis. No extra server needed.)
    v3 notes:  Talks to the real AI on the server (/ai/chat), so the Voice Control settings really apply.
@@ -419,6 +420,9 @@
   const SR = iosStandalone ? null : (window.SpeechRecognition || window.webkitSpeechRecognition)
   const canSpeak = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'
   const SPEAK_KEY = 'aiSpeak'
+  const VOICE_KEY = 'aiVoicePrefs'
+  const vp = { name: '', rate: 1.05, pitch: 1 } // the player's own voice choices (saved on their device)
+  try { Object.assign(vp, JSON.parse(localStorage.getItem(VOICE_KEY) || '{}')) } catch (error) {}
   let speakOn = false
   try { speakOn = localStorage.getItem(SPEAK_KEY) === '1' } catch (error) {}
   let live = false       // hands-free conversation: listen, answer out loud, listen again
@@ -463,6 +467,7 @@
   function pickVoice() {
     let voices = []
     try { voices = speechSynthesis.getVoices() || [] } catch (error) {}
+    if (vp.name) { const chosen = voices.find(v => v.name === vp.name); if (chosen) return chosen }
     voices = voices.filter(v => !NOVELTY.test(v.name))
     if (!voices.length) return null
     const lang = (navigator.language || 'en-US').toLowerCase()
@@ -499,7 +504,8 @@
     parts.forEach(p => {
       const u = new SpeechSynthesisUtterance(p)
       if (voice) { u.voice = voice; u.lang = voice.lang } else u.lang = navigator.language || 'en-US'
-      u.rate = 1.05
+      u.rate = vp.rate
+      u.pitch = vp.pitch
       u.onend = u.onerror = () => { if (--left <= 0) finish() }
       speechSynthesis.speak(u)
     })
@@ -593,6 +599,66 @@
     voiceUi()
   })
   if (canSpeak) { try { speechSynthesis.getVoices(); speechSynthesis.addEventListener('voiceschanged', () => speechSynthesis.getVoices()) } catch (error) {} } // some browsers load voices lazily
+
+  // ---------- voice settings the player can edit: which voice, how fast, how high ----------
+  if (canSpeak) {
+    const vstyle = document.createElement('style')
+    vstyle.textContent = `
+      #ai-panel .ai-vset { display: block; flex: 1 1 100%; padding: 8px 0 2px; font-size: 13px; }
+      #ai-panel .ai-vset[hidden] { display: none; }
+      #ai-panel .ai-vset label { display: block; margin: 6px 0; }
+      #ai-panel .ai-vset select, #ai-panel .ai-vset input[type=range] { display: block; width: 100%; margin-top: 4px; }
+      #ai-panel .ai-vset select { padding: 8px; color: #fff; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px; }
+    `
+    document.head.appendChild(vstyle)
+
+    const vsBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '⚙️ Voice' })
+    const voiceSel = make('select')
+    const rateVal = make('b')
+    const pitchVal = make('b')
+    const rateIn = make('input', { type: 'range', min: 0.7, max: 1.5, step: 0.05 })
+    const pitchIn = make('input', { type: 'range', min: 0.6, max: 1.6, step: 0.05 })
+    const testBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '▶ Test voice' })
+    const resetBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: 'Reset' })
+    const box = make('div', { className: 'ai-vset' },
+      make('label', { textContent: '🗣️ Voice' }, voiceSel),
+      make('label', { textContent: '⏩ Speed ' }, rateVal, rateIn),
+      make('label', { textContent: '🎚️ Pitch ' }, pitchVal, pitchIn),
+      testBtn, resetBtn
+    )
+    box.hidden = true
+
+    const savePrefs = () => { try { localStorage.setItem(VOICE_KEY, JSON.stringify(vp)) } catch (error) {} }
+    const syncSliders = () => {
+      rateIn.value = vp.rate
+      pitchIn.value = vp.pitch
+      rateVal.textContent = Number(vp.rate).toFixed(2) + 'x'
+      pitchVal.textContent = Number(vp.pitch).toFixed(2)
+    }
+    function fillVoices() {
+      let list = []
+      try { list = speechSynthesis.getVoices() || [] } catch (error) {}
+      const lang = (navigator.language || 'en').slice(0, 2).toLowerCase()
+      const mine = list.filter(v => !NOVELTY.test(v.name) && (v.lang || '').toLowerCase().startsWith(lang))
+      voiceSel.textContent = ''
+      voiceSel.append(make('option', { value: '', textContent: 'Automatic (best available)' }))
+      ;(mine.length ? mine : list).forEach(v => {
+        voiceSel.append(make('option', { value: v.name, textContent: v.name, selected: v.name === vp.name }))
+      })
+    }
+
+    voiceSel.addEventListener('change', () => { vp.name = voiceSel.value; savePrefs() })
+    rateIn.addEventListener('input', () => { vp.rate = Number(rateIn.value); syncSliders(); savePrefs() })
+    pitchIn.addEventListener('input', () => { vp.pitch = Number(pitchIn.value); syncSliders(); savePrefs() })
+    testBtn.addEventListener('click', () => { unlockSpeech(); speak('Hey, this is how I sound. Rock beats scissors, every time.') })
+    resetBtn.addEventListener('click', () => { vp.name = ''; vp.rate = 1.05; vp.pitch = 1; savePrefs(); fillVoices(); syncSliders() })
+    vsBtn.addEventListener('click', () => {
+      box.hidden = !box.hidden
+      if (!box.hidden) { fillVoices(); syncSliders() }
+    })
+    try { speechSynthesis.addEventListener('voiceschanged', () => { if (!box.hidden) fillVoices() }) } catch (error) {}
+    voiceRow.append(vsBtn, box)
+  }
   voiceUi()
 
   // ---------- secret Voice Control panel ----------
