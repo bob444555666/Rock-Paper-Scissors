@@ -35,7 +35,7 @@
   const valid = (v, values, fallback) => values.includes(v) ? v : fallback;
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const particleCanvas = document.createElement('canvas');
-  particleCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none';
+  particleCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none';
   document.body.appendChild(particleCanvas);
   const pctx = particleCanvas.getContext ? particleCanvas.getContext('2d') : null;
   let particleMode = 'none', particles = [], particleFrame = 0, sparkleOn = false, sparkleAt = 0;
