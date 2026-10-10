@@ -1087,7 +1087,7 @@ async function handleConnectFail() {
     }
   } catch (error) {}
 
-  resultElement.textContent = 'Could not join. The room may be full, or custom room codes may require Premium. Use Quick Play for free matchmaking.'
+  resultElement.textContent = 'Custum room play is for premium members only.'
 }
 
 async function startAuth() {
