@@ -6,17 +6,23 @@ All amounts are CAD and billed monthly. The public-facing names are Premium, Ult
 
 | Public plan | Internal key | Price | Accounts included | Trial |
 | --- | --- | ---: | ---: | --- |
-| Premium | `individual` | $9.99/month | 1 total | 7 days |
-| Ultra | `duo` | $11.99/month | 2 total (owner + 1) | None |
-| Ultra Plus | `family` | $31.99/month | 10 total (owner + up to 9) | None |
+| Premium | `individual` | $9.99/month base + $3/month per extra account | 1 total included | 7 days |
+| Ultra | `duo` | $14.99/month base + $5/month per extra account | 1 total included | None |
+| Ultra Plus | `family` | $31.99/month base + $7/month per extra account | 1 total included | None |
+
+## Per-account pricing change requested
+
+The intended policy is that every tier includes only the subscribing account. Each additional account costs CAD $3/month on Premium, $5/month on Ultra, and $7/month on Ultra Plus, added to the selected tier's base price. There is no tier-specific default allowance for multiple accounts under the new policy.
+
+The plan page now displays the intended policy and estimates the total, but it deliberately blocks checkout when extra accounts are selected. This is a safety guard: the current Worker checkout and entitlement endpoints still use the older `duo` limit of 2 accounts and `family` limit of 10 accounts, and do not yet calculate or collect the tier-specific recurring add-on ($3 Premium, $5 Ultra, $7 Ultra Plus per extra account). Do not remove that guard until the Worker validates the requested seat count, creates a Stripe subscription with the correct recurring add-on quantity, and enforces the purchased account limit server-side. The add-on recurring Stripe Price must be created in both test and live modes before enabling it.
 
 ## Benefits shown on the plan page
 
-- **Premium:** premium arcade modes and challenges, exclusive skins/themes, personal match stats and streaks, ranked-match access, private rooms, friend rematches, profile badge and emotes.
-- **Ultra:** everything in Premium; one additional account; advanced stats and match history; expanded cosmetics and victory animations; custom private-room settings; priority matchmaking; friend challenges; seasonal rewards and Ultra badge.
-- **Ultra Plus:** everything in Premium and Ultra; up to nine additional accounts; larger private rooms and group challenges; advanced leaderboard/performance breakdowns; exclusive frames, skins and effects; private tournaments; VIP status and top-tier customization.
+- **Premium:** ad-free play; exclusive themes, backgrounds and move styles; win animations, confetti and sound options; personal match history, win rate and streak records; profile badge/emotes; custom button, font and interface styling.
+- **Ultra:** everything in Premium; extra accounts at $5 CAD per account per month; competitive leagues and seasonal leaderboards; analytics by move, opponent and game mode; best-of-5/best-of-7/custom formats; friend challenges and custom room rules; daily missions, seasonal trophies, and exclusive Ultra profile effects.
+- **Ultra Plus:** everything in Premium and Ultra; extra accounts at $7 CAD per account per month; private tournaments and larger group competitions; adjustable AI practice opponents; long-term performance trends; monthly cosmetics and rare collectibles; elite crown/name effects; priority support.
 
-Important: these are the intended tier benefits displayed to customers. A benefit only works in gameplay after its actual game UI, service logic, and server-side entitlement checks are implemented. The existing subscription backend handles plan billing, Premium status, and group-member limits; do not treat the feature list alone as proof that ranked matchmaking, video chat, tournaments, or every cosmetic feature has been shipped.
+Implementation status: the plan page now presents a deduplicated benefits list, but the list is not proof that every benefit is live in gameplay. The existing Worker currently handles checkout, subscription status, and group-member limits. New competitive leagues, detailed analytics, custom match lengths, adjustable AI practice, tournament hosting, monthly rewards, ad-free enforcement, and priority support still need their respective game UI/service logic and server-side entitlement checks before being advertised as active. Existing Premium cosmetics should be reused rather than duplicated.
 
 ## Current Stripe test-mode catalog
 
