@@ -69,7 +69,6 @@
         <a class="rps-nav-link" href="/"><span class="rps-nav-icon">🎮</span>Play</a>
         <a class="rps-nav-link" href="/leaderboard.html"><span class="rps-nav-icon">🏆</span>Leaderboard</a>
         <a class="rps-nav-link" href="/multiplayer.html"><span class="rps-nav-icon">👥</span>3–4 Player Rooms</a>
-        <a class="rps-nav-link" href="/tournament.html"><span class="rps-nav-icon">🥇</span>Tournaments</a>
         <a class="rps-nav-link" href="/arcade-hub.html"><span class="rps-nav-icon">🕹️</span>Arcade Hub</a>
         <a class="rps-nav-link" href="/quests.html"><span class="rps-nav-icon">🎯</span>Quests</a>
         <a class="rps-nav-link" href="/achievements.html"><span class="rps-nav-icon">🏅</span>Achievements</a>
