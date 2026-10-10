@@ -11,6 +11,90 @@
   style.id = 'prem-global-style';
   document.head.appendChild(style);
 
+  // A shared, accessible slide-out menu keeps navigation tidy across pages.
+  function installSiteMenu() {
+    if (document.getElementById('rps-menu-toggle') || !document.body) return;
+    const navCss = document.createElement('style');
+    navCss.id = 'rps-menu-css';
+    navCss.textContent = \`
+      #rps-menu-toggle{position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:1200;display:flex;align-items:center;gap:9px;padding:11px 15px;border:1px solid rgba(255,255,255,.16);border-radius:14px;background:rgba(14,13,24,.9);color:#f7f6ff;font:700 14px system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,.28);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:transform .18s,border-color .18s}
+      #rps-menu-toggle:hover{transform:translateY(-1px);border-color:var(--green,#22f5a0)}
+      #rps-menu-toggle .rps-menu-glyph{font-size:18px;line-height:1}
+      #rps-menu-scrim{position:fixed;inset:0;z-index:1201;background:rgba(3,3,10,.64);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .22s}
+      #rps-menu-scrim.open{opacity:1;pointer-events:auto}
+      #rps-menu-drawer{position:fixed;top:0;right:0;bottom:0;z-index:1202;width:min(360px,88vw);padding:calc(22px + env(safe-area-inset-top)) 20px calc(22px + env(safe-area-inset-bottom));overflow-y:auto;background:linear-gradient(160deg,rgba(24,21,42,.99),rgba(8,10,22,.99));border-left:1px solid rgba(255,255,255,.12);box-shadow:-24px 0 70px rgba(0,0,0,.45);transform:translateX(105%);visibility:hidden;transition:transform .24s ease,visibility .24s}
+      #rps-menu-drawer.open{transform:translateX(0);visibility:visible}
+      .rps-menu-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px}
+      .rps-menu-brand{font-size:19px;font-weight:850;color:#fff}
+      .rps-menu-sub{margin:0 0 20px;color:rgba(255,255,255,.56);font-size:11px;letter-spacing:1.6px;text-transform:uppercase}
+      #rps-menu-close{width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-size:22px;cursor:pointer}
+      .rps-menu-links{display:grid;gap:7px}
+      .rps-menu-link{display:flex;align-items:center;gap:12px;min-height:48px;padding:11px 13px;border:1px solid rgba(255,255,255,.075);border-radius:13px;background:rgba(255,255,255,.035);color:#f4f2ff;text-decoration:none;font:600 14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;transition:background .16s,border-color .16s,transform .16s}
+      .rps-menu-link:hover,.rps-menu-link:focus-visible{background:rgba(255,255,255,.085);border-color:rgba(34,245,160,.42);transform:translateX(-2px);outline:none}
+      .rps-menu-emoji{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:10px;background:rgba(168,85,247,.15);font-size:16px}
+      #rps-menu-account{margin:0 0 15px}
+      #rps-menu-account .ui-fab{position:static!important;display:block;width:100%;max-width:none;text-align:left;margin:0 0 8px;padding:12px 14px;font-size:14px;box-shadow:none!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:13px;background:rgba(255,255,255,.055)!important}
+      #rps-menu-account #user-chip[hidden]{display:none!important}
+      body.rps-menu-open{overflow:hidden}
+      @media(max-width:480px){#rps-menu-toggle{top:calc(10px + env(safe-area-inset-top));right:10px;padding:10px 12px}#rps-menu-drawer{width:min(340px,90vw)}}
+      @media(prefers-reduced-motion:reduce){#rps-menu-toggle,#rps-menu-scrim,#rps-menu-drawer,.rps-menu-link{transition:none}}
+    \`;
+    document.head.appendChild(navCss);
+    const toggle = document.createElement('button');
+    toggle.id = 'rps-menu-toggle'; toggle.type = 'button';
+    toggle.setAttribute('aria-label','Open navigation menu');
+    toggle.setAttribute('aria-controls','rps-menu-drawer');
+    toggle.setAttribute('aria-expanded','false');
+    toggle.innerHTML = '<span class="rps-menu-glyph" aria-hidden="true">☰</span><span>Menu</span>';
+    const scrim = document.createElement('div');
+    scrim.id = 'rps-menu-scrim'; scrim.setAttribute('aria-hidden','true');
+    const drawer = document.createElement('aside');
+    drawer.id = 'rps-menu-drawer'; drawer.setAttribute('aria-label','Site navigation'); drawer.setAttribute('aria-hidden','true');
+    drawer.innerHTML = \`
+      <div class="rps-menu-head"><div class="rps-menu-brand">✊ Stone Paper Scissors</div><button id="rps-menu-close" type="button" aria-label="Close menu">×</button></div>
+      <p class="rps-menu-sub">Jump to a section</p>
+      <div id="rps-menu-account"></div>
+      <nav class="rps-menu-links">
+        <a class="rps-menu-link" href="/"><span class="rps-menu-emoji">🎮</span><span>Play the game</span></a>
+        <a class="rps-menu-link" href="/leaderboard.html"><span class="rps-menu-emoji">🏆</span><span>Leaderboard</span></a>
+        <a class="rps-menu-link" href="/multiplayer.html"><span class="rps-menu-emoji">👥</span><span>3–4 Player Rooms</span></a>
+        <a class="rps-menu-link" href="/arcade-hub.html"><span class="rps-menu-emoji">🕹️</span><span>Arcade Hub</span></a>
+        <a class="rps-menu-link" href="/quests.html"><span class="rps-menu-emoji">🎯</span><span>Quests</span></a>
+        <a class="rps-menu-link" href="/achievements.html"><span class="rps-menu-emoji">🏅</span><span>Achievements</span></a>
+        <a class="rps-menu-link" href="/vault.html"><span class="rps-menu-emoji">🎨</span><span>Style Vault</span></a>
+        <a class="rps-menu-link" href="/subscribe.html"><span class="rps-menu-emoji">⭐</span><span>Premium</span></a>
+        <a class="rps-menu-link" href="/privacy.html"><span class="rps-menu-emoji">🔒</span><span>Privacy Policy</span></a>
+      </nav>\`;
+    document.body.append(toggle, scrim, drawer);
+    const account = drawer.querySelector('#rps-menu-account');
+    const userChip = document.getElementById('user-chip');
+    if (userChip) account.appendChild(userChip);
+    ['lb-btn','mp-btn','arcade-hub-btn','premium-subscribe-btn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.setProperty('display','none','important');
+    });
+    const open = () => {
+      drawer.classList.add('open'); scrim.classList.add('open'); document.body.classList.add('rps-menu-open');
+      toggle.setAttribute('aria-expanded','true'); toggle.setAttribute('aria-label','Close navigation menu');
+      drawer.setAttribute('aria-hidden','false'); scrim.setAttribute('aria-hidden','false');
+      drawer.querySelector('#rps-menu-close').focus();
+    };
+    const close = () => {
+      drawer.classList.remove('open'); scrim.classList.remove('open'); document.body.classList.remove('rps-menu-open');
+      toggle.setAttribute('aria-expanded','false'); toggle.setAttribute('aria-label','Open navigation menu');
+      drawer.setAttribute('aria-hidden','true'); scrim.setAttribute('aria-hidden','true'); toggle.focus();
+    };
+    toggle.addEventListener('click', () => drawer.classList.contains('open') ? close() : open());
+    drawer.querySelector('#rps-menu-close').addEventListener('click', close);
+    scrim.addEventListener('click', close);
+    drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      drawer.classList.remove('open'); scrim.classList.remove('open'); document.body.classList.remove('rps-menu-open');
+    }));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) close(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installSiteMenu, { once: true });
+  else installSiteMenu();
+
   const THEMES = {
     neon: ['#22f5a0', '#3b82f6', '#a855f7'], gold: ['#fbbf24', '#f59e0b', '#fcd34d'],
     ocean: ['#38bdf8', '#2563eb', '#22d3ee'], sunset: ['#fb923c', '#f43f5e', '#ec4899'],
