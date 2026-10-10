@@ -26,7 +26,7 @@
 <main>
   <div class="eyebrow">🎵 Your next match, your soundtrack</div>
   <h1>Gaming Music</h1>
-  <p class="intro">Premium members can play all four gaming playlists here. Upgrade to Premium to unlock the embedded Spotify player.</p>
+  <p class="intro">Everyone can listen to the gaming playlists below. Premium members can also connect their own Spotify account.</p>
   <section class="playlist-grid" aria-label="Choose a playlist">
     <button class="pick" type="button" data-title="Epic Gaming" data-description="EDM, remixes, and high-energy gaming tracks" aria-pressed="true"><span class="emoji">⚔️</span><strong>Epic Gaming</strong><small>EDM • Remixes • Hype</small></button>
     <button class="pick" type="button" data-title="Gaming Phonk" data-description="Hard-hitting phonk for intense matches" aria-pressed="false"><span class="emoji">🔥</span><strong>Gaming Phonk</strong><small>Fast • Heavy • Intense</small></button>
@@ -34,102 +34,126 @@
     <button class="pick" type="button" data-title="Focus Mode" data-description="Chillstep, bass, and trap for focused play" aria-pressed="false"><span class="emoji">🎯</span><strong>Focus Mode</strong><small>Focus • Chillstep • Bass</small></button>
   </section>
   <section class="player-panel" id="music-player-panel" aria-live="polite">
-    <div id="premium-lock" style="padding:22px;border:1px solid rgba(168,85,247,.4);border-radius:16px;background:rgba(168,85,247,.08);">
-      <div style="font-size:28px;margin-bottom:8px">🔒 ⭐</div>
-      <h2 style="margin:0 0 8px">Gaming Music is a Premium perk</h2>
-      <p id="premium-lock-message" style="color:var(--muted);margin:0 0 16px">Checking your membership…</p>
-      <a id="music-upgrade" class="spotify-link" href="/subscribe.html">Unlock music with Premium →</a>
-      <p class="note">Already subscribed? <button id="music-check-premium" type="button" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:rgba(255,255,255,.07);color:#fff;cursor:pointer">Check Premium status</button></p>
+    <div id="premium-lock" style="padding:22px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.03);">
+      <div style="font-size:28px;margin-bottom:8px">🎧</div>
+      <h2 style="margin:0 0 8px">Gaming playlists</h2>
+      <p id="premium-lock-message" style="color:var(--muted);margin:0 0 16px">Choose a playlist above to start listening.</p>
     </div>
-    <div id="premium-player" hidden><div class="player-heading"><h2 id="player-title">⚔️ Epic Gaming</h2><a class="spotify-link" id="spotify-open" target="_blank" rel="noopener noreferrer">Open in Spotify ↗</a></div>
+    <div id="premium-player"><div class="player-heading"><h2 id="player-title">⚔️ Epic Gaming</h2><a class="spotify-link" id="spotify-open" target="_blank" rel="noopener noreferrer">Open playlist in Spotify ↗</a></div>
     <iframe id="spotify-player" title="Spotify gaming playlist player" src="about:blank" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-    <p class="note">Spotify controls playback. Spotify sign-in or a Spotify plan may still be required by Spotify for some playback features.</p></div>
+    <p class="note">Anyone can listen to these curated playlists. Premium members can connect their own Spotify account below. Spotify may require its own Premium plan for some playback features.</p></div>
+    <div id="spotify-connect-panel" style="margin-top:14px;padding:22px;border:1px solid rgba(168,85,247,.4);border-radius:16px;background:rgba(168,85,247,.08)">
+      <h2 style="margin:0 0 8px">⭐ Connect your Spotify account</h2>
+      <p id="spotify-connect-message" style="color:var(--muted);margin:0 0 14px">Checking Premium membership…</p>
+      <button id="spotify-connect" type="button" disabled style="border:0;border-radius:999px;padding:11px 17px;background:#1ed760;color:#07130b;font-weight:800;cursor:pointer;opacity:.65">Connect Spotify</button>
+      <a class="spotify-link" href="/subscribe.html" id="spotify-premium-link" style="margin-left:12px">Get Premium →</a>
+    </div>
   </section>
 </main>
 <script>
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev';
+  // Set this to the Spotify Developer app Client ID, and add this page as a Redirect URI
+  // in that app's dashboard before enabling Spotify account linking.
+  const SPOTIFY_CLIENT_ID = 'ADD_SPOTIFY_CLIENT_ID';
+  const REDIRECT_URI = location.origin + '/music.html';
   const buttons = [...document.querySelectorAll('.pick')];
   const player = document.getElementById('spotify-player');
   const title = document.getElementById('player-title');
   const open = document.getElementById('spotify-open');
-  const lock = document.getElementById('premium-lock');
   const lockMessage = document.getElementById('premium-lock-message');
   const premiumPlayer = document.getElementById('premium-player');
+  const connectMessage = document.getElementById('spotify-connect-message');
+  const connectButton = document.getElementById('spotify-connect');
+  const premiumLink = document.getElementById('spotify-premium-link');
   const icons = {'Epic Gaming':'⚔️','Gaming Phonk':'🔥','Chill Gaming':'🌌','Focus Mode':'🎯'};
-  let premium = false;
-  let checking = false;
-  // Playlist identifiers are not placed in links or DOM attributes until Premium is verified.
   const playlistIds = {
-    'Epic Gaming': 'NVhjMU5OcldBdXI3eWlGOGpFVkgyRQ==',
-    'Gaming Phonk': 'MkpJWUFqMkZzaEJhOEtvUTNxZDl2Ug==',
-    'Chill Gaming': 'NjRzZ1NlSHRnWG9vMnF1Tk1MYXU3Uw==',
-    'Focus Mode': 'MFB3VXB0Q242a054MUloazlOSHF6eg=='
+    'Epic Gaming': '5Xc1NNrWAur7yiF8jEVH2E',
+    'Gaming Phonk': '2JIYAj2FshBa8KoQ3qd9vR',
+    'Chill Gaming': '64sgSeHtgXoo2quNMLau7S',
+    'Focus Mode': '0PwUptCn6kNx1Ihk9NHqzz'
   };
-  const playlistId = name => atob(playlistIds[name] || '');
-  open.removeAttribute('href');
-
-  function token() {
-    try { return localStorage.getItem('token'); } catch (_) { return null; }
-  }
-  function showLocked(message) {
-    premium = false;
-    lock.hidden = false;
-    premiumPlayer.hidden = true;
-    lockMessage.textContent = message;
-    // Stop the embedded player from continuing if membership expires or sign-out occurs.
-    player.src = 'about:blank';
-  }
-  function showPlayer() {
-    premium = true;
-    lock.hidden = true;
-    premiumPlayer.hidden = false;
-    const selected = buttons.find(button => button.getAttribute('aria-pressed') === 'true') || buttons[0];
-    if (selected) loadPlaylist(selected);
-  }
-  async function checkPremium() {
-    if (checking) return;
-    checking = true;
-    const t = token();
-    if (!t) {
-      showLocked('Sign in to your account and get Premium to listen to these playlists.');
-      checking = false;
-      return;
-    }
-    lockMessage.textContent = 'Checking your Premium membership…';
-    try {
-      const res = await fetch(API + '/account/premium', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({token:t}),
-        cache: 'no-store'
-      });
-      if (!res.ok) throw new Error('Could not verify membership');
-      const data = await res.json();
-      if (data.premium === true) showPlayer();
-      else showLocked('A Premium membership is required to play music here. Upgrade or check your subscription status.');
-    } catch (_) {
-      showLocked('We could not verify your membership right now. Please try again. Music stays locked until Premium is verified.');
-    } finally { checking = false; }
-  }
+  let premium = false;
+  function token() { try { return localStorage.getItem('token'); } catch (_) { return null; } }
   function loadPlaylist(button) {
-    if (!premium) return;
     const name = button.dataset.title;
-    const id = playlistId(name);
+    const id = playlistIds[name];
     if (!id) return;
     buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
     title.textContent = (icons[name] || '🎵') + ' ' + name;
     player.src = 'https://open.spotify.com/embed/playlist/' + encodeURIComponent(id) + '?utm_source=generator';
     open.href = 'https://open.spotify.com/playlist/' + encodeURIComponent(id);
+    lockMessage.textContent = button.dataset.description || 'Now playing ' + name + '.';
   }
-  buttons.forEach(button => button.addEventListener('click', () => {
-    if (!premium) {
-      lockMessage.textContent = 'Upgrade to Premium and sign in to play this playlist.';
+  async function checkPremium() {
+    const t = token();
+    if (!t) {
+      premium = false;
+      connectMessage.textContent = 'Connect your own Spotify account is a Premium feature. Sign in and upgrade to unlock it.';
+      connectButton.disabled = true;
+      connectButton.style.opacity = '.65';
+      premiumLink.hidden = false;
       return;
     }
-    loadPlaylist(button);
-  }));
-  document.getElementById('music-check-premium').addEventListener('click', checkPremium);
+    connectMessage.textContent = 'Checking your Premium membership…';
+    try {
+      const res = await fetch(API + '/account/premium', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({token:t}), cache:'no-store'
+      });
+      if (!res.ok) throw new Error('Membership check failed');
+      const data = await res.json();
+      premium = data.premium === true;
+      if (premium) {
+        connectMessage.textContent = SPOTIFY_CLIENT_ID === 'ADD_SPOTIFY_CLIENT_ID'
+          ? 'Premium verified. Spotify account linking needs your Spotify Developer app Client ID before it can be enabled.'
+          : 'Premium verified. Connect your Spotify account to continue.';
+        connectButton.disabled = SPOTIFY_CLIENT_ID === 'ADD_SPOTIFY_CLIENT_ID';
+        connectButton.style.opacity = connectButton.disabled ? '.65' : '1';
+        premiumLink.hidden = true;
+      } else {
+        connectMessage.textContent = 'Your own Spotify account can be connected with a site Premium membership.';
+        connectButton.disabled = true;
+        connectButton.style.opacity = '.65';
+        premiumLink.hidden = false;
+      }
+    } catch (_) {
+      premium = false;
+      connectMessage.textContent = 'Could not verify Premium right now. Try again; account linking stays locked until verified.';
+      connectButton.disabled = true;
+      connectButton.style.opacity = '.65';
+      premiumLink.hidden = false;
+    }
+  }
+  function base64url(bytes) {
+    let s = '';
+    bytes.forEach(b => s += String.fromCharCode(b));
+    return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+  }
+  async function connectSpotify() {
+    if (!premium || SPOTIFY_CLIENT_ID === 'ADD_SPOTIFY_CLIENT_ID') return;
+    const bytes = crypto.getRandomValues(new Uint8Array(64));
+    const verifier = base64url(bytes);
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+    const challenge = base64url(new Uint8Array(digest));
+    sessionStorage.setItem('spotify_pkce_verifier', verifier);
+    const params = new URLSearchParams({
+      client_id:SPOTIFY_CLIENT_ID, response_type:'code', redirect_uri:REDIRECT_URI,
+      code_challenge_method:'S256', code_challenge:challenge,
+      scope:'user-read-private user-read-email playlist-read-private playlist-read-collaborative user-modify-playback-state user-read-playback-state streaming'
+    });
+    location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+  }
+  connectButton.addEventListener('click', connectSpotify);
+  const params = new URLSearchParams(location.search);
+  if (params.has('code')) {
+    connectMessage.textContent = 'Spotify authorized, but secure token exchange still needs to be configured on the server. Please contact site support to finish account linking.';
+    history.replaceState({}, '', location.pathname);
+  } else {
+    const selected = buttons[0];
+    if (selected) loadPlaylist(selected);
+  }
+  buttons.forEach(button => button.addEventListener('click', () => loadPlaylist(button)));
   checkPremium();
 })();
 </script>
