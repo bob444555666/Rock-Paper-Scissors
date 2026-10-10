@@ -294,7 +294,7 @@
   // ---------- Coach / Chat tabs ----------
   const INTRO = {
     coach: "Hey! I'm Coach. Ask me how to beat the computer, how to read an opponent, or what your last moves say about you. You can also tell me to change my orb color.",
-    chat: "Premium chat is on. Talk to me about anything, game or not. What's up?"
+    chat: "Ultra chat is on. Talk to me about anything, game or not. What's up?"
   }
 
   function updateLock() {
@@ -307,8 +307,8 @@
     if (locked) stopVoice()
     if (locked) {
       lock.textContent = aiMode === 'coach'
-        ? (session() ? '⭐ AI Coach is included with Premium, Ultra, and Ultra Plus. Upgrade your membership to unlock coaching.' : '⭐ Log in with a Premium, Ultra, or Ultra Plus account to use AI Coach.')
-        : (session() ? '💎 AI Chat is for Ultra and Ultra Plus members. Upgrade your membership to unlock conversational AI.' : '💎 Log in with an Ultra or Ultra Plus account to chat about anything.')
+        ? (session() ? '⭐ AI Coach is available to Premium, Ultra, and Ultra Plus members only.' : '⭐ AI Coach is for Premium, Ultra, and Ultra Plus members only. Log in to use AI Coach.')
+        : (session() ? '💎 AI Chat is for Ultra and Ultra Plus members only.' : '💎 AI Chat is for Ultra and Ultra Plus members only. Log in to use AI Chat.')
     }
     const showChips = aiMode === 'coach' && !log.querySelector('.ai-msg.me')
     chips.hidden = !showChips
