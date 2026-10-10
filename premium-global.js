@@ -6,6 +6,7 @@
   const CACHE = 'premiumPrefsCache';
   const token = () => { try { return localStorage.getItem('token'); } catch (e) { return null; } };
   const readCache = () => { try { return JSON.parse(localStorage.getItem(CACHE) || 'null'); } catch (e) { return null; } };
+  const titleOriginal = new Map();
   const style = document.createElement('style');
   style.id = 'prem-global-style';
   document.head.appendChild(style);
@@ -134,9 +135,10 @@
     if (p.rainbow === true) css.push('.title { background:linear-gradient(90deg,#f87171,#fbbf24,#4ade80,#38bdf8,#a78bfa,#f472b6,#f87171); background-size:300% 100%; -webkit-background-clip:text; background-clip:text; color:transparent !important; -webkit-text-fill-color:transparent; animation:prem-global-shift 6s linear infinite; } @keyframes prem-global-shift { to { background-position:300% 0; } }');
     style.textContent = css.join('\n');
 
-    if (typeof p.title === 'string' && p.title.trim()) {
-      const title = document.querySelector('.title');
-      if (title) title.textContent = p.title.trim().slice(0, 24);
+    const title = document.querySelector('.title');
+    if (title) {
+      if (!titleOriginal.has(title)) titleOriginal.set(title, title.textContent);
+      title.textContent = typeof p.title === 'string' && p.title.trim() ? p.title.trim().slice(0, 24) : titleOriginal.get(title);
     }
     startParticles(get('particles', ['none','stars','bubbles','snow','embers'], 'none'));\n    sparkleOn = p.sparkle === true;\n    document.documentElement.setAttribute('data-premium-look', 'on');
   }
