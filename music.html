@@ -55,7 +55,7 @@
   const API = 'https://rps-server.heyboernathan.workers.dev';
   // Set this to the Spotify Developer app Client ID, and add this page as a Redirect URI
   // in that app's dashboard before enabling Spotify account linking.
-  const SPOTIFY_CLIENT_ID = 'ADD_SPOTIFY_CLIENT_ID';
+  const SPOTIFY_CLIENT_ID = '815a6c7e47ad497da2a88227c871e9ad';
   const REDIRECT_URI = location.origin + '/music.html';
   const buttons = [...document.querySelectorAll('.pick')];
   const player = document.getElementById('spotify-player');
@@ -105,7 +105,7 @@
       const data = await res.json();
       premium = data.premium === true;
       if (premium) {
-        connectMessage.textContent = SPOTIFY_CLIENT_ID === 'ADD_SPOTIFY_CLIENT_ID'
+        connectMessage.textContent = SPOTIFY_CLIENT_ID === ''
           ? 'Premium verified. Spotify account linking needs your Spotify Developer app Client ID before it can be enabled.'
           : 'Premium verified. Connect your Spotify account to continue.';
         connectButton.disabled = SPOTIFY_CLIENT_ID === 'ADD_SPOTIFY_CLIENT_ID';
@@ -131,7 +131,7 @@
     return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
   }
   async function connectSpotify() {
-    if (!premium || SPOTIFY_CLIENT_ID === 'ADD_SPOTIFY_CLIENT_ID') return;
+    if (!premium || !SPOTIFY_CLIENT_ID) return;
     const bytes = crypto.getRandomValues(new Uint8Array(64));
     const verifier = base64url(bytes);
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
@@ -147,8 +147,43 @@
   connectButton.addEventListener('click', connectSpotify);
   const params = new URLSearchParams(location.search);
   if (params.has('code')) {
-    connectMessage.textContent = 'Spotify authorized, but secure token exchange still needs to be configured on the server. Please contact site support to finish account linking.';
-    history.replaceState({}, '', location.pathname);
+    (async () => {
+      const code = params.get('code');
+      const verifier = sessionStorage.getItem('spotify_pkce_verifier');
+      history.replaceState({}, '', location.pathname);
+      if (!verifier || !code) {
+        connectMessage.textContent = 'Spotify returned from login, but the verification data is missing. Please try connecting again.';
+        return;
+      }
+      connectMessage.textContent = 'Finishing Spotify connection…';
+      try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body:new URLSearchParams({
+            client_id:SPOTIFY_CLIENT_ID,
+            grant_type:'authorization_code',
+            code,
+            redirect_uri:REDIRECT_URI,
+            code_verifier:verifier
+          })
+        });
+        const data = await response.json();
+        sessionStorage.removeItem('spotify_pkce_verifier');
+        if (!response.ok || !data.access_token) throw new Error(data.error_description || data.error || 'Token exchange failed');
+        const profileResponse = await fetch('https://api.spotify.com/v1/me', {
+          headers:{Authorization:'Bearer ' + data.access_token}
+        });
+        if (!profileResponse.ok) throw new Error('Could not read Spotify profile');
+        const profile = await profileResponse.json();
+        connectMessage.textContent = 'Connected to Spotify as ' + (profile.display_name || profile.id) + '. This browser session is connected; reconnect after the access token expires.';
+        connectButton.textContent = 'Spotify connected ✓';
+        connectButton.disabled = true;
+        connectButton.style.opacity = '1';
+      } catch (error) {
+        connectMessage.textContent = 'Could not finish Spotify connection: ' + error.message + '. Check that the redirect URI in Spotify Developer settings is exactly ' + REDIRECT_URI + ' and try again.';
+      }
+    })();
   } else {
     const selected = buttons[0];
     if (selected) loadPlaylist(selected);
