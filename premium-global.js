@@ -17,7 +17,7 @@
     const css = document.createElement('style');
     css.id = 'rps-site-nav-css';
     css.textContent = `
-      #rps-menu-toggle{position:fixed;top:14px;left:14px;z-index:1402;width:48px;height:48px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);border-radius:15px;background:rgba(10,10,22,.94);color:#fff;box-shadow:0 8px 28px rgba(0,0,0,.3);cursor:pointer;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:transform .18s,border-color .18s,background .18s}
+      #rps-menu-toggle{position:fixed;top:calc(12px + env(safe-area-inset-top, 0px));left:calc(12px + env(safe-area-inset-left, 0px));z-index:2147483000;width:52px;height:52px;min-width:52px;min-height:52px;display:grid;place-items:center;border:2px solid rgba(34,245,160,.7);border-radius:15px;background:#0a0a16;color:#fff;box-shadow:0 6px 26px rgba(0,0,0,.55),0 0 0 3px rgba(34,245,160,.12);cursor:pointer;touch-action:manipulation;pointer-events:auto;visibility:visible;opacity:1;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:transform .18s,border-color .18s,background .18s}#rps-menu-toggle svg{display:block;width:26px;height:26px;flex:none} @media(max-width:600px){#rps-menu-toggle{top:calc(10px + env(safe-area-inset-top, 0px));left:calc(10px + env(safe-area-inset-left, 0px));width:54px;height:54px;min-width:54px;min-height:54px;border-radius:16px}}
       #rps-menu-toggle:hover{transform:translateY(-1px);border-color:rgba(34,245,160,.6);background:#151526}
       #rps-menu-toggle svg{width:23px;height:23px}
       #rps-menu-backdrop{position:fixed;inset:0;z-index:1400;background:rgba(3,4,12,.68);opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
