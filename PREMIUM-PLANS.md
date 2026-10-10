@@ -6,9 +6,15 @@ All amounts are CAD and billed monthly. The public-facing names are Premium, Ult
 
 | Public plan | Internal key | Price | Accounts included | Trial |
 | --- | --- | ---: | ---: | --- |
-| Premium | `individual` | $9.99/month | 1 total | 7 days |
-| Ultra | `duo` | $11.99/month | 2 total (owner + 1) | None |
-| Ultra Plus | `family` | $31.99/month | 10 total (owner + up to 9) | None |
+| Premium | `individual` | $9.99/month base + $3/month per extra account | 1 total included | 7 days |
+| Ultra | `duo` | $11.99/month base + $3/month per extra account | 1 total included | None |
+| Ultra Plus | `family` | $31.99/month base + $3/month per extra account | 1 total included | None |
+
+## Per-account pricing change requested
+
+The intended policy is that every tier includes only the subscribing account. Each additional account costs CAD $3 per month, added to the selected tier's base price. There is no tier-specific default allowance for multiple accounts under the new policy.
+
+The plan page now displays the intended policy and estimates the total, but it deliberately blocks checkout when extra accounts are selected. This is a safety guard: the current Worker checkout and entitlement endpoints still use the older `duo` limit of 2 accounts and `family` limit of 10 accounts, and do not yet calculate or collect the $3 per-account recurring add-on. Do not remove that guard until the Worker validates the requested seat count, creates a Stripe subscription with the correct recurring add-on quantity, and enforces the purchased account limit server-side. The add-on recurring Stripe Price must be created in both test and live modes before enabling it.
 
 ## Benefits shown on the plan page
 
