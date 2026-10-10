@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07060d">
+<title>3–4 Player Rock Paper Scissors | Premium</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;--green:#22f5a0;--blue:#3b82f6;--purple:#a855f7;--panel:rgba(18,16,30,.94)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px 14px 48px;background:#07060d;color:#fff;font:16px system-ui,sans-serif;display:flex;justify-content:center;align-items:flex-start}
+.wrap{width:min(100%,680px);margin:22px auto}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px}.back{color:var(--blue);text-decoration:none;font-weight:700}.pill{border:1px solid var(--green);border-radius:999px;padding:5px 10px;color:var(--green);font-size:12px;font-weight:800;letter-spacing:.08em}
+.card{background:var(--panel);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:clamp(18px,4vw,30px);box-shadow:0 18px 55px #0007}
+h1{font-size:clamp(28px,6vw,40px);margin:0 0 8px;letter-spacing:-.03em}.sub{color:#b9b8c8;line-height:1.5;margin:0 0 22px}
+label{display:block;font-size:13px;font-weight:700;color:#c9c7d8;margin:14px 0 7px}
+select,input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #454155;background:#0d0b16;color:#fff;font:inherit}
+button{font:inherit;font-weight:800;cursor:pointer;border:0;border-radius:12px;padding:13px 16px;background:var(--green);color:#080a0c}
+button:disabled{opacity:.4;cursor:not-allowed}.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}.secondary{background:#242132;color:#fff;border:1px solid #454155}.notice{min-height:24px;margin:14px 0 0;color:#fbbf24;line-height:1.4}.hidden{display:none!important}
+.room-code{font-size:clamp(26px,7vw,38px);font-weight:900;letter-spacing:.16em;color:var(--green);overflow-wrap:anywhere}.players{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}
+.player{padding:12px;border-radius:12px;border:1px solid #383347;background:#0d0b16}.player strong{display:block;overflow-wrap:anywhere}.player small{color:#aaa7bd}.moves{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.move{font-size:clamp(34px,8vw,52px);padding:14px 4px;background:#191626;border:1px solid #514767;color:white}.move span{display:block;font-size:13px;margin-top:5px}.move.selected{border-color:var(--green);box-shadow:0 0 18px #22f5a044}.result{min-height:58px;white-space:pre-line;line-height:1.5;color:#d8d5e5}.rules{margin-top:20px;color:#9c99ad;font-size:13px;line-height:1.5}
+@media(max-width:430px){.top{align-items:flex-start}.moves{gap:6px}.move{padding:12px 2px}}
+</style>
+<script src="premium-global.js?v=4" defer></script>
+<script src="multiplayer.js?v=1" defer></script>
+</head>
+<body>
+<main class="wrap">
+<div class="top"><a class="back" href="/">← Back to the main game</a><span class="pill">PREMIUM MODE</span></div>
+<section class="card">
+<h1>3–4 Player RPS</h1>
+<p class="sub">Play a live Rock Paper Scissors match with three or four people. Create a room and share its code, or join a friend's room. Every player needs Premium.</p>
+<div id="setup">
+<label for="player-count-select">Choose player count</label>
+<select id="player-count-select"><option value="3">3 players</option><option value="4">4 players</option></select>
+<div class="row" style="margin-top:16px"><button id="create-btn" type="button">Create room</button><button id="join-mode-btn" class="secondary" type="button">Join a room</button></div>
+<div id="join-controls" class="hidden">
+<label for="room-code-input">Room code</label><input id="room-code-input" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="Enter your friend's code">
+<button id="join-btn" type="button" style="width:100%;margin-top:10px">Join room</button>
+</div>
+<p id="setup-msg" class="notice" role="status"></p>
+</div>
+<div id="game" class="hidden">
+<div class="row" style="align-items:center"><div><div style="color:#aaa7bd;font-size:13px">ROOM CODE</div><div id="room-code-display" class="room-code"></div></div><button id="copy-btn" class="secondary" type="button">Copy code</button></div>
+<p id="game-status" class="notice" role="status">Connecting…</p>
+<div id="players" class="players"></div>
+<h2 style="font-size:19px;margin:20px 0 4px">Choose your move</h2>
+<p class="sub" style="margin-bottom:8px">Your move stays hidden until everyone has chosen.</p>
+<div class="moves">
+<button class="move" data-move="rock" type="button" disabled>✊<span>Rock</span></button>
+<button class="move" data-move="paper" type="button" disabled>✋<span>Paper</span></button>
+<button class="move" data-move="scissors" type="button" disabled>✌️<span>Scissors</span></button>
+</div>
+<div id="round-result" class="result" aria-live="polite">Waiting for players…</div>
+<div class="row"><button id="leave-btn" class="secondary" type="button">Leave room</button></div>
+</div>
+<div class="rules">Rules: if exactly two move types are chosen, the winning move beats the losing move. If everyone picks the same move or all three move types appear, the round is a tie.</div>
+</section>
+</main>
+</body>
+</html>
