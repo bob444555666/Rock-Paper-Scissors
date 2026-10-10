@@ -97,7 +97,7 @@
   });
 
   function apply(prefs, premium) {
-    if (!premium) { style.textContent = ''; startParticles('none'); sparkleOn = false; document.documentElement.removeAttribute('data-premium-look'); return; }
+    if (!premium) { style.textContent = ''; startParticles('none'); sparkleOn = false; const title = document.querySelector('.title'); if (title && titleOriginal.has(title)) title.textContent = titleOriginal.get(title); document.documentElement.removeAttribute('data-premium-look'); return; }
     const p = prefs || {};
     const get = (key, choices, fallback) => valid(p[key], choices, fallback);
     const css = [];
