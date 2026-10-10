@@ -33,9 +33,70 @@
   };
   const RINGS = { green: '#22f5a0', gold: '#fbbf24', pink: '#f472b6', blue: '#3b82f6', red: '#ef4444' };
   const valid = (v, values, fallback) => values.includes(v) ? v : fallback;
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const particleCanvas = document.createElement('canvas');
+  particleCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none';
+  document.body.appendChild(particleCanvas);
+  const pctx = particleCanvas.getContext ? particleCanvas.getContext('2d') : null;
+  let particleMode = 'none', particles = [], particleFrame = 0, sparkleOn = false, sparkleAt = 0;
+
+  function startParticles(mode) {
+    if (!pctx || reduced) mode = 'none';
+    particleMode = mode || 'none';
+    cancelAnimationFrame(particleFrame);
+    if (pctx) pctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+    if (particleMode === 'none') return;
+    particleCanvas.width = window.innerWidth;
+    particleCanvas.height = window.innerHeight;
+    const count = particleMode === 'stars' ? 70 : 42;
+    particles = Array.from({length: count}, () => ({
+      x: Math.random() * particleCanvas.width, y: Math.random() * particleCanvas.height,
+      r: particleMode === 'bubbles' ? 3 + Math.random() * 8 : .7 + Math.random() * 2,
+      speed: .3 + Math.random() * 1.2, phase: Math.random() * 6.28
+    }));
+    drawParticles();
+  }
+
+  function drawParticles() {
+    if (!pctx || particleMode === 'none') return;
+    const w = particleCanvas.width, h = particleCanvas.height, t = Date.now() / 1000;
+    pctx.clearRect(0, 0, w, h);
+    for (const q of particles) {
+      if (particleMode === 'stars') {
+        pctx.globalAlpha = .3 + .7 * Math.abs(Math.sin(t * q.speed + q.phase));
+        pctx.fillStyle = '#fff';
+      } else if (particleMode === 'bubbles') {
+        q.y -= q.speed * .6; q.x += Math.sin(t + q.phase) * .3;
+        pctx.globalAlpha = .35; pctx.strokeStyle = '#bfe9ff'; pctx.lineWidth = 1.5;
+        pctx.beginPath(); pctx.arc(q.x, q.y, q.r, 0, 6.28); pctx.stroke();
+      } else if (particleMode === 'snow') {
+        q.y += q.speed * .8; q.x += Math.sin(t + q.phase) * .4;
+        pctx.globalAlpha = .85; pctx.fillStyle = '#fff';
+      } else {
+        q.y -= q.speed * 1.4; q.x += Math.sin(t * 2 + q.phase) * .5;
+        pctx.globalAlpha = .4 + .6 * Math.abs(Math.sin(t * 3 + q.phase)); pctx.fillStyle = '#fb923c';
+      }
+      if (particleMode !== 'bubbles') { pctx.beginPath(); pctx.arc(q.x, q.y, q.r, 0, 6.28); pctx.fill(); }
+      if (q.y < -12) { q.y = h + 10; q.x = Math.random() * w; }
+      if (q.y > h + 12) { q.y = -10; q.x = Math.random() * w; }
+    }
+    pctx.globalAlpha = 1;
+    particleFrame = requestAnimationFrame(drawParticles);
+  }
+  window.addEventListener('resize', () => { if (particleMode !== 'none') startParticles(particleMode); });
+  document.addEventListener('pointermove', e => {
+    if (!sparkleOn || reduced || Date.now() - sparkleAt < 45) return;
+    sparkleAt = Date.now();
+    const s = document.createElement('span');
+    s.textContent = '✦';
+    s.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;z-index:96;pointer-events:none;color:var(--green);font-size:${10 + Math.random() * 12}px;transition:transform .7s,opacity .7s`;
+    document.body.appendChild(s);
+    requestAnimationFrame(() => { s.style.transform = `translate(${(Math.random() - .5) * 30}px,24px)`; s.style.opacity = '0'; });
+    setTimeout(() => s.remove(), 750);
+  });
 
   function apply(prefs, premium) {
-    if (!premium) { style.textContent = ''; document.documentElement.removeAttribute('data-premium-look'); return; }
+    if (!premium) { style.textContent = ''; startParticles('none'); sparkleOn = false; document.documentElement.removeAttribute('data-premium-look'); return; }
     const p = prefs || {};
     const get = (key, choices, fallback) => valid(p[key], choices, fallback);
     const css = [];
@@ -77,7 +138,7 @@
       const title = document.querySelector('.title');
       if (title) title.textContent = p.title.trim().slice(0, 24);
     }
-    document.documentElement.setAttribute('data-premium-look', 'on');
+    startParticles(get('particles', ['none','stars','bubbles','snow','embers'], 'none'));\n    sparkleOn = p.sparkle === true;\n    document.documentElement.setAttribute('data-premium-look', 'on');
   }
 
   async function refresh() {
