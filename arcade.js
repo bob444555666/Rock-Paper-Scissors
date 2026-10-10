@@ -1,0 +1,1 @@
+(() => {try{const s=JSON.parse(localStorage.getItem('rpsArcadeStats')||'{}');document.getElementById('games-stat').textContent=s.games||0;document.getElementById('wins-stat').textContent=s.wins||0;document.getElementById('streak-stat').textContent=s.bestStreak||0;}catch(e){}})();
