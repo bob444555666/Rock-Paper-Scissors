@@ -3,6 +3,8 @@
   const statusEl = document.getElementById('status');
   const subscribe = document.getElementById('subscribe');
   const refresh = document.getElementById('refresh');
+  const duoPlan = document.getElementById('duo-plan');
+  const familyPlan = document.getElementById('family-plan');
   const token = () => { try { return localStorage.getItem('token'); } catch { return null; } };
   const say = (message) => { statusEl.textContent = message; };
   async function call(path, body = {}) {
@@ -43,6 +45,15 @@
       say(error.message);
       subscribe.disabled = false;
     }
+  });
+  // Do not route Duo or Family to the Individual checkout: the Worker currently
+  // exposes only the existing single-member checkout. These buttons explain the
+  // remaining server-side setup instead of risking charging the wrong amount.
+  duoPlan.addEventListener('click', () => {
+    say('Duo is $12.00 CAD/month for two people. It still needs its own Stripe price and secure server-side invitations before checkout can be enabled.');
+  });
+  familyPlan.addEventListener('click', () => {
+    say('Family is $32.00 CAD/month for up to 10 people total. It still needs its own Stripe price and secure server-side invitations before checkout can be enabled.');
   });
   refresh.addEventListener('click', checkStatus);
   const params = new URLSearchParams(location.search);
