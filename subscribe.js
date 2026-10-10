@@ -15,7 +15,7 @@
   let selectedPlan = 'individual';
   const extraSeats = document.getElementById('extra-seats');
   const seatPrice = document.getElementById('seat-price');
-  const BASE_PRICES = { individual: 9.99, duo: 11.99, family: 31.99 };
+  const BASE_PRICES = { individual: 9.99, duo: 14.99, family: 31.99 };
   const money = value => '
   const token = () => { try { return localStorage.getItem('token'); } catch { return null; } };
   const say = (message) => { statusEl.textContent = message; };
