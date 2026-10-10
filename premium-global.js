@@ -11,68 +11,151 @@
   style.id = 'prem-global-style';
   document.head.appendChild(style);
 
-  // Shared horizontal navigation bar with all site sections and account access.
+  // Left-side hamburger drawer for every site destination and header action.
   function installSiteNav() {
     if (document.getElementById('rps-site-nav') || !document.body) return;
-    const navCss = document.createElement('style');
-    navCss.id = 'rps-site-nav-css';
-    navCss.textContent = `
-      #rps-site-nav{position:sticky;top:0;z-index:1200;width:100%;display:flex;align-items:center;gap:14px;padding:10px clamp(12px,2.5vw,28px);background:rgba(8,8,17,.94);border-bottom:1px solid rgba(255,255,255,.12);box-shadow:0 8px 26px rgba(0,0,0,.22);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-sizing:border-box}
-      #rps-site-nav .rps-nav-brand{display:flex;align-items:center;gap:8px;flex:none;color:#fff;text-decoration:none;font:850 14px/1.1 system-ui,-apple-system,"Segoe UI",sans-serif;white-space:nowrap}
-      #rps-site-nav .rps-nav-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--green,#22f5a0),#a855f7);color:#090812;font-size:18px}
-      #rps-site-nav .rps-nav-links{display:flex;align-items:center;gap:5px;flex:1;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;padding:2px 0}
-      #rps-site-nav .rps-nav-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;min-height:38px;padding:9px 11px;border:1px solid transparent;border-radius:11px;color:rgba(245,244,255,.82);text-decoration:none;white-space:nowrap;font:650 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;transition:background .16s,border-color .16s,color .16s}
-      #rps-site-nav .rps-nav-link:hover,#rps-site-nav .rps-nav-link:focus-visible{color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);outline:none}
-      #rps-site-nav .rps-nav-link[aria-current="page"]{color:var(--green,#22f5a0);background:rgba(34,245,160,.09);border-color:rgba(34,245,160,.22)}
-      #rps-site-nav .rps-nav-account{display:flex;align-items:center;justify-content:center;gap:7px;flex:none;min-height:40px;padding:8px 12px;border:1px solid rgba(34,245,160,.35);border-radius:12px;background:rgba(34,245,160,.1);color:#eafff5;text-decoration:none;white-space:nowrap;font:750 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
-      #rps-site-nav .rps-nav-account:hover{background:rgba(34,245,160,.17);border-color:var(--green,#22f5a0)}
+    const css = document.createElement('style');
+    css.id = 'rps-site-nav-css';
+    css.textContent = `
+      #rps-menu-toggle{position:fixed;top:14px;left:14px;z-index:1402;width:48px;height:48px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);border-radius:15px;background:rgba(10,10,22,.94);color:#fff;box-shadow:0 8px 28px rgba(0,0,0,.3);cursor:pointer;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:transform .18s,border-color .18s,background .18s}
+      #rps-menu-toggle:hover{transform:translateY(-1px);border-color:rgba(34,245,160,.6);background:#151526}
+      #rps-menu-toggle svg{width:23px;height:23px}
+      #rps-menu-backdrop{position:fixed;inset:0;z-index:1400;background:rgba(3,4,12,.68);opacity:0;visibility:hidden;transition:opacity .22s,visibility .22s;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+      #rps-menu-backdrop.is-open{opacity:1;visibility:visible}
+      #rps-site-nav{position:fixed;z-index:1401;inset:0 auto 0 0;width:min(340px,88vw);box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:22px 16px 18px;background:linear-gradient(180deg,rgba(16,16,32,.99),rgba(7,8,18,.99));border-right:1px solid rgba(255,255,255,.12);box-shadow:20px 0 70px rgba(0,0,0,.45);transform:translateX(-105%);visibility:hidden;transition:transform .25s cubic-bezier(.2,.8,.2,1),visibility .25s;color:#fff;overflow-y:auto;overscroll-behavior:contain}
+      #rps-site-nav.is-open{transform:translateX(0);visibility:visible}
+      #rps-site-nav .rps-nav-head{display:flex;align-items:center;gap:11px;padding:8px 5px 22px;border-bottom:1px solid rgba(255,255,255,.1)}
+      #rps-site-nav .rps-nav-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(135deg,var(--green,#22f5a0),#a855f7);color:#080812;font-size:22px;flex:none}
+      #rps-site-nav .rps-nav-brand{font:850 15px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;text-decoration:none}
+      #rps-site-nav .rps-nav-subtitle{display:block;margin-top:4px;color:rgba(235,234,255,.5);font:550 11px/1.2 system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase}
+      #rps-site-nav .rps-nav-close{margin-left:auto;width:36px;height:36px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;font-size:21px;cursor:pointer}
+      #rps-site-nav .rps-nav-label{margin:20px 9px 8px;color:rgba(221,221,245,.46);font:750 10px/1.2 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+      #rps-site-nav .rps-nav-links,#rps-site-nav .rps-nav-actions{display:flex;flex-direction:column;gap:5px}
+      #rps-site-nav .rps-nav-link,#rps-site-nav .rps-nav-actions button,#rps-site-nav .rps-nav-actions a{box-sizing:border-box;width:100%;min-height:44px;display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid transparent;border-radius:12px;background:transparent;color:rgba(246,245,255,.82);text-decoration:none;text-align:left;font:650 13px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
+      #rps-site-nav .rps-nav-link:hover,#rps-site-nav .rps-nav-actions button:hover,#rps-site-nav .rps-nav-actions a:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.09);color:#fff}
+      #rps-site-nav .rps-nav-link[aria-current="page"]{background:rgba(34,245,160,.09);border-color:rgba(34,245,160,.22);color:var(--green,#22f5a0)}
+      #rps-site-nav .rps-nav-icon{width:24px;display:inline-grid;place-items:center;font-size:17px;flex:none}
+      #rps-site-nav .rps-nav-actions{padding-bottom:14px}
+      #rps-site-nav #user-chip{position:static!important;inset:auto!important;display:flex!important;align-items:center;justify-content:flex-start;width:100%;min-height:44px;box-sizing:border-box;margin:0!important;padding:11px 13px!important;border:1px solid rgba(34,245,160,.25)!important;border-radius:12px!important;background:rgba(34,245,160,.08)!important;color:#eafff5!important;box-shadow:none!important;text-align:left;font:700 13px/1.25 system-ui,sans-serif!important;cursor:pointer}
       #rps-site-nav #user-chip[hidden]{display:none!important}
-      #rps-site-nav #user-chip{position:static!important;inset:auto!important;display:inline-flex;align-items:center;justify-content:center;flex:none;max-width:170px;min-height:40px;margin:0!important;padding:8px 12px!important;border:1px solid rgba(34,245,160,.35)!important;border-radius:12px!important;background:rgba(34,245,160,.1)!important;color:#eafff5!important;box-shadow:none!important;font:750 12px/1.2 system-ui,sans-serif!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      #rps-site-nav #user-chip:not([hidden]){display:inline-flex!important}
-      @media(max-width:760px){#rps-site-nav{gap:9px;padding:8px 10px}#rps-site-nav .rps-nav-brand{font-size:12px}#rps-site-nav .rps-nav-mark{width:30px;height:30px}#rps-site-nav .rps-nav-link{padding:9px 10px;font-size:11px}#rps-site-nav .rps-nav-account,#rps-site-nav #user-chip{min-height:38px;padding:8px 10px!important;font-size:11px!important}}
-      @media(max-width:480px){#rps-site-nav{gap:7px}#rps-site-nav .rps-brand-label{display:none}#rps-site-nav .rps-nav-links{gap:3px}#rps-site-nav .rps-nav-link{gap:5px;padding:9px 8px}#rps-site-nav .rps-nav-account{padding:8px 9px}}
-      @media(prefers-reduced-motion:reduce){#rps-site-nav *{transition:none!important}}
+      #rps-site-nav .rps-account-fallback{width:100%;min-height:44px;display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid rgba(34,245,160,.25);border-radius:12px;background:rgba(34,245,160,.08);color:#eafff5;text-decoration:none;font:700 13px/1.25 system-ui,sans-serif}
+      #rps-site-nav .rps-nav-footer{margin-top:auto;padding:16px 8px 2px;color:rgba(221,221,245,.35);font:500 10px/1.4 system-ui,sans-serif}
+      body.rps-drawer-open{overflow:hidden}
+      @media(prefers-reduced-motion:reduce){#rps-menu-toggle,#rps-menu-backdrop,#rps-site-nav{transition:none!important}}
     `;
-    document.head.appendChild(navCss);
-    const nav = document.createElement('header');
-    nav.id = 'rps-site-nav';
-    nav.setAttribute('aria-label','Main navigation');
-    nav.innerHTML = `
-      <a class="rps-nav-brand" href="/" aria-label="Stone Paper Scissors home"><span class="rps-nav-mark" aria-hidden="true">✊</span><span class="rps-brand-label">Stone Paper Scissors</span></a>
-      <nav class="rps-nav-links" aria-label="Site sections">
-        <a class="rps-nav-link" href="/">🎮 Play</a>
-        <a class="rps-nav-link" href="/leaderboard.html">🏆 Leaderboard</a>
-        <a class="rps-nav-link" href="/multiplayer.html">👥 3–4 Players</a>
-        <a class="rps-nav-link" href="/arcade-hub.html">🕹️ Arcade</a>
-        <a class="rps-nav-link" href="/quests.html">🎯 Quests</a>
-        <a class="rps-nav-link" href="/achievements.html">🏅 Achievements</a>
-        <a class="rps-nav-link" href="/vault.html">🎨 Style Vault</a>
-        <a class="rps-nav-link" href="/subscribe.html">⭐ Premium</a>
-        <a class="rps-nav-link" href="/privacy.html">🔒 Privacy</a>
+    document.head.appendChild(css);
+    const toggle = document.createElement('button');
+    toggle.id = 'rps-menu-toggle';
+    toggle.type = 'button';
+    toggle.setAttribute('aria-label','Open navigation menu');
+    toggle.setAttribute('aria-controls','rps-site-nav');
+    toggle.setAttribute('aria-expanded','false');
+    toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+    const backdrop = document.createElement('div');
+    backdrop.id = 'rps-menu-backdrop';
+    backdrop.setAttribute('aria-hidden','true');
+    const drawer = document.createElement('aside');
+    drawer.id = 'rps-site-nav';
+    drawer.setAttribute('aria-label','Site navigation');
+    drawer.setAttribute('aria-hidden','true');
+    drawer.innerHTML = `
+      <div class="rps-nav-head">
+        <span class="rps-nav-mark" aria-hidden="true">✊</span>
+        <a class="rps-nav-brand" href="/">Stone Paper Scissors<span class="rps-nav-subtitle">Choose your next move</span></a>
+        <button class="rps-nav-close" type="button" aria-label="Close navigation">×</button>
+      </div>
+      <div class="rps-nav-label">Explore</div>
+      <nav class="rps-nav-links" aria-label="Site pages">
+        <a class="rps-nav-link" href="/"><span class="rps-nav-icon">🎮</span>Play</a>
+        <a class="rps-nav-link" href="/leaderboard.html"><span class="rps-nav-icon">🏆</span>Leaderboard</a>
+        <a class="rps-nav-link" href="/multiplayer.html"><span class="rps-nav-icon">👥</span>3–4 Player Rooms</a>
+        <a class="rps-nav-link" href="/tournament.html"><span class="rps-nav-icon">🥇</span>Tournaments</a>
+        <a class="rps-nav-link" href="/arcade-hub.html"><span class="rps-nav-icon">🕹️</span>Arcade Hub</a>
+        <a class="rps-nav-link" href="/quests.html"><span class="rps-nav-icon">🎯</span>Quests</a>
+        <a class="rps-nav-link" href="/achievements.html"><span class="rps-nav-icon">🏅</span>Achievements</a>
+        <a class="rps-nav-link" href="/vault.html"><span class="rps-nav-icon">🎨</span>Style Vault</a>
+        <a class="rps-nav-link" href="/subscribe.html"><span class="rps-nav-icon">⭐</span>Subscription / Premium</a>
+        <a class="rps-nav-link" href="/privacy.html"><span class="rps-nav-icon">🔒</span>Privacy Policy</a>
       </nav>
-      <a class="rps-nav-account" id="rps-account-link" href="/">👤 Account</a>`;
-    document.body.insertBefore(nav, document.body.firstChild);
+      <div class="rps-nav-label">Your account</div>
+      <div class="rps-nav-actions" id="rps-nav-account-actions"></div>
+      <div class="rps-nav-label" id="rps-nav-tools-label">Quick actions</div>
+      <div class="rps-nav-actions" id="rps-nav-quick-actions"></div>
+      <div class="rps-nav-footer">Stone Paper Scissors · Play fair. Make your move.</div>`;
+    document.body.insertBefore(backdrop, document.body.firstChild);
+    document.body.insertBefore(drawer, document.body.firstChild);
+    document.body.insertBefore(toggle, document.body.firstChild);
+    const closeButton = drawer.querySelector('.rps-nav-close');
+    const openMenu = () => {
+      drawer.classList.add('is-open'); backdrop.classList.add('is-open');
+      drawer.setAttribute('aria-hidden','false'); backdrop.setAttribute('aria-hidden','false');
+      toggle.setAttribute('aria-expanded','true'); toggle.setAttribute('aria-label','Close navigation');
+      document.body.classList.add('rps-drawer-open'); closeButton.focus();
+    };
+    const closeMenu = () => {
+      drawer.classList.remove('is-open'); backdrop.classList.remove('is-open');
+      drawer.setAttribute('aria-hidden','true'); backdrop.setAttribute('aria-hidden','true');
+      toggle.setAttribute('aria-expanded','false'); toggle.setAttribute('aria-label','Open navigation');
+      document.body.classList.remove('rps-drawer-open'); toggle.focus();
+    };
+    toggle.addEventListener('click', () => drawer.classList.contains('is-open') ? closeMenu() : openMenu());
+    closeButton.addEventListener('click', closeMenu);
+    backdrop.addEventListener('click', closeMenu);
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && drawer.classList.contains('is-open')) closeMenu(); });
+    drawer.querySelectorAll('.rps-nav-link').forEach(link => {
+      const rawPath = window.location.pathname;
+      const path = rawPath.length > 1 && rawPath.endsWith('/') ? rawPath.slice(0,-1) : rawPath;
+      const targetPath = new URL(link.href, window.location.origin).pathname;
+      const target = targetPath.length > 1 && targetPath.endsWith('/') ? targetPath.slice(0,-1) : targetPath;
+      if (target === path) link.setAttribute('aria-current','page');
+      link.addEventListener('click', closeMenu);
+    });
+    const accountActions = drawer.querySelector('#rps-nav-account-actions');
+    const quickActions = drawer.querySelector('#rps-nav-quick-actions');
     const userChip = document.getElementById('user-chip');
-    const accountLink = nav.querySelector('#rps-account-link');
     if (userChip) {
-      nav.appendChild(userChip);
-      const syncAccountVisibility = () => { accountLink.hidden = !userChip.hidden; };
-      syncAccountVisibility();
-      new MutationObserver(syncAccountVisibility).observe(userChip, { attributes: true, attributeFilter: ['hidden'] });
-      accountLink.addEventListener('click', event => {
+      accountActions.appendChild(userChip);
+      const profileFallback = document.createElement('a');
+      profileFallback.className = 'rps-account-fallback';
+      profileFallback.href = '/';
+      profileFallback.innerHTML = '<span class="rps-nav-icon">👤</span>Profile / Sign in';
+      profileFallback.addEventListener('click', event => {
         if (!userChip.hidden) { event.preventDefault(); userChip.click(); }
       });
+      accountActions.appendChild(profileFallback);
+      const syncProfile = () => { profileFallback.hidden = !userChip.hidden; };
+      syncProfile();
+      new MutationObserver(syncProfile).observe(userChip, {attributes:true,attributeFilter:['hidden']});
+    } else {
+      const profileFallback = document.createElement('a');
+      profileFallback.className = 'rps-account-fallback'; profileFallback.href = '/';
+      profileFallback.innerHTML = '<span class="rps-nav-icon">👤</span>Profile / Sign in';
+      accountActions.appendChild(profileFallback);
     }
-    const rawPath = window.location.pathname;
-    const path = rawPath.length > 1 && rawPath.endsWith('/') ? rawPath.slice(0, -1) : rawPath;
-    nav.querySelectorAll('.rps-nav-link').forEach(link => {
-      const rawTarget = new URL(link.href, window.location.origin).pathname;
-      const target = rawTarget.length > 1 && rawTarget.endsWith('/') ? rawTarget.slice(0, -1) : rawTarget;
-      if (target === path) link.setAttribute('aria-current','page');
-    });
-    ['lb-btn','mp-btn','arcade-hub-btn','premium-subscribe-btn'].forEach(id => {
+    const quickIds = ['lb-btn','mp-btn','arcade-hub-btn','premium-subscribe-btn','friends-btn'];
+    quickIds.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.style.setProperty('display','none','important');
+      if (el && !drawer.contains(el)) {
+        el.classList.add('rps-nav-moved-action');
+        quickActions.appendChild(el);
+      }
+    });
+    // Move only header-level controls related to tournaments, subscription, or profile.
+    document.querySelectorAll('button,a').forEach(el => {
+      if (drawer.contains(el) || el.id === 'rps-menu-toggle' || el.closest('[role="dialog"],.modal,#profile-layer,#auth-layer')) return;
+      const label = (el.innerText || el.getAttribute('aria-label') || '').trim().toLowerCase();
+      if (!label || !/(tournament|subscription|subscribe|premium|profile|account|sign in|log in)/.test(label)) return;
+      if (el.closest('header,nav,.top-bar,.topbar,.toolbar,.header-actions,.ui-actions') || el.classList.contains('ui-fab')) {
+        quickActions.appendChild(el);
+        el.classList.add('rps-nav-moved-action');
+      }
+    });
+    [accountActions,quickActions].forEach(group => {
+      group.querySelectorAll('button,a').forEach(el => {
+        if (el.id === 'user-chip') return;
+        el.style.setProperty('width','100%');
+        el.style.setProperty('box-sizing','border-box');
+      });
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installSiteNav, { once: true });
