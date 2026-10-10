@@ -107,7 +107,7 @@
       if (premium) {
         connectMessage.textContent = SPOTIFY_CLIENT_ID === ''
           ? 'Premium verified. Spotify account linking needs your Spotify Developer app Client ID before it can be enabled.'
-          : 'Premium verified. Connect your Spotify account to continue.';
+          : 'Premium verified. Choose which Spotify account to connect.';
         connectButton.disabled = false;
         connectButton.style.opacity = '1';
         connectButton.style.pointerEvents = 'auto';
@@ -142,6 +142,7 @@
     const params = new URLSearchParams({
       client_id:SPOTIFY_CLIENT_ID, response_type:'code', redirect_uri:REDIRECT_URI,
       code_challenge_method:'S256', code_challenge:challenge,
+      show_dialog:'true',
       scope:'user-read-private user-read-email playlist-read-private playlist-read-collaborative user-modify-playback-state user-read-playback-state streaming'
     });
     location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
@@ -195,7 +196,10 @@
           throw new Error('Spotify profile request returned HTTP ' + profileResponse.status + (details ? ': ' + details.slice(0, 220) : ''));
         }
         const profile = await profileResponse.json();
-        connectMessage.textContent = 'Connected to Spotify as ' + (profile.display_name || profile.id) + '. This browser session is connected; reconnect after the access token expires.';
+        connectMessage.textContent = 'Connected to Spotify as ' + (profile.display_name || profile.id) + '. To choose a different account, click Change Spotify account.';
+        connectButton.textContent = 'Change Spotify account';
+        connectButton.disabled = false;
+        connectButton.style.opacity = '1';
         connectButton.textContent = 'Spotify connected ✓';
         connectButton.disabled = true;
         connectButton.style.opacity = '1';
