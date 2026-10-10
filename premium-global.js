@@ -16,7 +16,7 @@
     if (document.getElementById('rps-menu-toggle') || !document.body) return;
     const navCss = document.createElement('style');
     navCss.id = 'rps-menu-css';
-    navCss.textContent = \`
+    navCss.textContent = `
       #rps-menu-toggle{position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:1200;display:flex;align-items:center;gap:9px;padding:11px 15px;border:1px solid rgba(255,255,255,.16);border-radius:14px;background:rgba(14,13,24,.9);color:#f7f6ff;font:700 14px system-ui,sans-serif;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,.28);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:transform .18s,border-color .18s}
       #rps-menu-toggle:hover{transform:translateY(-1px);border-color:var(--green,#22f5a0)}
       #rps-menu-toggle .rps-menu-glyph{font-size:18px;line-height:1}
@@ -38,7 +38,7 @@
       body.rps-menu-open{overflow:hidden}
       @media(max-width:480px){#rps-menu-toggle{top:calc(10px + env(safe-area-inset-top));right:10px;padding:10px 12px}#rps-menu-drawer{width:min(340px,90vw)}}
       @media(prefers-reduced-motion:reduce){#rps-menu-toggle,#rps-menu-scrim,#rps-menu-drawer,.rps-menu-link{transition:none}}
-    \`;
+    `;
     document.head.appendChild(navCss);
     const toggle = document.createElement('button');
     toggle.id = 'rps-menu-toggle'; toggle.type = 'button';
@@ -50,7 +50,7 @@
     scrim.id = 'rps-menu-scrim'; scrim.setAttribute('aria-hidden','true');
     const drawer = document.createElement('aside');
     drawer.id = 'rps-menu-drawer'; drawer.setAttribute('aria-label','Site navigation'); drawer.setAttribute('aria-hidden','true');
-    drawer.innerHTML = \`
+    drawer.innerHTML = `
       <div class="rps-menu-head"><div class="rps-menu-brand">✊ Stone Paper Scissors</div><button id="rps-menu-close" type="button" aria-label="Close menu">×</button></div>
       <p class="rps-menu-sub">Jump to a section</p>
       <div id="rps-menu-account"></div>
@@ -64,7 +64,7 @@
         <a class="rps-menu-link" href="/vault.html"><span class="rps-menu-emoji">🎨</span><span>Style Vault</span></a>
         <a class="rps-menu-link" href="/subscribe.html"><span class="rps-menu-emoji">⭐</span><span>Premium</span></a>
         <a class="rps-menu-link" href="/privacy.html"><span class="rps-menu-emoji">🔒</span><span>Privacy Policy</span></a>
-      </nav>\`;
+      </nav>`;
     document.body.append(toggle, scrim, drawer);
     const account = drawer.querySelector('#rps-menu-account');
     const userChip = document.getElementById('user-chip');
