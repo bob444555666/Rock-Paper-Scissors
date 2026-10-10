@@ -55,50 +55,7 @@
     const total = BASE_PRICES[selectedPlan] + count * perAccount;
     seatPrice.textContent = 'Estimated total: ' + money(total) +
       ' (' + count + ' extra account' + (count === 1 ? '' : 's') +
-      ' at 
-
-  async function refreshMembers() {
-    if (!memberList || !memberHelp) return;
-    try {
-      const result = await call('/account/premium-members');
-      memberList.replaceChildren();
-      const totalLimit = result.plan === 'duo' ? 2 : 10;
-      memberHelp.textContent = result.plan === 'duo'
-        ? 'Ultra includes you plus one member. Add an existing game account by username.'
-        : 'Ultra Plus includes you plus up to nine members. Add existing game accounts by username.';
-      if (!result.members.length) {
-        const empty = document.createElement('li');
-        empty.textContent = 'No members added yet.';
-        memberList.appendChild(empty);
-      } else {
-        for (const member of result.members) {
-          const item = document.createElement('li');
-          const name = document.createElement('span');
-          name.textContent = member.username;
-          const remove = document.createElement('button');
-          remove.type = 'button';
-          remove.className = 'remove-member';
-          remove.textContent = 'Remove';
-          remove.addEventListener('click', async () => {
-            remove.disabled = true;
-            try {
-              await call('/account/premium-invite', { username: member.username, action: 'remove' });
-              say(member.username + ' was removed from your plan.');
-              await refreshMembers();
-            } catch (error) {
-              say(error.message);
-              remove.disabled = false;
-            }
-          });
-          item.append(name, remove);
-          memberList.appendChild(item);
-        }
-      }
-      memberHelp.textContent += ' ' + (result.members.length + 1) + ' of ' + totalLimit +
-        ' total accounts currently on your plan.';
-    } catch (error) {
-      say(error.message);
-    }
+      ' at ' + String.fromCharCode(36) + perAccount.toFixed(2) + ' each).';
   }
 
   async function checkStatus() {
