@@ -2,6 +2,7 @@
   'use strict';
 
   const API = 'https://rps-server.heyboernathan.workers.dev';
+  const PAYMENT_API = 'https://paymentsystem.heyboernathan.workers.dev';
   const statusEl = document.getElementById('status');
   const subscribe = document.getElementById('subscribe');
   const refresh = document.getElementById('refresh');
@@ -150,7 +151,13 @@
     planButtons.forEach(button => { button.disabled = true; });
     say('Connecting securely to Stripe…');
     try {
-      const result = await call('/account/stripe-checkout', { plan, extraAccounts: requestedExtraSeats });
+      const response = await fetch(PAYMENT_API + '/account/stripe-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token(), plan, extraAccounts: requestedExtraSeats })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not start checkout. Please try again.');
       if (!result.url || !/^https:\/\/checkout\.stripe\.com\//.test(result.url)) {
         throw new Error('Stripe did not return a valid checkout link.');
       }
