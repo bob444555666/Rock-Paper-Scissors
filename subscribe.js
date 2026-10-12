@@ -16,6 +16,8 @@
   const extraSeats = document.getElementById('extra-seats');
   const seatPrice = document.getElementById('seat-price');
   const promoCodeInput = document.getElementById('promo-code');
+  const clearPromo = document.getElementById('clear-promo');
+  const promoStatus = document.getElementById('promo-status');
   const planButtons = [subscribe, duoPlan, familyPlan].filter(Boolean);
   const plansSection = document.querySelector('.plans');
   const pricingSections = document.querySelectorAll('main > .member-manager[aria-label="Additional account pricing"], main > .member-manager[aria-label="Promo code"], main > .trial');
@@ -210,6 +212,23 @@
       checkoutBusy = false;
       if (!hasActiveMembership) planButtons.forEach(button => { button.disabled = false; });
     }
+  }
+
+  if (clearPromo) clearPromo.onclick = () => {
+    if (promoCodeInput) promoCodeInput.value = '';
+    if (promoStatus) promoStatus.textContent = 'Promo code cleared. You can enter another code at any time.';
+    say('Promo code cleared. Choose a plan when ready.');
+    checkoutBusy = false;
+    planButtons.forEach(button => { button.disabled = false; });
+  };
+  if (promoCodeInput) {
+    promoCodeInput.addEventListener('input', () => {
+      if (promoStatus) promoStatus.textContent = promoCodeInput.value.trim()
+        ? 'Code entered. It will be checked securely when you start checkout.'
+        : 'No promo code entered. You can still choose any plan.';
+      checkoutBusy = false;
+      if (!hasActiveMembership) planButtons.forEach(button => { button.disabled = false; });
+    });
   }
 
   // Assign direct handlers so plan buttons remain clickable even if another script
