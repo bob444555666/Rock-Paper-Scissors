@@ -17,9 +17,12 @@
   const seatPrice = document.getElementById('seat-price');
   const promoCodeInput = document.getElementById('promo-code');
   const planButtons = [subscribe, duoPlan, familyPlan].filter(Boolean);
+  const plansSection = document.querySelector('.plans');
+  const pricingSections = document.querySelectorAll('main > .member-manager[aria-label="Additional account pricing"], main > .member-manager[aria-label="Promo code"], main > .trial');
   const BASE_PRICES = { individual: 9.99, duo: 14.99, family: 31.99 };
   const EXTRA_ACCOUNT_PRICES = { individual: 3, duo: 5, family: 7 };
   let checkoutBusy = false;
+  let hasActiveMembership = false;
   let selectedPlan = 'individual';
 
   const money = value => '$' + value.toFixed(2) + ' CAD/month';
@@ -29,6 +32,7 @@
   const say = message => {
     if (statusEl) statusEl.textContent = message;
   };
+  const planName = plan => ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[plan] || 'Premium');
 
   async function call(path, body = {}) {
     const res = await fetch(API + path, {
@@ -41,12 +45,32 @@
     return data;
   }
 
-  function getExtraSeatCount() {
-    if (!extraSeats) return 0;
-    const value = Number(extraSeats.value);
-    const count = Number.isFinite(value) ? Math.max(0, Math.min(99, Math.floor(value))) : 0;
-    extraSeats.value = String(count);
-    return count;
+  function showActivePlan(result) {
+    hasActiveMembership = true;
+    if (plansSection) plansSection.hidden = true;
+    pricingSections.forEach(section => { section.hidden = true; });
+    planButtons.forEach(button => { button.disabled = true; });
+    if (subscribe) subscribe.textContent = 'Membership already active';
+    if (duoPlan) duoPlan.textContent = 'Membership already active';
+    if (familyPlan) familyPlan.textContent = 'Membership already active';
+    const currentPlan = planName(result.plan);
+    let message;
+    if (result.plan === 'family') {
+      message = 'You have Ultra Plus! It includes everything in Ultra and Premium, plus all Ultra Plus features. Plan purchase buttons are locked while your membership is active.';
+    } else if (result.plan === 'duo') {
+      message = 'You have Ultra! It includes everything in Premium, plus all Ultra features. Plan purchase buttons are locked while your membership is active.';
+    } else {
+      message = 'You have Premium! Your Premium membership is active. Plan purchase buttons are locked while your membership is active.';
+    }
+    if (result.source === 'group') message = 'Your access is included in a ' + currentPlan + ' membership. ' + message;
+    if (result.canManageMembers && memberManager) {
+      memberManager.hidden = false;
+      say(message + ' You can manage your extra accounts below.');
+      await refreshMembers();
+    } else {
+      if (memberManager) memberManager.hidden = true;
+      say(message);
+    }
   }
 
   function updateSeatEstimate(plan = selectedPlan) {
@@ -60,13 +84,21 @@
       ' at $' + perAccount.toFixed(2) + ' each).';
   }
 
+  function getExtraSeatCount() {
+    if (!extraSeats) return 0;
+    const value = Number(extraSeats.value);
+    const count = Number.isFinite(value) ? Math.max(0, Math.min(99, Math.floor(value))) : 0;
+    extraSeats.value = String(count);
+    return count;
+  }
+
   async function refreshMembers() {
     if (!memberList || !memberHelp) return;
     try {
       const result = await call('/account/premium-members');
       memberList.replaceChildren();
       const totalLimit = 1 + Number(result.memberLimit || 0);
-      memberHelp.textContent = 'Your ' + ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[result.plan] || 'Premium') + ' plan includes one account plus ' + Number(result.memberLimit || 0) + ' paid extra account(s). Add existing game accounts by username.';
+      memberHelp.textContent = 'Your ' + planName(result.plan) + ' plan includes one account plus ' + Number(result.memberLimit || 0) + ' paid extra account(s). Add existing game accounts by username.';
       if (!result.members.length) {
         const empty = document.createElement('li');
         empty.textContent = 'No members added yet.';
@@ -104,28 +136,22 @@
 
   async function checkStatus() {
     if (!token()) {
+      hasActiveMembership = false;
       if (memberManager) memberManager.hidden = true;
+      if (plansSection) plansSection.hidden = false;
+      pricingSections.forEach(section => { section.hidden = false; });
+      planButtons.forEach(button => { button.disabled = false; });
       say('Log in to your game account first, then return here to subscribe.');
       return;
     }
     try {
       const result = await call('/account/premium');
       if (result.premium) {
-        planButtons.forEach(button => { button.disabled = false; });
-        if (subscribe) subscribe.textContent = 'Start 7-day free trial';
-        if (duoPlan) duoPlan.textContent = 'Choose Ultra';
-        if (familyPlan) familyPlan.textContent = 'Choose Ultra Plus';
-        if (result.canManageMembers && memberManager) {
-          memberManager.hidden = false;
-          say('Your ' + ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[result.plan] || 'Premium') + ' plan is active. Manage extra accounts below.');
-          await refreshMembers();
-        } else {
-          if (memberManager) memberManager.hidden = true;
-          say(result.source === 'group'
-            ? 'Your Premium access is included in a ' + (result.plan || 'group') + ' plan.'
-            : 'Your account already has Premium. Enjoy the game!');
-        }
+        await showActivePlan(result);
       } else {
+        hasActiveMembership = false;
+        if (plansSection) plansSection.hidden = false;
+        pricingSections.forEach(section => { section.hidden = false; });
         planButtons.forEach(button => { button.disabled = false; });
         if (memberManager) memberManager.hidden = true;
         const checkout = new URLSearchParams(location.search).get('checkout');
@@ -141,6 +167,10 @@
   }
 
   async function startCheckout(plan) {
+    if (hasActiveMembership) {
+      say('You already have an active membership. Plan checkout is locked while it is active.');
+      return;
+    }
     updateSeatEstimate(plan);
     const requestedExtraSeats = getExtraSeatCount();
     if (!token()) {
