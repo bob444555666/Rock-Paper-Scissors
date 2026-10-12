@@ -180,12 +180,19 @@
     if (checkoutBusy) return;
     checkoutBusy = true;
     planButtons.forEach(button => { button.disabled = true; });
-    say('Connecting securely to Stripe…');
+    const enteredPromo = promoCodeInput ? promoCodeInput.value.trim() : '';
+    say(enteredPromo
+      ? 'Checking promo code and connecting securely to Stripe…'
+      : 'Connecting securely to Stripe…');
+    let timeoutId;
     try {
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 20000);
       const response = await fetch(PAYMENT_API + '/account/stripe-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token(), plan, extraAccounts: requestedExtraSeats, promoCode: promoCodeInput ? promoCodeInput.value.trim() : '' })
+        signal: controller.signal,
+        body: JSON.stringify({ token: token(), plan, extraAccounts: requestedExtraSeats, promoCode: enteredPromo })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not start checkout. Please try again.');
@@ -194,9 +201,14 @@
       }
       window.location.assign(result.url);
     } catch (error) {
-      say(error.message);
+      const message = error.name === 'AbortError'
+        ? 'Checkout took too long. You can try again; promo codes can be submitted repeatedly.'
+        : (error.message || 'Checkout failed. You can try again.');
+      say(message);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
       checkoutBusy = false;
-      planButtons.forEach(button => { button.disabled = false; });
+      if (!hasActiveMembership) planButtons.forEach(button => { button.disabled = false; });
     }
   }
 
