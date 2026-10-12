@@ -15,6 +15,7 @@
   const memberHelp = document.getElementById('member-help');
   const extraSeats = document.getElementById('extra-seats');
   const seatPrice = document.getElementById('seat-price');
+  const promoCodeInput = document.getElementById('promo-code');
   const planButtons = [subscribe, duoPlan, familyPlan].filter(Boolean);
   const BASE_PRICES = { individual: 9.99, duo: 14.99, family: 31.99 };
   const EXTRA_ACCOUNT_PRICES = { individual: 3, duo: 5, family: 7 };
@@ -154,7 +155,7 @@
       const response = await fetch(PAYMENT_API + '/account/stripe-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token(), plan, extraAccounts: requestedExtraSeats })
+        body: JSON.stringify({ token: token(), plan, extraAccounts: requestedExtraSeats, promoCode: promoCodeInput ? promoCodeInput.value.trim() : '' })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not start checkout. Please try again.');
