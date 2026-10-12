@@ -45,7 +45,7 @@
     return data;
   }
 
-  function showActivePlan(result) {
+  async function showActivePlan(result) {
     hasActiveMembership = true;
     if (plansSection) plansSection.hidden = true;
     pricingSections.forEach(section => { section.hidden = true; });
