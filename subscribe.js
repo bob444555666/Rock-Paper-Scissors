@@ -200,9 +200,16 @@
     }
   }
 
-  if (subscribe) subscribe.addEventListener('click', () => startCheckout('individual'));
-  if (duoPlan) duoPlan.addEventListener('click', () => startCheckout('duo'));
-  if (familyPlan) familyPlan.addEventListener('click', () => startCheckout('family'));
+  // Assign direct handlers so plan buttons remain clickable even if another script
+  // has attached unrelated listeners to the page.
+  if (subscribe) subscribe.onclick = event => { event.preventDefault(); startCheckout('individual'); };
+  if (duoPlan) duoPlan.onclick = event => { event.preventDefault(); startCheckout('duo'); };
+  if (familyPlan) familyPlan.onclick = event => { event.preventDefault(); startCheckout('family'); };
+
+  // Make script/runtime failures visible instead of leaving the page appearing inert.
+  window.addEventListener('error', event => {
+    if (event && event.message) say('Page script error: ' + event.message.slice(0, 160));
+  });
   if (extraSeats) extraSeats.addEventListener('input', () => updateSeatEstimate());
 
   if (addMember && memberUsername) {
