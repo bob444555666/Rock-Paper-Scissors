@@ -31,7 +31,7 @@
   const say = message => {
     if (statusEl) statusEl.textContent = message;
   };
-  const planName = plan => ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' }[plan] || 'Premium');
+  const planName = plan => ({ individual: 'Premium', premium: 'Premium', duo: 'Ultra', ultra: 'Ultra', family: 'Ultra Plus', 'ultra plus': 'Ultra Plus' }[String(plan || '').trim().toLowerCase()] || 'Premium');
 
   async function call(path, body = {}) {
     const res = await fetch(API + path, {
@@ -52,7 +52,7 @@
     if (subscribe) subscribe.textContent = 'Membership already active';
     if (duoPlan) duoPlan.textContent = 'Membership already active';
     if (familyPlan) familyPlan.textContent = 'Membership already active';
-    const currentPlan = planName(result.plan);
+    const currentPlan = planName(result.plan || result.premiumPlan || (result.source === 'group' ? result.groupPlan : 'individual'));
     let message;
     if (result.plan === 'family') {
       message = 'You have Ultra Plus! It includes everything in Ultra and Premium, plus all Ultra Plus features. Plan purchase buttons are locked while your membership is active.';
@@ -155,10 +155,10 @@
         if (memberManager) memberManager.hidden = true;
         const checkout = new URLSearchParams(location.search).get('checkout');
         say(checkout === 'success'
-          ? 'Stripe returned successfully. Premium activates after the signed webhook confirms your subscription; check again in a few seconds.'
+          ? 'Stripe returned successfully. Your selected plan activates after the signed webhook confirms your subscription; check again in a few seconds.'
           : checkout === 'cancelled'
             ? 'Checkout was cancelled. You have not been charged.'
-            : 'No active Premium membership was found for this account.');
+            : 'No active paid membership was found for this account.');
       }
     } catch (error) {
       say(error.message);
