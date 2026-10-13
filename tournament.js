@@ -144,26 +144,40 @@
     return box
   }
 
-  // Premium only: how your opponent has played so far in this tournament (never their current hidden pick)
+  // Ultra and Ultra Plus: scouting only uses past rounds, never the opponent's hidden current pick.
   function scoutBox(m) {
     const sc = m.scout
     const box = make('div', { className: 'to-note' })
     if (!sc.total) {
-      box.textContent = `🔎 Scout: ${m.opp} has not played a round yet.`
+      box.textContent = `🔎 Ultra Scout: ${m.opp} has not played a round yet.`
       return box
     }
-    const parts = ['rock', 'paper', 'scissors'].map(k => `${EMOJI[k]} ${Math.round((sc.counts[k] / sc.total) * 100)}%`).join('   ')
-    const top = ['rock', 'paper', 'scissors'].sort((a, b) => sc.counts[b] - sc.counts[a])[0]
-    box.textContent = `🔎 Scout: ${m.opp} played ${parts} (${sc.total} rounds). Favourite: ${EMOJI[top]}. Recent: ${sc.recent.map(x => EMOJI[x]).join(' ')}`
+    const moves = ['rock', 'paper', 'scissors']
+    const parts = moves.map(k => `${EMOJI[k]} ${Math.round((sc.counts[k] / sc.total) * 100)}%`).join('   ')
+    const top = moves.sort((a, b) => sc.counts[b] - sc.counts[a])[0]
+    let message = `🔎 Ultra Scout: ${m.opp} played ${parts} (${sc.total} rounds). Favourite: ${EMOJI[top]}. Recent: ${sc.recent.map(x => EMOJI[x]).join(' ')}`
+    try {
+      const cache = JSON.parse(localStorage.getItem('premiumPrefsCache') || 'null')
+      const plan = String(cache && cache.plan || '').trim().toLowerCase()
+      if (['family', 'ultra plus'].includes(plan)) {
+        const recent = sc.recent.slice(-5)
+        const recentCounts = { rock: 0, paper: 0, scissors: 0 }
+        recent.forEach(move => { if (recentCounts[move] !== undefined) recentCounts[move]++ })
+        const recentTop = moves.slice().sort((a, b) => recentCounts[b] - recentCounts[a])[0]
+        message += ` Ultra Plus insight: last ${recent.length} rounds leaned toward ${EMOJI[recentTop]} (${recentCounts[recentTop]}/${recent.length}).`
+      }
+    } catch (error) {}
+    box.textContent = message
     return box
   }
 
-  // Premium option "Tournament scout stats" (on unless the player switched it off)
+  // The server supplies scout data only to Ultra and Ultra Plus members.
   function scoutWanted() {
     try {
       const c = JSON.parse(localStorage.getItem('premiumPrefsCache') || 'null')
-      return !(c && c.prefs && c.prefs.scout === false)
-    } catch (error) { return true }
+      const plan = String(c && c.plan || '').trim().toLowerCase()
+      return ['duo', 'family', 'ultra', 'ultra plus'].includes(plan) && !(c && c.prefs && c.prefs.scout === false)
+    } catch (error) { return false }
   }
 
   function timerText(m) {
@@ -261,7 +275,7 @@
       text = `Last round: You ${EMOJI[m.last.you] || ''}  vs  ${m.opp} ${EMOJI[m.last.opp] || ''}\n${word}` + (m.youMoved ? '\nMove sent. Waiting for your opponent...' : '')
       cls = m.last.result
     }
-    if (m.scout && scoutWanted()) body.append(scoutBox(m)) // Premium option
+    if (m.scout && scoutWanted()) body.append(scoutBox(m)) // Ultra / Ultra Plus feature
     body.append(make('p', { className: 'to-line to-last ' + cls, textContent: text }), bracket(v))
     schedule(1200)
   }
