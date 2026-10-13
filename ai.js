@@ -321,7 +321,7 @@
     const data = r.ok && r.data ? r.data : {}
     const plan = String(data.plan || data.premiumPlan || '').toLowerCase().replace(/[_\s]+/g, '-')
     isPremium = !!data.premium
-    isUltra = isPremium && (plan === 'ultra' || plan === 'ultra-plus' || plan === 'ultraplus' || plan.includes('ultra'))
+    isUltra = isPremium && (plan === 'ultra' || plan === 'ultra-plus' || plan === 'ultraplus' || plan === 'family' || plan.includes('ultra'))
     premiumChecked = true
   }
 
@@ -624,7 +624,7 @@
   }
 
   async function startRecording() {
-    if (aiMode === 'chat' && !isPremium) { live = false; voiceUi(); updateLock(); return }
+    if (aiMode === 'chat' && !isUltra) { live = false; voiceUi(); updateLock(); return }
     if (listening || busy || transcribing) return
     stopSpeaking()
     listening = true
@@ -723,7 +723,7 @@
   function startListening() {
     if (!SR && !useRec) return
     if (!SR) { startRecording(); return }
-    if (aiMode === 'chat' && !isPremium) { live = false; voiceUi(); updateLock(); return }
+    if (aiMode === 'chat' && !isUltra) { live = false; voiceUi(); updateLock(); return }
     if (listening || busy) return
     stopSpeaking()
     let finalText = ''
