@@ -425,7 +425,7 @@
     }
     const plan = ({ individual: 'Premium', premium: 'Premium', duo: 'Ultra', ultra: 'Ultra', family: 'Ultra Plus', 'ultra plus': 'Ultra Plus' })[String(status.plan || '').trim().toLowerCase()] || (status.source === 'group' ? 'your included plan' : 'Premium')
     const extra = plan === 'Ultra Plus' ? ' Ultra Plus includes advanced tournament scouting.' : plan === 'Ultra' ? ' Ultra includes tournament scout stats.' : ''
-    info.textContent = '⭐ Your active plan: ' + plan + '. Membership customization is unlocked.' + extra
+    info.textContent = '⭐ Your active plan: ' + plan + '. ' + (status.lifetime ? 'Lifetime access — no expiry. ' : '') + 'Membership customization is unlocked.' + extra
     openBtn.textContent = '🎨 Customize ' + plan
     openBtn.disabled = false
   }
