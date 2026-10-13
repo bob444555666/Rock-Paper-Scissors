@@ -362,6 +362,7 @@
   function renderPanel() {
     panelBody.textContent = ''
     OPTIONS.forEach(o => {
+      if (o.id === 'scout' && !['duo', 'family', 'ultra', 'ultra plus'].includes(String(status && status.plan || '').trim().toLowerCase())) return
       if (o.group) { panelBody.append(make('h3', { textContent: o.group })); return }
       const box = make('div', { className: 'po' }, make('b', { textContent: o.label }))
       if (o.type === 'choice') {
