@@ -15,12 +15,9 @@
   const memberHelp = document.getElementById('member-help');
   const extraSeats = document.getElementById('extra-seats');
   const seatPrice = document.getElementById('seat-price');
-  const promoCodeInput = document.getElementById('promo-code');
-  const clearPromo = document.getElementById('clear-promo');
-  const promoStatus = document.getElementById('promo-status');
   const planButtons = [subscribe, duoPlan, familyPlan].filter(Boolean);
   const plansSection = document.querySelector('.plans');
-  const pricingSections = document.querySelectorAll('main > .member-manager[aria-label="Additional account pricing"], main > .member-manager[aria-label="Promo code"], main > .trial');
+  const pricingSections = document.querySelectorAll('main > .member-manager[aria-label="Additional account pricing"], main > .trial');
   const BASE_PRICES = { individual: 9.99, duo: 14.99, family: 31.99 };
   const EXTRA_ACCOUNT_PRICES = { individual: 3, duo: 5, family: 7 };
   let checkoutBusy = false;
@@ -182,10 +179,7 @@
     if (checkoutBusy) return;
     checkoutBusy = true;
     planButtons.forEach(button => { button.disabled = true; });
-    const enteredPromo = promoCodeInput ? promoCodeInput.value.trim() : '';
-    say(enteredPromo
-      ? 'Checking promo code and connecting securely to Stripe…'
-      : 'Connecting securely to Stripe…');
+    say('Connecting securely to Stripe…');
     let timeoutId;
     try {
       const controller = new AbortController();
@@ -194,7 +188,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ token: token(), plan, extraAccounts: requestedExtraSeats, promoCode: enteredPromo })
+        body: JSON.stringify({ token: token(), plan, extraAccounts: requestedExtraSeats })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not start checkout. Please try again.');
@@ -204,7 +198,7 @@
       window.location.assign(result.url);
     } catch (error) {
       const message = error.name === 'AbortError'
-        ? 'Checkout took too long. You can try again; promo codes can be submitted repeatedly.'
+        ? 'Checkout took too long. Please try again.'
         : (error.message || 'Checkout failed. You can try again.');
       say(message);
     } finally {
@@ -214,22 +208,6 @@
     }
   }
 
-  if (clearPromo) clearPromo.onclick = () => {
-    if (promoCodeInput) promoCodeInput.value = '';
-    if (promoStatus) promoStatus.textContent = 'Promo code cleared. You can enter another code at any time.';
-    say('Promo code cleared. Choose a plan when ready.');
-    checkoutBusy = false;
-    planButtons.forEach(button => { button.disabled = false; });
-  };
-  if (promoCodeInput) {
-    promoCodeInput.addEventListener('input', () => {
-      if (promoStatus) promoStatus.textContent = promoCodeInput.value.trim()
-        ? 'Code entered. It will be checked securely when you start checkout.'
-        : 'No promo code entered. You can still choose any plan.';
-      checkoutBusy = false;
-      if (!hasActiveMembership) planButtons.forEach(button => { button.disabled = false; });
-    });
-  }
 
   // Assign direct handlers so plan buttons remain clickable even if another script
   // has attached unrelated listeners to the page.
