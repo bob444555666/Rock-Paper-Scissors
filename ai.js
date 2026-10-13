@@ -440,8 +440,8 @@
   try { Object.assign(vp, JSON.parse(localStorage.getItem(VOICE_KEY) || '{}')) } catch (error) {}
   if (!HUMAN_VOICES[vp.gender]) vp.gender = 'girl'
   if (!HUMAN_VOICES[vp.gender].some(v => v[0] === vp.speaker)) vp.speaker = HUMAN_VOICES[vp.gender][0][0]
-  let speakOn = false
-  try { speakOn = localStorage.getItem(SPEAK_KEY) === '1' } catch (error) {}
+  let speakOn = true
+  try { const savedSpeak = localStorage.getItem(SPEAK_KEY); speakOn = savedSpeak === null ? true : savedSpeak === '1' } catch (error) {}
   let live = false       // hands-free conversation: listen, answer out loud, listen again
   let listening = false
   let speaking = false
@@ -544,7 +544,7 @@
     fetch(API + '/ai/speak', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: session(), text: t, speaker: vp.speaker }),
+      body: JSON.stringify({ token: session(), text: t, speaker: vp.speaker, mode: aiMode }),
       signal: ctl.signal
     })
       .then(res => { if (!res.ok) throw new Error('tts ' + res.status); return res.blob() })
