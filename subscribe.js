@@ -55,7 +55,9 @@
     const currentPlan = planName(result.plan || result.premiumPlan || (result.source === 'group' ? result.groupPlan : 'individual'));
     let message;
     if (result.plan === 'family') {
-      message = 'You have Ultra Plus! It includes everything in Ultra and Premium, plus all Ultra Plus features. Plan purchase buttons are locked while your membership is active.';
+      message = result.lifetime
+        ? 'You have Ultra Plus for life — no expiry. It includes everything in Ultra and Premium, plus all Ultra Plus features. Plan purchase buttons are locked while your membership is active.'
+        : 'You have Ultra Plus! It includes everything in Ultra and Premium, plus all Ultra Plus features. Plan purchase buttons are locked while your membership is active.';
     } else if (result.plan === 'duo') {
       message = 'You have Ultra! It includes everything in Premium, plus all Ultra features. Plan purchase buttons are locked while your membership is active.';
     } else {
