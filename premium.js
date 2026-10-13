@@ -338,7 +338,7 @@
   panelClose.addEventListener('click', () => { panel.hidden = true })
 
   function persist() {
-    store(CACHE, JSON.stringify({ premium: premiumNow(), prefs }))
+    store(CACHE, JSON.stringify({ premium: premiumNow(), plan: status && status.plan || '', prefs }))
     clearTimeout(saveTimer)
     saveTimer = setTimeout(async () => {
       const r = await call('/account/premium-prefs', { prefs })
@@ -422,8 +422,10 @@
       openBtn.disabled = false
       return
     }
-    info.textContent = '⭐ Your membership customization is unlocked. Change your themes, backgrounds, effects, sounds, and more.'
-    openBtn.textContent = '🎨 Customize membership look'
+    const plan = ({ individual: 'Premium', premium: 'Premium', duo: 'Ultra', ultra: 'Ultra', family: 'Ultra Plus', 'ultra plus': 'Ultra Plus' })[String(status.plan || '').trim().toLowerCase()] || (status.source === 'group' ? 'your included plan' : 'Premium')
+    const extra = plan === 'Ultra Plus' ? ' Ultra Plus includes advanced tournament scouting.' : plan === 'Ultra' ? ' Ultra includes tournament scout stats.' : ''
+    info.textContent = '⭐ Your active plan: ' + plan + '. Membership customization is unlocked.' + extra
+    openBtn.textContent = '🎨 Customize ' + plan
     openBtn.disabled = false
   }
 
@@ -441,7 +443,7 @@
     if (r.ok) {
       status = r.data
       prefs = status.premium && status.prefs ? status.prefs : {}
-      store(CACHE, status.premium ? JSON.stringify({ premium: true, prefs }) : null)
+      store(CACHE, status.premium ? JSON.stringify({ premium: true, plan: status.plan || '', prefs }) : null)
     } else if (r.status === 401) {
       status = null
       prefs = {}
@@ -456,7 +458,7 @@
   try {
     const cached = JSON.parse(load(CACHE) || 'null')
     if (cached && cached.premium && session()) {
-      status = { premium: true, source: '', badge: true, prefs: cached.prefs || {} }
+      status = { premium: true, source: '', plan: cached.plan || '', badge: true, prefs: cached.prefs || {} }
       prefs = cached.prefs || {}
       apply()
     }
