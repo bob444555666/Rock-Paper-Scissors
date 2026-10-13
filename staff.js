@@ -276,6 +276,7 @@
   function tabPremium() {
     const u = make('input', { type: 'text', placeholder: 'Account username', maxLength: 16, autocomplete: 'off', value: keep.prem.username })
     u.addEventListener('input', () => { keep.prem.username = u.value })
+
     const give = make('button', { className: 'big', type: 'button', textContent: 'Give Premium' })
     give.addEventListener('click', async () => {
       const r = await act('prem-add', { username: u.value }, 'Premium given.')
@@ -284,14 +285,32 @@
     content.append(make('h3', { textContent: 'Give Premium' }),
       make('p', { className: 'st-small', textContent: 'Premium is also won automatically in tournaments that have Premium as the prize.' }), u, give)
 
+    const plan = make('select')
+    ;[['individual', 'Premium'], ['duo', 'Ultra'], ['family', 'Ultra Plus']].forEach(([value, label]) => {
+      plan.append(make('option', { value, textContent: label }))
+    })
+    const lifetime = make('button', { className: 'big', type: 'button', textContent: 'Grant selected plan for life' })
+    lifetime.addEventListener('click', async () => {
+      if (!u.value.trim()) { msg.textContent = 'Enter an account username first.'; return }
+      const label = ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' })[plan.value] || 'Premium'
+      if (!confirm('Grant ' + label + ' for life to ' + u.value.trim() + '?')) return
+      const r = await act('prem-plan', { username: u.value.trim(), plan: plan.value, lifetime: true }, label + ' granted for life.')
+      if (r.ok) { keep.prem.username = ''; render() }
+    })
+    content.append(make('h3', { textContent: 'Grant a plan for life' }),
+      make('p', { className: 'st-small', textContent: 'This sets the actual account plan and saves lifetime access on the server, not just the label.' }),
+      plan, lifetime)
+
     const list = data.premium || []
-    content.append(make('h3', { textContent: `Premium members (${list.length})` }))
-    if (!list.length) content.append(make('p', { className: 'msg', textContent: 'Nobody has Premium yet.' }))
+    content.append(make('h3', { textContent: 'Plan members (' + list.length + ')' }))
+    if (!list.length) content.append(make('p', { className: 'msg', textContent: 'Nobody has a plan yet.' }))
     list.forEach(p => {
       const rm = make('button', { className: 'st-mini red', type: 'button', textContent: 'Remove' })
-      rm.addEventListener('click', () => { if (confirm(`Remove Premium from ${p.username}?`)) act('prem-remove', { id: p.id }, 'Premium removed.') })
+      rm.addEventListener('click', () => { if (confirm('Remove plan access from ' + p.username + '?')) act('prem-remove', { id: p.id }, 'Plan access removed.') })
+      const planName = ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' })[p.plan] || 'Premium'
+      const detail = (p.lifetime ? 'Lifetime ' : '') + planName + ' · ' + (p.source === 'tournament' ? 'won in a tournament' : 'granted by staff')
       content.append(make('div', { className: 'st-pl' }, pic(p.username, p.avatarAt),
-        make('span', { className: 'st-grow' }, make('b', { textContent: p.username }), make('small', { textContent: p.source === 'tournament' ? 'won in a tournament' : 'given by staff' })), rm))
+        make('span', { className: 'st-grow' }, make('b', { textContent: p.username }), make('small', { textContent: detail })), rm))
     })
   }
 
