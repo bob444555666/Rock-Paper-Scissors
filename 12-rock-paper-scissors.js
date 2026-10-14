@@ -1487,3 +1487,127 @@ setInterval(() => {
   if (!token || kicked) return
   if (!friendsLayer.hidden || friendTick % 4 === 0) loadFriends()
 }, 5000)
+
+// RPS ARENA progression HUD: local-only XP, streaks and optional synthesized SFX.
+// This never changes server results, accounts, subscriptions or competitive scores.
+;(() => {
+  const SCORE_KEY = 'rpsArenaProgress.v1';
+  const SOUND_KEY = 'rpsArenaSound.v1';
+  const defaults = { xp: 0, streak: 0, bestStreak: 0, rounds: 0, wins: 0 };
+  const readProgress = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SCORE_KEY) || '{}');
+      return { ...defaults, ...saved };
+    } catch (_) { return { ...defaults }; }
+  };
+  let progress = readProgress();
+  let soundEnabled = false;
+  try { soundEnabled = localStorage.getItem(SOUND_KEY) === 'on'; } catch (_) {}
+  let audioContext = null;
+
+  const score = document.querySelector('.js-score');
+  const result = document.querySelector('.js-result');
+  if (!score || !result) return;
+
+  const hud = document.createElement('section');
+  hud.className = 'arena-progression';
+  hud.setAttribute('aria-label', 'Your local game progression');
+  hud.innerHTML = `
+    <div class="arena-progression-head">
+      <div><span class="arena-eyebrow">PLAYER PROGRESSION</span><strong class="arena-level" id="arena-level">LEVEL 1</strong></div>
+      <label class="arena-sound-toggle"><input id="arena-sound" type="checkbox"><span>🔊 Sound effects</span></label>
+    </div>
+    <div class="arena-xp-meta"><span id="arena-xp-label">0 XP</span><span id="arena-next-label">250 XP to next level</span></div>
+    <div class="arena-xp-track" role="progressbar" aria-label="XP progress" aria-valuemin="0" aria-valuemax="250" aria-valuenow="0" id="arena-xp-track"><span id="arena-xp-fill"></span></div>
+    <div class="arena-progression-stats">
+      <div><span>🔥 CURRENT STREAK</span><strong id="arena-streak">0</strong></div>
+      <div><span>🏆 BEST STREAK</span><strong id="arena-best-streak">0</strong></div>
+      <div><span>🎯 ROUNDS PLAYED</span><strong id="arena-rounds">0</strong></div>
+    </div>
+    <p class="arena-progression-note">Earn XP every round. Win streaks add bonus XP. Progress is saved on this device.</p>
+  `;
+  score.insertAdjacentElement('afterend', hud);
+
+  const $ = id => document.getElementById(id);
+  const soundInput = $('arena-sound');
+  soundInput.checked = soundEnabled;
+
+  function renderProgress() {
+    const level = Math.floor(progress.xp / 250) + 1;
+    const intoLevel = progress.xp % 250;
+    $('arena-level').textContent = 'LEVEL ' + level;
+    $('arena-xp-label').textContent = progress.xp.toLocaleString() + ' XP';
+    $('arena-next-label').textContent = (250 - intoLevel) + ' XP to next level';
+    $('arena-xp-fill').style.width = (intoLevel / 250 * 100) + '%';
+    $('arena-xp-track').setAttribute('aria-valuenow', String(intoLevel));
+    $('arena-streak').textContent = String(progress.streak);
+    $('arena-best-streak').textContent = String(progress.bestStreak);
+    $('arena-rounds').textContent = progress.rounds.toLocaleString();
+  }
+  function saveProgress() {
+    try { localStorage.setItem(SCORE_KEY, JSON.stringify(progress)); } catch (_) {}
+    renderProgress();
+  }
+  function playSfx(outcome) {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      audioContext = audioContext || new AudioCtx();
+      if (audioContext.state === 'suspended') audioContext.resume();
+      const now = audioContext.currentTime;
+      const notes = outcome === 'win' ? [523.25, 659.25, 783.99] : outcome === 'tie' ? [440, 440] : [330, 247];
+      notes.forEach((frequency, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(frequency, now + index * 0.09);
+        gain.gain.setValueAtTime(0.0001, now + index * 0.09);
+        gain.gain.exponentialRampToValueAtTime(0.075, now + index * 0.09 + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.09 + 0.16);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(now + index * 0.09);
+        oscillator.stop(now + index * 0.09 + 0.17);
+      });
+    } catch (_) {}
+  }
+  soundInput.addEventListener('change', () => {
+    soundEnabled = soundInput.checked;
+    try { localStorage.setItem(SOUND_KEY, soundEnabled ? 'on' : 'off'); } catch (_) {}
+    if (soundEnabled) playSfx('win');
+  });
+
+  window.addEventListener('rps-result', event => {
+    const detail = event.detail || {};
+    if (!['win', 'loss', 'tie'].includes(detail.result)) return;
+    progress.rounds += 1;
+    let earned = 5;
+    if (detail.result === 'win') {
+      progress.streak += 1;
+      progress.wins += 1;
+      progress.bestStreak = Math.max(progress.bestStreak, progress.streak);
+      earned = 25 + Math.min(25, Math.max(0, progress.streak - 1) * 5);
+    } else if (detail.result === 'tie') {
+      earned = 8;
+    } else {
+      progress.streak = 0;
+    }
+    progress.xp += earned;
+    saveProgress();
+    result.classList.remove('arena-round-pop');
+    void result.offsetWidth;
+    result.classList.add('arena-round-pop');
+    result.dataset.outcome = detail.result;
+    result.setAttribute('aria-live', 'polite');
+    playSfx(detail.result);
+    const prior = result.querySelector('.arena-xp-earned');
+    if (prior) prior.remove();
+    const reward = document.createElement('span');
+    reward.className = 'arena-xp-earned';
+    reward.textContent = '+' + earned + ' XP';
+    result.appendChild(reward);
+  });
+
+  renderProgress();
+})();
