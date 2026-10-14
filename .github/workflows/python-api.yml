@@ -1,0 +1,29 @@
+name: Python API checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "python-backend/**"
+      - ".github/workflows/python-api.yml"
+  pull_request:
+    paths:
+      - "python-backend/**"
+      - ".github/workflows/python-api.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: python-backend/pyproject.toml
+      - name: Install Python and dependencies
+        run: uv sync --python 3.12
+      - name: Run game engine tests
+        run: uv run python -m unittest discover -s tests -v
