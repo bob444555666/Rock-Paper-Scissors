@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070d16"><meta name="description" content="Build custom Rock Paper Scissors matches, practice with different AI styles, and track training missions.">
+<title>Custom Arena Lab · Stone Paper Scissors</title>
+<link rel="stylesheet" href="/site-wide.css?v=5"><link rel="stylesheet" href="/game-lab.css?v=1">
+</head>
+<body>
+<main class="lab-wrap">
+<header class="lab-top"><a class="back" href="/">← Back to game</a><a class="back" href="/arcade-hub.html">🎮 Arcade Hub</a><a class="back" href="/subscribe.html">⭐ Memberships</a></header>
+<section class="lab-hero">
+<p class="eyebrow">CUSTOM ARENA · PYTHON GAME ENGINE</p><h1 class="title">Build your own match.</h1>
+<p>Mix match formats, AI personalities, variants, and training goals. Your setup is playable now; progress is saved in this browser.</p>
+<div class="lab-pills"><span>⚙️ 1,000+ setup combinations</span><span>🎯 100 training missions</span><span>🐍 Python-powered rounds</span></div>
+</section>
+<section class="lab-layout">
+<aside class="lab-panel">
+<h2>Match workshop</h2>
+<label>Game rules<select id="variant"><option value="classic">Classic · Rock Paper Scissors</option><option value="rpsls">Extended · Rock Paper Scissors Lizard Spock</option></select></label>
+<label>Match format<select id="format"><option value="single">Single round</option><option value="bo3" selected>Best of 3</option><option value="bo5">Best of 5</option><option value="bo7">Best of 7</option><option value="first5">First to 5 wins</option><option value="first10">First to 10 wins</option></select></label>
+<label>Computer personality<select id="ai-style"><option value="random">Randomizer · fair and unpredictable</option><option value="counter">Counter-striker · reacts to your habits</option><option value="copy">Echo · repeats your last move sometimes</option><option value="chaos">Chaos · changes strategy often</option></select></label>
+<label>Difficulty<select id="difficulty"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="insane">Insane</option></select></label>
+<label>Arena theme<select id="theme"><option value="neon">Neon Circuit</option><option value="forest">Emerald Forest</option><option value="cosmic">Cosmic Rift</option><option value="ember">Ember Forge</option><option value="ice">Glacier Lab</option></select></label>
+<label>Training focus<select id="focus"><option value="balanced">Balanced practice</option><option value="variety">Move variety</option><option value="streak">Build a streak</option><option value="comeback">Comeback practice</option><option value="ties">Tie-breaker practice</option></select></label>
+<div class="lab-toggle-row"><label class="lab-check"><input id="sound" type="checkbox" checked> Sound effects</label><label class="lab-check"><input id="show-hints" type="checkbox" checked> Coaching hints</label></div>
+<button class="go lab-primary" id="apply-settings" type="button">Apply setup</button><button class="back lab-reset" id="reset-stats" type="button">Reset local stats</button>
+<p class="lab-note" id="setup-note" aria-live="polite">Your selected setup is ready to play.</p>
+</aside>
+<section class="lab-panel lab-game" id="arena">
+<div class="lab-game-head"><div><p class="eyebrow">LIVE MATCH</p><h2 id="match-title">Neon Circuit</h2></div><span class="lab-status" id="match-status">READY</span></div>
+<div class="lab-scoreboard"><div><small>YOU</small><strong id="player-score">0</strong></div><div class="lab-vs">VS</div><div><small>COMPUTER</small><strong id="computer-score">0</strong></div></div>
+<p id="round-label" class="lab-round">Round 1 · Best of 3</p>
+<div class="lab-moves" id="move-buttons"></div>
+<div id="round-result" class="lab-result" role="status" aria-live="polite">Choose a move to start your match.</div>
+<div id="coach-hint" class="lab-hint">Coach tip: mix up your choices to avoid predictable patterns.</div>
+<div class="lab-actions"><button id="new-match" class="go" type="button">↻ New match</button><button id="undo-round" class="back" type="button">Undo last round</button></div>
+<div class="lab-stat-grid"><div><small>WINS</small><strong id="stat-wins">0</strong></div><div><small>WIN RATE</small><strong id="stat-rate">0%</strong></div><div><small>BEST STREAK</small><strong id="stat-streak">0</strong></div><div><small>ROUNDS</small><strong id="stat-rounds">0</strong></div></div>
+</section>
+</section>
+<section class="lab-panel mission-panel">
+<div class="lab-section-head"><div><p class="eyebrow">TRAINING BOARD</p><h2>100 missions. Your next personal best.</h2><p>Mission progress is tracked locally as you play. Search or filter the board.</p></div><div class="lab-mission-total" id="mission-total">0 / 100</div></div>
+<div class="lab-filters"><input id="mission-search" type="search" placeholder="Search missions…" aria-label="Search missions"><select id="mission-filter" aria-label="Filter missions"><option value="all">All missions</option><option value="active">In progress</option><option value="complete">Completed</option><option value="free">Free goals</option><option value="premium">Premium ideas</option></select><select id="mission-sort" aria-label="Sort missions"><option value="default">Recommended order</option><option value="progress">Most progress</option><option value="name">Name A–Z</option></select></div>
+<div class="lab-mission-grid" id="mission-grid"></div>
+<p class="lab-note">Membership-only missions are clearly marked and do not grant paid access. Premium, Ultra, and Ultra Plus entitlements continue to be controlled by your account and subscription service.</p>
+</section>
+<section class="lab-panel lab-history">
+<div class="lab-section-head"><div><p class="eyebrow">MATCH HISTORY</p><h2>Learn from your last rounds</h2></div><button class="back" id="export-history" type="button">Export JSON</button></div>
+<div id="history-list" class="lab-history-list"><p>No rounds yet. Play a match to start building your local history.</p></div>
+</section>
+<footer class="lab-footer"><a href="/">Game</a><a href="/quests.html">Quests</a><a href="/achievements.html">Achievements</a><a href="/competitive-lab.html">Competitive Lab</a><a href="/privacy.html">Privacy</a></footer>
+</main>
+<script src="/game-lab.js?v=1"></script>
+</body></html>
