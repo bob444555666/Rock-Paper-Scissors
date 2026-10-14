@@ -177,3 +177,17 @@ img { max-width:100%; }
 @keyframes arenaRoundPop { 0% { transform:scale(.97); filter:brightness(1); } 55% { transform:scale(1.025); filter:brightness(1.18); } 100% { transform:scale(1); filter:brightness(1); } }
 @media(max-width:420px) { .arena-progression { padding:12px; } .arena-progression-stats { gap:6px; } .arena-progression-stats>div { padding:9px 3px; } .arena-progression-stats span { font-size:8px; } .arena-progression-stats strong { font-size:19px; } .arena-sound-toggle { font-size:11px; } }
 @media(prefers-reduced-motion:reduce) { .arena-round-pop { animation:none!important; } #arena-xp-fill { transition:none!important; } }
+
+
+/* Python-backed daily challenge */
+.arena-daily-challenge { display:flex; align-items:center; gap:12px; margin-top:15px; padding:13px; border:1px solid rgba(66,232,245,.2); border-radius:12px; background:linear-gradient(110deg,rgba(66,232,245,.065),rgba(184,255,85,.035)); transition:border-color .2s,background .2s; }
+.arena-daily-challenge.is-complete { border-color:rgba(184,255,85,.55); background:linear-gradient(110deg,rgba(184,255,85,.1),rgba(66,232,245,.04)); }
+.arena-daily-icon { display:grid; place-items:center; flex:none; width:38px; height:38px; border-radius:11px; color:#08131b; background:linear-gradient(135deg,#42e8f5,#b8ff55); font-size:20px; }
+.arena-daily-copy { flex:1; min-width:0; }
+.arena-daily-copy .arena-eyebrow { font-size:9px; }
+.arena-daily-copy strong { display:block; margin-top:4px; color:#f3f7ff; font-size:13px; }
+.arena-daily-copy p { margin:3px 0 4px; color:#a8bad0; font-size:11px; line-height:1.4; }
+.arena-daily-status { color:#b8ff55; font-size:10px; font-weight:800; }
+.arena-daily-reward { flex:none; color:#b8ff55; font-size:19px; font-weight:950; text-align:center; white-space:nowrap; }
+.arena-daily-reward small { display:block; color:#94a8bf; font-size:9px; letter-spacing:.12em; }
+@media(max-width:420px) { .arena-daily-challenge { gap:8px; padding:10px; } .arena-daily-icon { width:32px; height:32px; font-size:17px; } .arena-daily-copy strong { font-size:12px; } .arena-daily-reward { font-size:16px; } }
