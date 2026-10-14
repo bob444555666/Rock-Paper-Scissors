@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from src.entry import daily_challenge, play_round, result_for
+from src.game import daily_challenge, play_round, result_for
 
 
 class GameRulesTests(unittest.TestCase):
@@ -17,11 +17,14 @@ class GameRulesTests(unittest.TestCase):
         self.assertIn(result["result"], ("win", "loss", "tie"))
         self.assertEqual(result["engine"], "python")
 
+    def test_round_rejects_invalid_move(self):
+        with self.assertRaises(ValueError):
+            play_round("lizard")
+
     def test_daily_challenge_is_stable_for_same_utc_day(self):
         moment = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
         first = daily_challenge(moment)
-        second = daily_challenge(moment)
-        self.assertEqual(first, second)
+        self.assertEqual(first, daily_challenge(moment))
         self.assertIn(first["requiredMove"], ("rock", "paper", "scissors"))
         self.assertEqual(first["rewardXp"], 75)
 
