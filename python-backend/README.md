@@ -7,7 +7,8 @@ This is an **additive** Python Worker for the existing game. It runs on the same
 - `GET /health` — runtime health check.
 - `GET /v1/rules` — game rules and supported difficulty levels.
 - `GET /v1/daily-challenge` — deterministic UTC daily challenge.
-- `POST /v1/round` — play a round using the Python game engine. JSON body: `{"move":"rock","level":"medium","history":["paper","rock"]}`.
+- `POST /v1/round` — play a classic round using the Python game engine. JSON body: `{"move":"rock","level":"medium","history":["paper","rock"]}`.
+- `POST /v1/custom-round` — play a validated classic or Rock Paper Scissors Lizard Spock round. Accepts `move`, `variant`, `level`, `history`, and `style` (`random`, `counter`, `copy`, or `chaos`).
 
 ## Local development
 
