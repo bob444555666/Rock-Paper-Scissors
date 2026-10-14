@@ -2,7 +2,7 @@ import json
 from urllib.parse import urlparse
 
 from workers import Response, WorkerEntrypoint
-from game import BEATS, MOVES, SMARTNESS, daily_challenge, play_round
+from game import BEATS, MOVES, EXTENDED_MOVES, SMARTNESS, daily_challenge, play_round, play_custom_round
 
 SITE_ORIGIN = "https://www.stone-paper-scissors.com"
 
@@ -41,12 +41,19 @@ class Default(WorkerEntrypoint):
             return json_response({"error": "Origin not allowed."}, 403)
 
         if path == "/health" and method == "GET":
-            return json_response({"ok": True, "service": "rps-python-api", "runtime": "python-workers", "version": 1})
+            return json_response({"ok": True, "service": "rps-python-api", "runtime": "python-workers", "version": 2})
         if path == "/v1/daily-challenge" and method == "GET":
             return json_response(daily_challenge())
         if path == "/v1/rules" and method == "GET":
-            return json_response({"moves": list(MOVES), "beats": BEATS, "levels": list(SMARTNESS), "engine": "python"})
-        if path == "/v1/round" and method == "POST":
+            return json_response({
+                "moves": list(MOVES),
+                "variants": {"classic": list(MOVES), "rpsls": list(EXTENDED_MOVES)},
+                "beats": BEATS,
+                "levels": list(SMARTNESS),
+                "aiStyles": ["random", "counter", "copy", "chaos"],
+                "engine": "python",
+            })
+        if path in ("/v1/round", "/v1/custom-round") and method == "POST":
             try:
                 body = await request.json()
             except Exception:
@@ -56,11 +63,22 @@ class Default(WorkerEntrypoint):
             move = body.get("move")
             level = body.get("level", "easy")
             history = body.get("history", [])
-            if not isinstance(move, str) or move not in MOVES:
-                return json_response({"error": "Move must be rock, paper, or scissors."}, 400)
+            if not isinstance(move, str):
+                return json_response({"error": "Move must be a string."}, 400)
             if not isinstance(level, str):
                 return json_response({"error": "Level must be a string."}, 400)
-            if not isinstance(history, list) or len(history) > 100 or any(item not in MOVES for item in history):
-                return json_response({"error": "History must contain at most 100 valid moves."}, 400)
+            if not isinstance(history, list) or len(history) > 100 or any(not isinstance(item, str) for item in history):
+                return json_response({"error": "History must contain at most 100 move strings."}, 400)
+            if path == "/v1/custom-round":
+                variant = body.get("variant", "classic")
+                style = body.get("style", "random")
+                if not isinstance(variant, str) or not isinstance(style, str):
+                    return json_response({"error": "Variant and style must be strings."}, 400)
+                try:
+                    return json_response(play_custom_round(move, variant, level, history, style))
+                except ValueError as error:
+                    return json_response({"error": str(error)}, 400)
+            if move not in MOVES or any(item not in MOVES for item in history):
+                return json_response({"error": "Move and history must use rock, paper, or scissors."}, 400)
             return json_response(play_round(move, level, history))
         return json_response({"error": "Not found."}, 404)
