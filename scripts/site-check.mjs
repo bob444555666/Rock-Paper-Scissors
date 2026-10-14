@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const entries = fs.readdirSync(root, { withFileTypes: true });
-const htmlFiles = entries.filter(entry => entry.isFile() && entry.name.endsWith('.html')).map(entry => entry.name);
+const htmlFiles = entries.filter(entry => entry.isFile() && entry.name.endsWith('.html') && !/^google[^/]*\.html$/i.test(entry.name)).map(entry => entry.name);
 const failures = [];
 
 function existsLocalPath(raw, fromFile) {
