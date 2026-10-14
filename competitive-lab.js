@@ -6,6 +6,7 @@ const STORE='rpsCompetitiveLab.v1';
 const MOVES=['rock','paper','scissors'];
 const ICON={rock:'✊',paper:'✋',scissors:'✌️'};
 const BEATS={rock:'scissors',paper:'rock',scissors:'paper'};
+const COUNTERS={rock:'paper',paper:'scissors',scissors:'rock'};
 const token=()=>{try{return localStorage.getItem('token')}catch{return null}};
 let tier='free', state={rounds:[],sessions:[],daily:{day:'',goal:'wins',wins:0,streak:0,used:[]}}, series={you:0,ai:0,rounds:0,done:false};
 const dayKey=()=>new Date().toLocaleDateString('en-CA');
@@ -42,14 +43,14 @@ function applyLocks(){
 function aiMove(){
  const style=$('opponent').value, previous=state.rounds.slice(-8);
  if(style==='random')return randomMove();
- if(style==='counter'&&previous.length)return BEATS[previous[previous.length-1].you]||randomMove();
- if(style==='pattern'&&previous.length>=2){const last=previous[previous.length-1].you;const prev=previous[previous.length-2].you;if(last===prev)return BEATS[last];}
+ if(style==='counter'&&previous.length)return COUNTERS[previous[previous.length-1].you]||randomMove();
+ if(style==='pattern'&&previous.length>=2){const last=previous[previous.length-1].you;const prev=previous[previous.length-2].you;if(last===prev)return COUNTERS[last];}
  if(levelFor(tier)>=2){
   const plusStyle=$('training-style').value;
   if(plusStyle==='bluffer'&&Math.random()<.35)return MOVES[(MOVES.indexOf(previous.at(-1)?.you||'rock')+1)%3];
-  if(plusStyle==='streak'&&series.you>series.ai)return BEATS[previous.at(-1)?.you||'rock'];
+  if(plusStyle==='streak'&&series.you>series.ai)return COUNTERS[previous.at(-1)?.you||'rock'];
   if(plusStyle==='chaos'&&Math.random()<.5)return randomMove();
-  if(plusStyle==='adaptive'&&previous.length>=3){const counts={rock:0,paper:0,scissors:0};previous.forEach(x=>counts[x.you]++);const common=MOVES.slice().sort((a,b)=>counts[b]-counts[a])[0];return BEATS[common]}
+  if(plusStyle==='adaptive'&&previous.length>=3){const counts={rock:0,paper:0,scissors:0};previous.forEach(x=>counts[x.you]++);const common=MOVES.slice().sort((a,b)=>counts[b]-counts[a])[0];return COUNTERS[common]}
  }
  if(style==='counter'||style==='pattern')return randomMove();
  return randomMove();
