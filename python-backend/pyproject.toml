@@ -1,0 +1,9 @@
+[project]
+name = "rps-python-api"
+version = "0.1.0"
+description = "An additive Python API for Stone Paper Scissors"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = ["workers-py"]
