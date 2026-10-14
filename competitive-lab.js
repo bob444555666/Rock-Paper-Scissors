@@ -49,7 +49,7 @@ function aiMove(){
   if(plusStyle==='bluffer'&&Math.random()<.35)return MOVES[(MOVES.indexOf(previous.at(-1)?.you||'rock')+1)%3];
   if(plusStyle==='streak'&&series.you>series.ai)return BEATS[previous.at(-1)?.you||'rock'];
   if(plusStyle==='chaos'&&Math.random()<.5)return randomMove();
-  if(plusStyle==='adaptive'&&previous.length>=3){const counts={rock:0,paper:0,scissors:0};previous.forEach(x=>counts[x.you]++);const common=MOVES.sort((a,b)=>counts[b]-counts[a])[0];return BEATS[common]}
+  if(plusStyle==='adaptive'&&previous.length>=3){const counts={rock:0,paper:0,scissors:0};previous.forEach(x=>counts[x.you]++);const common=MOVES.slice().sort((a,b)=>counts[b]-counts[a])[0];return BEATS[common]}
  }
  if(style==='counter'||style==='pattern')return randomMove();
  return randomMove();
