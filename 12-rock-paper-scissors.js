@@ -796,7 +796,7 @@ function applyResult(
 
 
   window.dispatchEvent(new CustomEvent('rps-result', {
-    detail: { which, result, level }
+    detail: { which, result, level, yourMove }
   }))
 
   updateScoreElement()
@@ -1525,12 +1525,62 @@ setInterval(() => {
       <div><span>🎯 ROUNDS PLAYED</span><strong id="arena-rounds">0</strong></div>
     </div>
     <p class="arena-progression-note">Earn XP every round. Win streaks add bonus XP. Progress is saved on this device.</p>
+    <div class="arena-daily-challenge" id="arena-daily-challenge">
+      <div class="arena-daily-icon" aria-hidden="true">⚡</div>
+      <div class="arena-daily-copy">
+        <span class="arena-eyebrow">DAILY CHALLENGE · PYTHON API</span>
+        <strong id="arena-daily-title">Loading today's challenge…</strong>
+        <p id="arena-daily-goal">Connecting to the Python game service.</p>
+        <span id="arena-daily-status" class="arena-daily-status" aria-live="polite">Checking challenge…</span>
+      </div>
+      <div class="arena-daily-reward">+75 <small>XP</small></div>
+    </div>
   `;
   score.insertAdjacentElement('afterend', hud);
 
   const $ = id => document.getElementById(id);
   const soundInput = $('arena-sound');
   soundInput.checked = soundEnabled;
+
+
+  const DAILY_API = 'https://rps-python-api.heyboernathan.workers.dev';
+  const dailyKey = 'rpsArenaDailyChallenge.v1';
+  let dailyChallenge = null;
+  const dailyTitle = $('arena-daily-title');
+  const dailyGoal = $('arena-daily-goal');
+  const dailyStatus = $('arena-daily-status');
+
+  async function loadDailyChallenge() {
+    try {
+      const response = await fetch(DAILY_API + '/v1/daily-challenge', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Daily challenge service unavailable');
+      const data = await response.json();
+      if (!data || !data.id || !['rock', 'paper', 'scissors'].includes(data.requiredMove)) throw new Error('Invalid daily challenge');
+      dailyChallenge = data;
+      dailyTitle.textContent = data.title || 'Daily Counter';
+      dailyGoal.textContent = data.goal || ('Win a round using ' + data.requiredMove + '.');
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(dailyKey) || 'null'); } catch (_) {}
+      const done = saved && saved.id === data.id && saved.completed === true;
+      dailyStatus.textContent = done ? '✓ Challenge completed today' : 'Play against the computer to complete it';
+      document.getElementById('arena-daily-challenge').classList.toggle('is-complete', !!done);
+    } catch (_) {
+      dailyTitle.textContent = 'Daily challenge unavailable';
+      dailyGoal.textContent = 'The Python game service could not be reached. Your regular game still works.';
+      dailyStatus.textContent = 'Retry by refreshing the page';
+    }
+  }
+
+  function completeDailyChallenge() {
+    if (!dailyChallenge || !dailyStatus) return 0;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(dailyKey) || 'null'); } catch (_) {}
+    if (saved && saved.id === dailyChallenge.id && saved.completed) return 0;
+    try { localStorage.setItem(dailyKey, JSON.stringify({ id: dailyChallenge.id, date: dailyChallenge.date, completed: true })); } catch (_) {}
+    dailyStatus.textContent = '✓ Challenge complete! +75 bonus XP';
+    document.getElementById('arena-daily-challenge').classList.add('is-complete');
+    return Number(dailyChallenge.rewardXp) || 75;
+  }
 
   function renderProgress() {
     const level = Math.floor(progress.xp / 250) + 1;
@@ -1593,6 +1643,10 @@ setInterval(() => {
     } else {
       progress.streak = 0;
     }
+    if (detail.which === 'computer' && detail.result === 'win' && dailyChallenge && detail.yourMove === dailyChallenge.requiredMove) {
+      const bonus = completeDailyChallenge();
+      if (bonus > 0) earned += bonus;
+    }
     progress.xp += earned;
     saveProgress();
     result.classList.remove('arena-round-pop');
@@ -1610,4 +1664,5 @@ setInterval(() => {
   });
 
   renderProgress();
+  loadDailyChallenge();
 })();
