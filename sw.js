@@ -1,6 +1,6 @@
 // Simple service worker: network first, falls back to cache when offline.
 // Only handles same-site GET requests, so your game server, login and ads are never touched.
-const CACHE = 'rps-v24'
+const CACHE = 'rps-v25'
 const SHELL = ['/', '/index.html', '/leaderboard.html', '/privacy.html', '/music.html', '/minigames.html', '/competitive-lab.html', '/12-rock-paper-scissors.css', '/site-wide.css', '/12-rock-paper-scissors.js', '/challenge.js', '/ai.js', '/tournament.js', '/premium.js', '/premium-global.js', '/multiplayer.html', '/multiplayer.js', '/arcade-hub.html', '/arcade.js', '/arcade.html', '/arcade-game.js', '/quests.html', '/quests.js', '/achievements.html', '/achievements.js', '/vault.html', '/vault.js', '/subscribe.html', '/subscribe.js', '/competitive-lab.js', '/staff.js', '/favicon.svg', '/favicon-192.png', '/favicon-512.png', '/icon-maskable-512.png', '/manifest.json', '/images/rock-emoji.png', '/images/paper-emoji.png', '/images/scissors-emoji.png']
 
 self.addEventListener('install', event => {
