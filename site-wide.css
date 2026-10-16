@@ -191,3 +191,55 @@ img { max-width:100%; }
 .arena-daily-reward { flex:none; color:#b8ff55; font-size:19px; font-weight:950; text-align:center; white-space:nowrap; }
 .arena-daily-reward small { display:block; color:#94a8bf; font-size:9px; letter-spacing:.12em; }
 @media(max-width:420px) { .arena-daily-challenge { gap:8px; padding:10px; } .arena-daily-icon { width:32px; height:32px; font-size:17px; } .arena-daily-copy strong { font-size:12px; } .arena-daily-reward { font-size:16px; } }
+
+
+/* Unified navigation: keep every navigation link inside the hamburger menu on all screen sizes. */
+.rps-main-nav {
+  position: sticky !important;
+  z-index: 1000 !important;
+  overflow: visible !important;
+}
+.rps-nav-toggle {
+  display: flex !important;
+  flex: 0 0 44px !important;
+  margin-left: auto !important;
+}
+.rps-nav-links {
+  display: none !important;
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  left: auto !important;
+  z-index: 1001 !important;
+  width: min(340px, calc(100vw - 24px)) !important;
+  max-height: min(72vh, 560px) !important;
+  overflow-y: auto !important;
+  flex: none !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 5px !important;
+  padding: 10px !important;
+  border: 1px solid rgba(120,190,220,.3) !important;
+  border-radius: 14px !important;
+  background: rgba(7,14,25,.98) !important;
+  box-shadow: 0 18px 44px rgba(0,0,0,.48) !important;
+  backdrop-filter: blur(18px);
+}
+.rps-nav-links.is-open {
+  display: flex !important;
+}
+.rps-nav-links a {
+  display: flex !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 11px 12px !important;
+  white-space: normal !important;
+}
+@media (max-width: 760px) {
+  .rps-nav-links {
+    top: calc(100% + 7px) !important;
+    width: min(340px, calc(100vw - 16px)) !important;
+  }
+}
