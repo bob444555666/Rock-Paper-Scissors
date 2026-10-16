@@ -82,52 +82,13 @@
       .seo-text a { color: var(--blue); }
     </style>
     <link rel="stylesheet" href="12-rock-paper-scissors.css?v=14">
-  <link rel="stylesheet" href="/site-wide.css?v=4">
+  <link rel="stylesheet" href="/site-wide.css?v=5">
 </head>
 
   <body>
 
-    <nav class="rps-main-nav" aria-label="Main navigation">
-      <a class="rps-nav-brand" href="/" aria-label="Stone Paper Scissors home">✊ <span>STONE <b>PAPER</b> SCISSORS</span></a>
-      <div class="rps-nav-links">
-        <a href="/" aria-current="page">🎮 Play</a>
-        <a href="/arcade-hub.html">🕹️ Arcade Hub</a>
-        <a class="rps-nav-lab" href="/game-lab.html">🧪 Custom Arena</a>
-        <a href="/multiplayer.html">👥 Multiplayer</a>
-        <a href="/subscribe.html">⭐ Memberships</a>
-      </div>
-      <button class="rps-nav-toggle" type="button" aria-expanded="false" aria-controls="rps-nav-links" aria-label="Open navigation menu"><span></span><span></span><span></span></button>
-    </nav>
     <button id="user-chip" class="ui-fab" type="button" hidden></button>
     <button id="lb-btn" class="ui-fab" type="button">🏆 Top</button>
-    <style>
-      .rps-main-nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:1000;width:min(1160px,calc(100% - 24px));margin:10px auto 18px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(120,190,220,.24);border-radius:16px;background:rgba(7,14,25,.92);backdrop-filter:blur(18px);box-shadow:0 10px 32px rgba(0,0,0,.24)}
-      .rps-nav-brand{display:flex;align-items:center;gap:8px;white-space:nowrap;color:#f2f7ff;text-decoration:none;font-size:12px;font-weight:950;letter-spacing:.04em}.rps-nav-brand>b,.rps-nav-brand b{color:#b8ff55}
-      .rps-nav-links{display:flex;align-items:center;justify-content:flex-end;gap:5px;flex-wrap:wrap}.rps-nav-links a{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 11px;border:1px solid transparent;border-radius:10px;color:#d9e6f7;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap;transition:background .16s,border-color .16s}.rps-nav-links a:hover{background:rgba(255,255,255,.06);border-color:rgba(150,190,220,.2)}.rps-nav-links .rps-nav-lab{color:#bdf9ff;background:rgba(66,232,245,.08);border-color:rgba(66,232,245,.3)}.rps-nav-toggle{display:none;align-items:center;justify-content:center;flex-direction:column;gap:5px;width:42px;height:42px;border:1px solid rgba(120,190,220,.3);border-radius:11px;background:#0d1928;cursor:pointer}.rps-nav-toggle span{display:block;width:18px;height:2px;border-radius:2px;background:#b8ff55}
-      @media(max-width:760px){.rps-main-nav{position:sticky;top:env(safe-area-inset-top,0px);width:calc(100% - 16px);margin:8px auto 14px;padding:8px 10px;flex-wrap:wrap}.rps-nav-brand{font-size:10px;letter-spacing:0}.rps-nav-toggle{display:flex;margin-left:auto}.rps-nav-links{display:none;flex:1 0 100%;width:100%;align-items:stretch;flex-direction:column;gap:5px;padding-top:6px}.rps-nav-links.is-open{display:flex}.rps-nav-links a{justify-content:flex-start;width:100%;padding:11px 12px}.rps-main-nav{scroll-margin-top:env(safe-area-inset-top,0px)}}
-    </style>
-    <script>
-      (() => {
-        const nav = document.querySelector('.rps-main-nav');
-        if (!nav) return;
-        const toggle = nav.querySelector('.rps-nav-toggle');
-        const links = nav.querySelector('.rps-nav-links');
-        if (!toggle || !links) return;
-        links.id = 'rps-nav-links';
-        toggle.addEventListener('click', () => {
-          const open = links.classList.toggle('is-open');
-          toggle.setAttribute('aria-expanded', String(open));
-          toggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
-        });
-        links.addEventListener('click', event => {
-          if (event.target.closest('a')) {
-            links.classList.remove('is-open');
-            toggle.setAttribute('aria-expanded', 'false');
-            toggle.setAttribute('aria-label', 'Open navigation menu');
-          }
-        });
-      })();
-    </script>
 
     <div class="ui-layer" id="friends-layer" hidden>
       <div class="card">
