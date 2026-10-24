@@ -25,6 +25,109 @@
   let hasActiveMembership = false;
   let selectedPlan = 'individual';
   let billingPeriod = 'month';
+  const ashtonManager = document.createElement('section');
+  ashtonManager.id = 'ashton-plan-manager';
+  ashtonManager.hidden = true;
+  ashtonManager.style.cssText = 'margin:18px 0;padding:18px;border:1px solid rgba(251,191,36,.45);border-radius:18px;background:linear-gradient(135deg,rgba(20,20,35,.98),rgba(35,26,12,.96));color:#fff;box-shadow:0 14px 35px rgba(0,0,0,.2)';
+  const mainEl = document.querySelector('main');
+  if (mainEl) mainEl.insertBefore(ashtonManager, plansSection || null);
+
+  async function cancelAshtonSubscriptions() {
+    const response = await fetch(PAYMENT_API + '/account/ashton-cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token() })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not cancel subscriptions.');
+    return data;
+  }
+
+  function ashtonButton(label, action, danger = false) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;margin:5px;padding:11px 14px;border-radius:11px;border:1px solid ' + (danger ? '#f87171' : 'rgba(255,255,255,.2)') + ';background:' + (danger ? 'rgba(127,29,29,.8)' : 'rgba(255,255,255,.08)') + ';color:#fff;font:600 13px system-ui;cursor:pointer';
+    button.addEventListener('click', async () => {
+      if (!token()) { say('Log in to your Ashton account first.'); return; }
+      const labelBefore = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Working…';
+      try {
+        if (action.kind === 'free') {
+          if (!confirm('Cancel every active Stripe subscription for Ashton and set this account to ' + action.label + '?')) return;
+          await cancelAshtonSubscriptions();
+          await call('/account/ashton-plan', { action: 'choose-free', plan: action.plan });
+          say('Ashton is now set to ' + action.label + (action.plan === 'free' ? '.' : ' for free, for life.'));
+          await checkStatus();
+        } else if (action.kind === 'cancel') {
+          if (!confirm('Cancel every active Stripe subscription belonging to Ashton immediately and remove the current membership? This can end paid access right away.')) return;
+          const result = await cancelAshtonSubscriptions();
+          hasActiveMembership = false;
+          say('Cancelled ' + Number(result.cancelled || 0) + ' subscription(s). Ashton can now choose a free plan or start a new paid plan.');
+          await checkStatus();
+        } else if (action.kind === 'paid') {
+          if (!confirm('Cancel any existing Stripe subscriptions for Ashton before starting a new paid ' + action.label + ' checkout?')) return;
+          await cancelAshtonSubscriptions();
+          hasActiveMembership = false;
+          await startCheckout(action.plan);
+        }
+      } catch (error) {
+        say(error.message || 'That plan change failed. Please try again.');
+      } finally {
+        button.disabled = false;
+        button.textContent = labelBefore;
+      }
+    });
+    return button;
+  }
+
+  async function refreshAshtonManager() {
+    if (!token()) { ashtonManager.hidden = true; return false; }
+    try {
+      const info = await call('/account/ashton-plan', { action: 'status' });
+      if (String(info.username || '').trim().toLowerCase() !== 'ashton') { ashtonManager.hidden = true; return false; }
+      ashtonManager.hidden = false;
+      ashtonManager.textContent = '';
+      const title = document.createElement('h2');
+      title.textContent = 'Ashton · Plan Control';
+      title.style.cssText = 'margin:0 0 8px;font-size:20px';
+      const current = document.createElement('p');
+      const currentName = ({ free: 'Free', individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' })[info.plan] || 'Free';
+      current.textContent = 'Current plan: ' + currentName + (info.lifetime ? ' · free for life' : '') + '. This private control only works for the Ashton account.';
+      current.style.cssText = 'margin:0 0 12px;color:rgba(255,255,255,.78);font-size:13px;line-height:1.5';
+      const cancelTitle = document.createElement('h3');
+      cancelTitle.textContent = 'Subscriptions';
+      cancelTitle.style.cssText = 'margin:12px 0 5px;font-size:15px';
+      const cancelHelp = document.createElement('p');
+      cancelHelp.textContent = 'Cancel all active Stripe subscriptions immediately and reset the account to Free before choosing another plan.';
+      cancelHelp.style.cssText = 'margin:0 0 8px;color:rgba(255,255,255,.65);font-size:12px';
+      ashtonManager.append(title, current, cancelTitle, cancelHelp, ashtonButton('Cancel all subscriptions', { kind: 'cancel' }, true));
+      const freeTitle = document.createElement('h3');
+      freeTitle.textContent = 'Choose a plan for free';
+      freeTitle.style.cssText = 'margin:12px 0 5px;font-size:15px';
+      ashtonManager.append(freeTitle,
+        ashtonButton('Free · no membership', { kind: 'free', plan: 'free', label: 'Free' }),
+        ashtonButton('Premium · free for life', { kind: 'free', plan: 'individual', label: 'Premium' }),
+        ashtonButton('Ultra · free for life', { kind: 'free', plan: 'duo', label: 'Ultra' }),
+        ashtonButton('Ultra Plus · free for life', { kind: 'free', plan: 'family', label: 'Ultra Plus' }));
+      const paidTitle = document.createElement('h3');
+      paidTitle.textContent = 'Choose a paid plan';
+      paidTitle.style.cssText = 'margin:12px 0 5px;font-size:15px';
+      const paidHelp = document.createElement('p');
+      paidHelp.textContent = 'Paid options open the normal secure Stripe checkout. Existing Ashton subscriptions are cancelled first to avoid overlapping plans.';
+      paidHelp.style.cssText = 'margin:0 0 8px;color:rgba(255,255,255,.65);font-size:12px';
+      ashtonManager.append(paidTitle, paidHelp,
+        ashtonButton('Pay for Premium', { kind: 'paid', plan: 'individual', label: 'Premium' }),
+        ashtonButton('Pay for Ultra', { kind: 'paid', plan: 'duo', label: 'Ultra' }),
+        ashtonButton('Pay for Ultra Plus', { kind: 'paid', plan: 'family', label: 'Ultra Plus' }));
+      return true;
+    } catch (error) {
+      ashtonManager.hidden = true;
+      return false;
+    }
+  }
+
 
   const money = value => '$' + value.toFixed(2) + ' CAD/' + (billingPeriod === 'year' ? 'year' : 'month');
   const token = () => {
@@ -141,6 +244,7 @@
     if (!token()) {
       hasActiveMembership = false;
       if (memberManager) memberManager.hidden = true;
+      if (ashtonManager) ashtonManager.hidden = true;
       if (plansSection) plansSection.hidden = false;
       pricingSections.forEach(section => { section.hidden = false; });
       planButtons.forEach(button => { button.disabled = false; });
@@ -149,6 +253,7 @@
     }
     try {
       const result = await call('/account/premium');
+      await refreshAshtonManager();
       if (result.premium) {
         await showActivePlan(result);
       } else {
