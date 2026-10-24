@@ -1,20 +1,20 @@
 # Premium membership plans and billing
 
-All amounts are CAD and billed monthly. The public-facing names are Premium, Ultra, and Ultra Plus. The existing internal Stripe/Worker plan keys remain `individual`, `duo`, and `family` so current checkout and member entitlements continue to work.
+All amounts are CAD. Monthly plans renew monthly; annual plans are charged once per year. Public plan names are Premium, Ultra, and Ultra Plus. Internal Stripe/Worker keys remain `individual`, `duo`, and `family`. The public-facing names are Premium, Ultra, and Ultra Plus. The existing internal Stripe/Worker plan keys remain `individual`, `duo`, and `family` so current checkout and member entitlements continue to work.
 
 ## Public plan lineup
 
 | Public plan | Internal key | Price | Accounts included | Trial |
 | --- | --- | ---: | ---: | --- |
-| Premium | `individual` | $9.99/month base + $3/month per extra account | 1 total included | 7 days |
-| Ultra | `duo` | $14.99/month base + $5/month per extra account | 1 total included | None |
-| Ultra Plus | `family` | $31.99/month base + $7/month per extra account | 1 total included | None |
+| Premium | `individual` | $9.99/month or $99.99/year + $3/month or $36/year per extra account | 1 total included | 7 days on monthly only |
+| Ultra | `duo` | $14.99/month or $149.99/year + $5/month or $60/year per extra account | 1 total included | None |
+| Ultra Plus | `family` | $19.99/month or $199.99/year + $7/month or $84/year per extra account | 1 total included | None |
 
 ## Per-account pricing change requested
 
 The intended policy is that every tier includes only the subscribing account. Each additional account costs CAD $3/month on Premium, $5/month on Ultra, and $7/month on Ultra Plus, added to the selected tier's base price. There is no tier-specific default allowance for multiple accounts under the new policy.
 
-The checkout and entitlement Worker has been updated to validate up to 99 extra accounts, add the tier-specific recurring price to Stripe Checkout, store the purchased quantity in subscription metadata, and enforce that purchased quantity when managing member accounts. The plan page sends the selected extra-account quantity to the Worker. Test-mode recurring prices exist for Premium ($3/month, `price_1UP6ZN3FalmEL64xWXkZenqu`), Ultra ($5/month, `price_1UP6ZR3FalmEL64xNuq5DHNg`), and Ultra Plus ($7/month, `price_1UP6ZT3FalmEL64xWPQKUCoH`). The connected Stripe account is test mode only; live-mode prices and live credentials are not configured here, so do not treat this as ready to collect real payments.
+The live `paymentsystem` Worker now accepts `billingPeriod: "month" | "year"`, adds the selected base price and optional extra-account recurring price to Checkout, stores `extraAccounts` and `billingPeriod` in subscription metadata, and syncs purchased extra-account limits to the game Worker. Annual extra-account prices are the monthly add-on amount multiplied by 12; the base annual prices include roughly two months of savings. Premium's 7-day trial applies only to monthly Premium checkout.
 
 ## Benefits shown on the plan page
 
@@ -24,7 +24,25 @@ The checkout and entitlement Worker has been updated to validate up to 99 extra 
 
 Implementation status: the plan page now presents a deduplicated benefits list, but the list is not proof that every benefit is live in gameplay. The existing Worker currently handles checkout, subscription status, and group-member limits. New competitive leagues, detailed analytics, custom match lengths, adjustable AI practice, tournament hosting, monthly rewards, ad-free enforcement, and priority support still need their respective game UI/service logic and server-side entitlement checks before being advertised as active. Existing Premium cosmetics should be reused rather than duplicated.
 
-## Current Stripe test-mode catalog
+## Live Stripe catalog
+
+The following live-mode CAD recurring prices are active in the connected R-P-S Stripe account. The old Ultra Plus $31.99 monthly price remains active in Stripe for historical subscriptions, but new checkout uses the replacement $19.99 monthly price.
+
+| Price | Amount | Stripe price ID |
+| --- | ---: | --- |
+| Premium monthly | $9.99/month | `price_1UPeYnKoGEk54c2MML5uP6Tr` |
+| Premium annual | $99.99/year | `price_1UTtM0KoGEk54c2MSGrYV31P` |
+| Ultra monthly | $14.99/month | `price_1UPeYpKoGEk54c2McDPgvx5H` |
+| Ultra annual | $149.99/year | `price_1UTtM2KoGEk54c2MDpbayI6Z` |
+| Ultra Plus monthly | $19.99/month | `price_1UTtLvKoGEk54c2MVlbAgfuF` |
+| Ultra Plus annual | $199.99/year | `price_1UTtM3KoGEk54c2Md1jGFbOp` |
+| Premium extra account monthly / annual | $3/month · $36/year | `price_1UTtNkKoGEk54c2Mgi3ce0BV` / `price_1UTtO5KoGEk54c2MtfiMOz4F` |
+| Ultra extra account monthly / annual | $5/month · $60/year | `price_1UTtNmKoGEk54c2MfvngWiM4` / `price_1UTtO7KoGEk54c2MOvz02aX7` |
+| Ultra Plus extra account monthly / annual | $7/month · $84/year | `price_1UTtNoKoGEk54c2MGoiqPq09` / `price_1UTtO9KoGEk54c2M8X7SXuGT` |
+
+The live webhook endpoint is configured at `https://paymentsystem.heyboernathan.workers.dev/stripe/webhook`. Verify its signing secret is set on the Worker before relying on live membership activation.
+
+## Historical Stripe test-mode catalog
 
 These objects were created in the connected Stripe sandbox. They are for testing only and do not collect live payments. The Stripe test-mode product names have also been updated to Premium, Ultra, and Ultra Plus.
 
@@ -48,7 +66,7 @@ The test-mode webhook is configured at `https://rps-server.heyboernathan.workers
 
 ## Before taking real payments
 
-The connected Stripe account used for this setup is a **test-mode sandbox**. Before launch, create matching live-mode monthly CAD prices, update the price IDs in the Worker checkout route, configure the live webhook for the same URL and required events, and set the Worker's `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to the live account's corresponding secrets. Do not use test-mode price IDs with a live secret key.
+The connected Stripe account used for this update is the **R-P-S live-mode account**. The Worker was deployed with the live price IDs. Confirm the live webhook signing secret and account session synchronization in Cloudflare before announcing the full live purchase flow as end-to-end verified. Do not mix test-mode prices or secrets into this Worker.
 
 Review applicable GST/HST and other tax obligations and configure Stripe Tax only after the appropriate tax registrations/settings are in place.
 
