@@ -99,7 +99,7 @@
     const dialog = element('div','sp-dialog'); dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-modal','true'); dialog.setAttribute('aria-labelledby','sp-dialog-title');
     const dialogTitle=element('h2','', 'Quick Draw!'); dialogTitle.id='sp-dialog-title';
     const message=element('p','','Press start, wait for GO!, then tap as quickly as you can. False starts count!'); message.id='sp-draw-message';
-    const start=element('button','','Start test'); start.type='button'; start.id='sp-draw-start';
+    const start=element('button','','Start test'); start.type='button'; start.id='sp-draw-start'; start.onclick=startDraw;
     const close=element('button','','Close'); close.type='button'; close.addEventListener('click',closeDraw);
     dialog.append(dialogTitle,message,start,close); overlay.appendChild(dialog); document.body.appendChild(overlay);
     overlay.addEventListener('click',e=>{ if(e.target===overlay) closeDraw(); });
