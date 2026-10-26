@@ -1118,3 +1118,8 @@ body[data-theme="midnight"] .js-scissors-button { background:var(--sp-lime); }
   .move-button, .sp-burst { animation:none!important; }
   .move-button { will-change:auto; }
 }
+
+/* User-selected reduced motion applies to every new UI element too. */
+body.sp-reduced-motion *, body.sp-reduced-motion *::before, body.sp-reduced-motion *::after {
+  animation:none!important; transition:none!important; scroll-behavior:auto!important; will-change:auto!important;
+}
