@@ -5,7 +5,7 @@
    v4 notes:  Now with live voice: tap the mic to talk, or use Live talk for a hands-free back-and-forth.
    (Uses the browser's built-in speech recognition and speech synthesis. No extra server needed.)
    v3 notes:  Talks to the real AI on the server (/ai/chat), so the Voice Control settings really apply.
-   Two tabs: Coach (strategy, Premium and above) and Chat (talk about anything, Ultra and Ultra Plus only; the server must enforce this too).
+   Two tabs: Coach (strategy, Plus and above) and Chat (talk about anything, Pro and Legend only; the server must enforce this too).
    Older note:  Replaces the old player-to-player chat.
    A moving, color-changing orb in the bottom-right corner opens a chat with an AI that helps with strategy.
    Type the secret code into the chat box to open the Voice Control panel (the code is checked by the server,
@@ -294,7 +294,7 @@
   // ---------- Coach / Chat tabs ----------
   const INTRO = {
     coach: "Hey! I'm Coach. Ask me how to beat the computer, how to read an opponent, or what your last moves say about you. You can also tell me to change my orb color.",
-    chat: "Ultra chat is on. Talk to me about anything, game or not. What's up?"
+    chat: "Pro and Legend Chat is on. Talk to me about anything, game or not. What's up?"
   }
 
   function updateLock() {
@@ -307,8 +307,8 @@
     if (locked) stopVoice()
     if (locked) {
       lock.textContent = aiMode === 'coach'
-        ? (session() ? '⭐ AI Coach is available to Premium, Ultra, and Ultra Plus members only.' : '⭐ AI Coach is for Premium, Ultra, and Ultra Plus members only. Log in to use AI Coach.')
-        : (session() ? '💎 AI Chat is for Ultra and Ultra Plus members only.' : '💎 AI Chat is for Ultra and Ultra Plus members only. Log in to use AI Chat.')
+        ? (session() ? '⭐ AI Coach is available to Plus, Pro, and Legend members only.' : '⭐ AI Coach is for Plus, Pro, and Legend members only. Log in to use AI Coach.')
+        : (session() ? '💎 AI Chat is for Pro and Legend members only.' : '💎 AI Chat is for Pro and Legend members only. Log in to use AI Chat.')
     }
     const showChips = aiMode === 'coach' && !log.querySelector('.ai-msg.me')
     chips.hidden = !showChips
@@ -321,7 +321,7 @@
     const data = r.ok && r.data ? r.data : {}
     const plan = String(data.plan || data.premiumPlan || '').toLowerCase().replace(/[_\s]+/g, '-')
     isPremium = !!data.premium
-    isUltra = isPremium && (plan === 'ultra' || plan === 'ultra-plus' || plan === 'ultraplus' || plan === 'family' || plan.includes('ultra'))
+    isUltra = isPremium && (plan === 'ultra' || plan === 'ultra-plus' || plan === 'ultraplus' || plan === 'duo' || plan === 'family' || plan.includes('ultra'))
     premiumChecked = true
   }
 
