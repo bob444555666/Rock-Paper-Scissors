@@ -1,75 +1,69 @@
-# Premium membership plans and billing
+# Membership plans and billing
 
-All amounts are CAD. Monthly plans renew monthly; annual plans are charged once per year. Public plan names are Premium, Ultra, and Ultra Plus. Internal Stripe/Worker keys remain `individual`, `duo`, and `family`. The public-facing names are Premium, Ultra, and Ultra Plus. The existing internal Stripe/Worker plan keys remain `individual`, `duo`, and `family` so current checkout and member entitlements continue to work.
+All prices are in Canadian dollars (CAD). The public plan names are **Free**, **Plus**, **Pro**, and **Legend**. Existing game-server entitlement keys remain compatible with the older account model: Plus → `individual`, Pro → `duo`, and Legend → `family`.
 
 ## Public plan lineup
 
-| Public plan | Internal key | Price | Accounts included | Trial |
-| --- | --- | ---: | ---: | --- |
-| Premium | `individual` | $9.99/month or $99.99/year + $3/month or $36/year per extra account | 1 total included | 7 days on monthly only |
-| Ultra | `duo` | $14.99/month or $149.99/year + $5/month or $60/year per extra account | 1 total included | None |
-| Ultra Plus | `family` | $19.99/month or $199.99/year + $7/month or $84/year per extra account | 1 total included | None |
+| Public plan | Monthly | Annual | Trial | Accounts included |
+|---|---:|---:|---|---:|
+| Free | $0 | $0 | None | 1 |
+| Plus | $3.99/month | $39.90/year | 7 days | 1 |
+| Pro | $7.99/month | $79.90/year | 7 days | 1 |
+| Legend | $14.99/month | $149.90/year | None | 1 |
 
-## Per-account pricing change requested
+Annual billing is ten monthly payments, a 16.7% discount against paying month by month. Plus and Pro get a 7-day trial on monthly or annual checkout. Legend has no trial. Cancel before the trial ends to avoid the first charge.
 
-The intended policy is that every tier includes only the subscribing account. Each additional account costs CAD $3/month on Premium, $5/month on Ultra, and $7/month on Ultra Plus, added to the selected tier's base price. There is no tier-specific default allowance for multiple accounts under the new policy.
+## Additional accounts
 
-The live `paymentsystem` Worker now accepts `billingPeriod: "month" | "year"`, adds the selected base price and optional extra-account recurring price to Checkout, stores `extraAccounts` and `billingPeriod` in subscription metadata, and syncs purchased extra-account limits to the game Worker. Annual extra-account prices are the monthly add-on amount multiplied by 12; the base annual prices include roughly two months of savings. Premium's 7-day trial applies only to monthly Premium checkout.
+Every paid plan includes one account. Additional accounts are optional:
+
+| Plan | Monthly add-on | Annual add-on |
+|---|---:|---:|
+| Plus | $3.00/month | $30.00/year |
+| Pro | $5.00/month | $50.00/year |
+| Legend | $7.00/month | $70.00/year |
+
+The checkout Worker adds the corresponding recurring Stripe price and quantity. The annual add-on prices also use ten monthly payments.
 
 ## Benefits shown on the plan page
 
-- **Premium (existing benefits):** exclusive themes, backgrounds and move styles; win animations, confetti and sound options; personal match history, win rate and streak records; profile badge/emotes; custom button, font and interface styling. Planned practical additions: detailed move-by-move win-rate breakdowns, searchable match history, weekly improvement goals, and adjustable AI practice.
-- **Ultra:** everything in Premium; extra accounts at $5 CAD per account per month; planned competitive leagues and seasonal leaderboards, analytics by move/opponent/game mode, custom match formats, private challenges and custom room rules, daily missions and seasonal trophies; existing Ultra profile effects.
-- **Ultra Plus:** everything in Premium and Ultra; extra accounts at $7 CAD per account per month; planned private tournaments, team competitions, multi-stage brackets, downloadable match reports, advanced league administration and adjustable AI practice; existing monthly collectibles and profile effects. Priority support is planned, not currently available.
+- **Free:** core game, online rooms, Quick Play, computer opponents, friends, leaderboard, core match history, daily challenges, accessibility settings, and free progression.
+- **Plus:** Free benefits, ad-free experience, additional themes and cosmetics, extra game modes, more practice settings, and expanded statistics.
+- **Pro:** Plus benefits, advanced match formats, private lobbies, custom rules, spectator tools, full match history, AI Coach, adaptive practice, rating trends, and replay sharing.
+- **Legend:** Plus and Pro benefits, creator and tournament tools, custom move sets, Theme Studio, opponent scouting, data export, Nemesis AI, streamer overlays, and priority support.
 
-Implementation status: the plan page now presents a deduplicated benefits list, but the list is not proof that every benefit is live in gameplay. The existing Worker currently handles checkout, subscription status, and group-member limits. New competitive leagues, detailed analytics, custom match lengths, adjustable AI practice, tournament hosting, monthly rewards, ad-free enforcement, and priority support still need their respective game UI/service logic and server-side entitlement checks before being advertised as active. Existing Premium cosmetics should be reused rather than duplicated.
+**Feature-status note:** A plan card is not proof that every roadmap benefit is implemented. Some advanced modes, tournament systems, analytics, and creator tools are still planned and must not be described as live until their UI, service logic, and server-side entitlements are implemented and tested.
 
-## Live Stripe catalog
+## Current live Stripe catalog
 
-The following live-mode CAD recurring prices are active in the connected R-P-S Stripe account. The old Ultra Plus $31.99 monthly price remains active in Stripe for historical subscriptions, but new checkout uses the replacement $19.99 monthly price.
+These active live-mode recurring prices were verified in the connected R-P-S Stripe account. The deployed `paymentsystem` Worker uses these price IDs for new checkouts.
 
 | Price | Amount | Stripe price ID |
-| --- | ---: | --- |
-| Premium monthly | $9.99/month | `price_1UPeYnKoGEk54c2MML5uP6Tr` |
-| Premium annual | $99.99/year | `price_1UTtM0KoGEk54c2MSGrYV31P` |
-| Ultra monthly | $14.99/month | `price_1UPeYpKoGEk54c2McDPgvx5H` |
-| Ultra annual | $149.99/year | `price_1UTtM2KoGEk54c2MDpbayI6Z` |
-| Ultra Plus monthly | $19.99/month | `price_1UTtLvKoGEk54c2MVlbAgfuF` |
-| Ultra Plus annual | $199.99/year | `price_1UTtM3KoGEk54c2Md1jGFbOp` |
-| Premium extra account monthly / annual | $3/month · $36/year | `price_1UTtNkKoGEk54c2Mgi3ce0BV` / `price_1UTtO5KoGEk54c2MtfiMOz4F` |
-| Ultra extra account monthly / annual | $5/month · $60/year | `price_1UTtNmKoGEk54c2MfvngWiM4` / `price_1UTtO7KoGEk54c2MOvz02aX7` |
-| Ultra Plus extra account monthly / annual | $7/month · $84/year | `price_1UTtNoKoGEk54c2MGoiqPq09` / `price_1UTtO9KoGEk54c2M8X7SXuGT` |
+|---|---:|---|
+| Plus monthly | $3.99/month | `price_1UUhriKoGEk54c2MpTJE5ZeU` |
+| Plus annual | $39.90/year | `price_1UUhsAKoGEk54c2MdGMZUy78` |
+| Pro monthly | $7.99/month | `price_1UUhruKoGEk54c2MjOKQpnlJ` |
+| Pro annual | $79.90/year | `price_1UUhsCKoGEk54c2M8idWNdBy` |
+| Legend monthly | $14.99/month | `price_1UUhrwKoGEk54c2MQfCrqPfy` |
+| Legend annual | $149.90/year | `price_1UUhsEKoGEk54c2MfZGTd6Gk` |
+| Plus extra account monthly / annual | $3/month · $30/year | `price_1UUhryKoGEk54c2MKJ5gKIUL` / `price_1UUhsUKoGEk54c2Mgf1wIM4U` |
+| Pro extra account monthly / annual | $5/month · $50/year | `price_1UUhs0KoGEk54c2MHTGrU9NW` / `price_1UUhsIKoGEk54c2MXTBM3sN9` |
+| Legend extra account monthly / annual | $7/month · $70/year | `price_1UUhs3KoGEk54c2M78aYsY2S` / `price_1UUhsKKoGEk54c2M30bQsH5l` |
 
-The live webhook endpoint is configured at `https://paymentsystem.heyboernathan.workers.dev/stripe/webhook`. Verify its signing secret is set on the Worker before relying on live membership activation.
+Older Stripe products and prices remain in the account for historical subscriptions. Existing subscriptions are not automatically cancelled or migrated; new checkout uses the price IDs above.
 
-## Historical Stripe test-mode catalog
+## Worker behavior and compatibility
 
-These objects were created in the connected Stripe sandbox. They are for testing only and do not collect live payments. The Stripe test-mode product names have also been updated to Premium, Ultra, and Ultra Plus.
+- `POST /account/stripe-checkout` accepts `plan: "plus" | "pro" | "legend"`, billing period, and an optional extra-account quantity.
+- Plus and Pro checkout sessions receive a 7-day subscription trial. Legend does not.
+- The signed Stripe webhook synchronizes subscription status, plan, period end, and paid extra-account limits to `rps-server`.
+- The payment Worker maps Plus → `individual`, Pro → `duo`, and Legend → `family` so the existing account storage and member-limit logic continue to work.
+- AI Chat access now allows the Pro and Legend internal plan keys; AI Coach allows all three paid plans. Both the browser and server enforce the AI Chat gate.
+- Promo-code entry is disabled in checkout.
+- The checkout success redirect does not grant membership by itself; activation depends on the signed webhook.
 
-- Premium / individual product: `prod_VPhVP1JAHjxtL9`
-- Premium / individual price: `price_1UOs6G3FalmEL64xoVuwHt5f`
-- Ultra / duo product: `prod_VPtpcMm1ZiqnpL`
-- Ultra / duo price: `price_1UP41i3FalmEL64xou8zpVa1`
-- Ultra Plus / family product: `prod_VPtpt40smt3dTy`
-- Ultra Plus / family price: `price_1UP41m3FalmEL64xUg05vCS5`
+## Operational notes
 
-The test-mode webhook is configured at `https://rps-server.heyboernathan.workers.dev/stripe/webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and the subscription created/updated/deleted events.
+The deployed `paymentsystem` Worker retains the `RPS_SERVER`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `PAYMENT_SYNC_SECRET` bindings. The deployed `rps-server` Worker retains its existing secrets, AI bindings, and Durable Object namespace. Secret values are intentionally not stored in this repository and cannot be verified from deployment metadata alone.
 
-## Worker behavior
-
-- `POST /account/stripe-checkout` accepts `plan: "individual" | "duo" | "family"` and `extraAccounts` (0–99). Only `individual` receives the 7-day trial. The Worker selects the plan-specific recurring add-on price and sets its quantity server-side.
-- Signed Stripe webhook events sync the owner's subscription status, plan, and purchased extra-account count.
-- `POST /account/premium` returns current Premium status and whether the account can manage purchased extra accounts.
-- `POST /account/premium-members` lists member accounts and returns the paid member limit for an active subscriber.
-- `POST /account/premium-invite` accepts `{ username }` to add an existing account, or `{ username, action: "remove" }` to remove it. The Worker enforces the purchased quantity and prevents an account with its own active Stripe subscription from being added.
-- When a subscription becomes inactive, group-member Premium entitlements are removed.
-
-## Before taking real payments
-
-The connected Stripe account used for this update is the **R-P-S live-mode account**. The Worker was deployed with the live price IDs. Confirm the live webhook signing secret and account session synchronization in Cloudflare before announcing the full live purchase flow as end-to-end verified. Do not mix test-mode prices or secrets into this Worker.
-
-Review applicable GST/HST and other tax obligations and configure Stripe Tax only after the appropriate tax registrations/settings are in place.
-
-## Maintenance note
-
-The deployed Worker was updated directly through Cloudflare because its original source file was not present in this repository. Recover and version the original Worker source before the next full Worker rebuild/deploy, or these changes could be overwritten by an older bundle.
+The original source for the deployed `rps-server` bundle was not present in this repository. The compatibility patch was applied directly to the deployed Worker; recover and version the canonical source before the next full server rebuild so that the AI Chat gate changes are not overwritten.
