@@ -136,7 +136,7 @@
   const say = message => {
     if (statusEl) statusEl.textContent = message;
   };
-  const planName = plan => ({ individual: 'Plus', premium: 'Plus', duo: 'Pro', ultra: 'Pro', family: 'Legend', 'ultra plus': 'Legend' }[String(plan || '').trim().toLowerCase()] || 'Plus');
+  const planName = plan => ({ free: 'Free', individual: 'Plus', premium: 'Plus', plus: 'Plus', duo: 'Pro', ultra: 'Pro', pro: 'Pro', family: 'Legend', 'ultra plus': 'Legend', legend: 'Legend' }[String(plan || '').trim().toLowerCase()] || 'Free');
 
   async function call(path, body = {}) {
     const res = await fetch(API + path, {
