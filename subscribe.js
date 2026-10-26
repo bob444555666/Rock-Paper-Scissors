@@ -6,8 +6,8 @@
   const statusEl = document.getElementById('status');
   const subscribe = document.getElementById('subscribe');
   const refresh = document.getElementById('refresh');
-  const duoPlan = document.getElementById('duo-plan');
-  const familyPlan = document.getElementById('family-plan');
+  const duoPlan = document.getElementById('pro-plan');
+  const familyPlan = document.getElementById('legend-plan');
   const memberManager = document.getElementById('member-manager');
   const memberUsername = document.getElementById('member-username');
   const addMember = document.getElementById('add-member');
@@ -18,12 +18,12 @@
   const planButtons = [subscribe, duoPlan, familyPlan].filter(Boolean);
   const plansSection = document.querySelector('.plans');
   const pricingSections = document.querySelectorAll('main > .member-manager[aria-label="Additional account pricing"], main > .trial');
-  const BASE_PRICES = { individual: 9.99, duo: 14.99, family: 19.99 };
-  const ANNUAL_BASE_PRICES = { individual: 99.99, duo: 149.99, family: 199.99 };
-  const EXTRA_ACCOUNT_PRICES = { individual: 3, duo: 5, family: 7 };
+  const BASE_PRICES = { plus: 3.99, pro: 7.99, legend: 14.99 };
+  const ANNUAL_BASE_PRICES = { plus: 39.90, pro: 79.90, legend: 149.90 };
+  const EXTRA_ACCOUNT_PRICES = { plus: 3, pro: 5, legend: 7 };
   let checkoutBusy = false;
   let hasActiveMembership = false;
-  let selectedPlan = 'individual';
+  let selectedPlan = 'plus';
   let billingPeriod = 'month';
   const ashtonManager = document.createElement('section');
   ashtonManager.id = 'ashton-plan-manager';
@@ -70,7 +70,7 @@
           if (!confirm('Cancel any existing Stripe subscriptions for Ashton before starting a new paid ' + action.label + ' checkout?')) return;
           await cancelAshtonSubscriptions();
           hasActiveMembership = false;
-          await startCheckout(action.plan);
+          await startCheckout(({ individual: 'plus', duo: 'pro', family: 'legend' })[action.plan] || action.plan);
         }
       } catch (error) {
         say(error.message || 'That plan change failed. Please try again.');
@@ -93,7 +93,7 @@
       title.textContent = 'Ashton · Plan Control';
       title.style.cssText = 'margin:0 0 8px;font-size:20px';
       const current = document.createElement('p');
-      const currentName = ({ free: 'Free', individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' })[info.plan] || 'Free';
+      const currentName = ({ free: 'Free', individual: 'Plus', duo: 'Pro', family: 'Legend' })[info.plan] || 'Free';
       current.textContent = 'Current plan: ' + currentName + (info.lifetime ? ' · free for life' : '') + '. This private control only works for the Ashton account.';
       current.style.cssText = 'margin:0 0 12px;color:rgba(255,255,255,.78);font-size:13px;line-height:1.5';
       const cancelTitle = document.createElement('h3');
@@ -108,9 +108,9 @@
       freeTitle.style.cssText = 'margin:12px 0 5px;font-size:15px';
       ashtonManager.append(freeTitle,
         ashtonButton('Free · no membership', { kind: 'free', plan: 'free', label: 'Free' }),
-        ashtonButton('Premium · free for life', { kind: 'free', plan: 'individual', label: 'Premium' }),
-        ashtonButton('Ultra · free for life', { kind: 'free', plan: 'duo', label: 'Ultra' }),
-        ashtonButton('Ultra Plus · free for life', { kind: 'free', plan: 'family', label: 'Ultra Plus' }));
+        ashtonButton('Plus · free for life', { kind: 'free', plan: 'individual', label: 'Plus' }),
+        ashtonButton('Pro · free for life', { kind: 'free', plan: 'duo', label: 'Pro' }),
+        ashtonButton('Legend · free for life', { kind: 'free', plan: 'family', label: 'Legend' }));
       const paidTitle = document.createElement('h3');
       paidTitle.textContent = 'Choose a paid plan';
       paidTitle.style.cssText = 'margin:12px 0 5px;font-size:15px';
@@ -118,9 +118,9 @@
       paidHelp.textContent = 'Paid options open the normal secure Stripe checkout. Existing Ashton subscriptions are cancelled first to avoid overlapping plans.';
       paidHelp.style.cssText = 'margin:0 0 8px;color:rgba(255,255,255,.65);font-size:12px';
       ashtonManager.append(paidTitle, paidHelp,
-        ashtonButton('Pay for Premium', { kind: 'paid', plan: 'individual', label: 'Premium' }),
-        ashtonButton('Pay for Ultra', { kind: 'paid', plan: 'duo', label: 'Ultra' }),
-        ashtonButton('Pay for Ultra Plus', { kind: 'paid', plan: 'family', label: 'Ultra Plus' }));
+        ashtonButton('Pay for Plus', { kind: 'paid', plan: 'plus', label: 'Plus' }),
+        ashtonButton('Pay for Pro', { kind: 'paid', plan: 'pro', label: 'Pro' }),
+        ashtonButton('Pay for Legend', { kind: 'paid', plan: 'legend', label: 'Legend' }));
       return true;
     } catch (error) {
       ashtonManager.hidden = true;
@@ -136,7 +136,7 @@
   const say = message => {
     if (statusEl) statusEl.textContent = message;
   };
-  const planName = plan => ({ individual: 'Premium', premium: 'Premium', duo: 'Ultra', ultra: 'Ultra', family: 'Ultra Plus', 'ultra plus': 'Ultra Plus' }[String(plan || '').trim().toLowerCase()] || 'Premium');
+  const planName = plan => ({ free: 'Free', individual: 'Plus', premium: 'Plus', plus: 'Plus', duo: 'Pro', ultra: 'Pro', pro: 'Pro', family: 'Legend', 'ultra plus': 'Legend', legend: 'Legend' }[String(plan || '').trim().toLowerCase()] || 'Free');
 
   async function call(path, body = {}) {
     const res = await fetch(API + path, {
@@ -161,12 +161,12 @@
     let message;
     if (result.plan === 'family') {
       message = result.lifetime
-        ? 'You have Ultra Plus for life — no expiry. It includes everything in Ultra and Premium, plus all Ultra Plus features. Plan purchase buttons are locked while your membership is active.'
-        : 'You have Ultra Plus! It includes everything in Ultra and Premium, plus all Ultra Plus features. Plan purchase buttons are locked while your membership is active.';
+        ? 'You have Legend for life — no expiry. It includes everything in Pro and Plus, plus all Legend features. Plan purchase buttons are locked while your membership is active.'
+        : 'You have Legend! It includes everything in Pro and Plus, plus all Legend features. Plan purchase buttons are locked while your membership is active.';
     } else if (result.plan === 'duo') {
-      message = 'You have Ultra! It includes everything in Premium, plus all Ultra features. Plan purchase buttons are locked while your membership is active.';
+      message = 'You have Pro! It includes everything in Plus, plus all Pro features. Plan purchase buttons are locked while your membership is active.';
     } else {
-      message = 'You have Premium! Your Premium membership is active. Plan purchase buttons are locked while your membership is active.';
+      message = 'You have Plus! Your Plus membership is active. Plan purchase buttons are locked while your membership is active.';
     }
     if (result.source === 'group') message = 'Your access is included in a ' + currentPlan + ' membership. ' + message;
     if (result.canManageMembers && memberManager) {
@@ -180,7 +180,7 @@
   }
 
   function updateSeatEstimate(plan = selectedPlan) {
-    selectedPlan = Object.prototype.hasOwnProperty.call(BASE_PRICES, plan) ? plan : 'individual';
+    selectedPlan = Object.prototype.hasOwnProperty.call(BASE_PRICES, plan) ? plan : 'plus';
     if (!seatPrice) return;
     const count = getExtraSeatCount();
     const perAccount = EXTRA_ACCOUNT_PRICES[selectedPlan];
@@ -320,9 +320,9 @@
 
   // Assign direct handlers so plan buttons remain clickable even if another script
   // has attached unrelated listeners to the page.
-  if (subscribe) subscribe.onclick = event => { event.preventDefault(); startCheckout('individual'); };
-  if (duoPlan) duoPlan.onclick = event => { event.preventDefault(); startCheckout('duo'); };
-  if (familyPlan) familyPlan.onclick = event => { event.preventDefault(); startCheckout('family'); };
+  if (subscribe) subscribe.onclick = event => { event.preventDefault(); startCheckout('plus'); };
+  if (duoPlan) duoPlan.onclick = event => { event.preventDefault(); startCheckout('pro'); };
+  if (familyPlan) familyPlan.onclick = event => { event.preventDefault(); startCheckout('legend'); };
 
   // Make script/runtime failures visible instead of leaving the page appearing inert.
   window.addEventListener('error', event => {
@@ -337,15 +337,15 @@
     const annualButton = document.getElementById('billing-annual');
     if (monthlyButton) { monthlyButton.setAttribute('aria-pressed', String(billingPeriod === 'month')); monthlyButton.classList.toggle('selected', billingPeriod === 'month'); }
     if (annualButton) { annualButton.setAttribute('aria-pressed', String(billingPeriod === 'year')); annualButton.classList.toggle('selected', billingPeriod === 'year'); }
-    const prices = { individual: billingPeriod === 'year' ? 99.99 : 9.99, duo: billingPeriod === 'year' ? 149.99 : 14.99, family: billingPeriod === 'year' ? 199.99 : 19.99 };
+    const prices = { plus: billingPeriod === 'year' ? 39.90 : 3.99, pro: billingPeriod === 'year' ? 79.90 : 7.99, legend: billingPeriod === 'year' ? 149.90 : 14.99 };
     document.querySelectorAll('[data-plan-price]').forEach(el => {
       const plan = el.getAttribute('data-plan-price');
       if (prices[plan] !== undefined) el.innerHTML = '$' + prices[plan].toFixed(2) + ' <small>CAD / ' + (billingPeriod === 'year' ? 'year' : 'month') + '</small>';
     });
     const trial = document.querySelector('.trial');
     if (trial) trial.innerHTML = billingPeriod === 'year'
-      ? '<strong>Annual billing selected</strong><br><span>Annual plans are charged once per year. Premium’s 7-day trial applies only to monthly Premium checkout. Extra accounts are billed annually at 12 times the listed monthly rate.</span>'
-      : '<strong>7-day free trial with Premium</strong><br><span>Premium includes a 7-day free trial. Ultra and Ultra Plus have no free trial. Every tier starts with one account. Additional accounts cost $3/month on Premium, $5/month on Ultra, and $7/month on Ultra Plus, on top of the selected plan price.</span>';
+      ? '<strong>Annual billing selected</strong><br><span>Annual plans are charged once per year and save 16.7% versus monthly billing. Plus and Pro include a 7-day trial. Extra accounts are billed annually at a discounted rate.</span>'
+      : '<strong>7-day free trial with Plus and Pro</strong><br><span>Plus and Pro include a 7-day free trial. Legend has no trial. Every paid plan includes one account. Extra accounts cost $3/month on Plus, $5/month on Pro, and $7/month on Legend.</span>';
     updateSeatEstimate();
   }
   const monthlyBillingButton = document.getElementById('billing-monthly');
@@ -381,8 +381,8 @@
 
   if (refresh) refresh.addEventListener('click', checkStatus);
   const params = new URLSearchParams(location.search);
-  if (params.get('checkout') === 'success') say('Checkout returned successfully. Checking your Premium status…');
+  if (params.get('checkout') === 'success') say('Checkout returned successfully. Checking your Plus status…');
   if (params.get('checkout') === 'cancelled') say('Checkout was cancelled. You have not been charged.');
-  updateSeatEstimate('individual');
+  updateSeatEstimate('plus');
   checkStatus();
 })();

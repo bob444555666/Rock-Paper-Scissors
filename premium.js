@@ -1,5 +1,5 @@
 /* Membership customization: saved visual preferences for eligible members.
-   Profile messaging directs players to compare Premium, Ultra, and Ultra Plus upgrades.
+   Profile messaging directs players to compare Plus, Pro, and Legend upgrades.
    Self-contained: it cannot break the main game. */
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev'
@@ -408,7 +408,7 @@
   if (layer && anchor) {
     const head = make('h3', { textContent: 'Membership upgrades' })
     info = make('p', { className: 'auth-sub' })
-    openBtn = make('button', { className: 'big', type: 'button', textContent: '⭐ Explore Premium · Ultra · Ultra Plus' })
+    openBtn = make('button', { className: 'big', type: 'button', textContent: '⭐ Explore Plus · Pro · Legend' })
     ;[head, info, openBtn].forEach(n => anchor.parentNode.insertBefore(n, anchor))
     openBtn.addEventListener('click', () => { if (premiumNow()) { panelMsg.textContent = ''; renderPanel(); panel.hidden = false } else { window.location.href = '/subscribe.html' } })
     new MutationObserver(() => { if (!layer.hidden) refresh() }).observe(layer, { attributes: true, attributeFilter: ['hidden'] })
@@ -416,15 +416,15 @@
 
   function showProfile() {
     if (!info) return
-    if (!status) { info.textContent = session() ? 'Loading...' : 'Log in to see your Premium status.'; openBtn.disabled = true; return }
+    if (!status) { info.textContent = session() ? 'Loading...' : 'Log in to see your Plus status.'; openBtn.disabled = true; return }
     if (!status.premium) {
-      info.textContent = '🔒 Compare Premium, Ultra, and Ultra Plus to find the membership upgrade that fits you. Membership perks include themes, backgrounds, effects, sounds, and more.'
-      openBtn.textContent = '⭐ Explore Premium · Ultra · Ultra Plus'
+      info.textContent = '🔒 Compare Plus, Pro, and Legend to find the membership upgrade that fits you. Membership perks include themes, backgrounds, effects, sounds, and more.'
+      openBtn.textContent = '⭐ Explore Plus · Pro · Legend'
       openBtn.disabled = false
       return
     }
-    const plan = ({ individual: 'Premium', premium: 'Premium', duo: 'Ultra', ultra: 'Ultra', family: 'Ultra Plus', 'ultra plus': 'Ultra Plus' })[String(status.plan || '').trim().toLowerCase()] || (status.source === 'group' ? 'your included plan' : 'Premium')
-    const extra = plan === 'Ultra Plus' ? ' Ultra Plus includes advanced tournament scouting.' : plan === 'Ultra' ? ' Ultra includes tournament scout stats.' : ''
+    const plan = ({ individual: 'Plus', premium: 'Plus', duo: 'Pro', ultra: 'Pro', family: 'Legend', 'ultra plus': 'Legend' })[String(status.plan || '').trim().toLowerCase()] || (status.source === 'group' ? 'your included plan' : 'Plus')
+    const extra = plan === 'Legend' ? ' Legend includes advanced tournament scouting.' : plan === 'Pro' ? ' Pro includes tournament scout stats.' : ''
     info.textContent = '⭐ Your active plan: ' + plan + '. ' + (status.lifetime ? 'Lifetime access — no expiry. ' : '') + 'Membership customization is unlocked.' + extra
     openBtn.textContent = '🎨 Customize ' + plan
     openBtn.disabled = false
@@ -467,5 +467,5 @@
 
   refresh()
   setInterval(() => { if (session() !== lastToken) refresh() }, 1500) // log in / out
-  setInterval(refresh, 5 * 60 * 1000) // Premium given or removed
+  setInterval(refresh, 5 * 60 * 1000) // Plus given or removed
 })()

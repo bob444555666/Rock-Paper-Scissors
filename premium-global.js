@@ -1,4 +1,4 @@
-/* Shared Premium appearance for every page outside the main game page.
+/* Shared Plus appearance for every page outside the main game page.
    premium.js owns the main game page; this file mirrors its visual preferences elsewhere. */
 (() => {
   if (document.getElementById('prem-global-style')) return;
@@ -91,7 +91,7 @@
         <a class="rps-nav-link" href="/quests.html"><span class="rps-nav-icon">🎯</span>Quests</a>
         <a class="rps-nav-link" href="/achievements.html"><span class="rps-nav-icon">🏅</span>Achievements</a>
         <a class="rps-nav-link" href="/vault.html"><span class="rps-nav-icon">🎨</span>Style Vault</a>
-        <a class="rps-nav-link" href="/subscribe.html"><span class="rps-nav-icon">⭐</span>Subscription / Premium</a>
+        <a class="rps-nav-link" href="/subscribe.html"><span class="rps-nav-icon">⭐</span>Subscription / Plus</a>
         <a class="rps-nav-link" href="/privacy.html"><span class="rps-nav-icon">🔒</span>Privacy Policy</a>
       </nav>
       <div class="rps-nav-label">Your account</div>
