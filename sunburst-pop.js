@@ -101,7 +101,6 @@
     const message=element('p','','Press start, wait for GO!, then tap as quickly as you can. False starts count!'); message.id='sp-draw-message';
     const start=element('button','','Start test'); start.type='button'; start.id='sp-draw-start';
     const close=element('button','','Close'); close.type='button'; close.addEventListener('click',closeDraw);
-    start.addEventListener('click',startDraw);
     dialog.append(dialogTitle,message,start,close); overlay.appendChild(dialog); document.body.appendChild(overlay);
     overlay.addEventListener('click',e=>{ if(e.target===overlay) closeDraw(); });
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden) closeDraw();});
@@ -137,12 +136,28 @@
   function startDraw(){
     const message=$('#sp-draw-message'), start=$('#sp-draw-start'); if(!message||!start)return;
     if(drawTimer)window.clearTimeout(drawTimer);
-    drawReady=false; start.disabled=true; start.textContent='Wait for GO…'; message.textContent='Hold it… not yet!';
-    const delay=1200+Math.random()*2600;
-    drawTimer=window.setTimeout(()=>{drawReady=true;drawStarted=performance.now();message.textContent='GO! TAP THE BUTTON!';start.textContent='TAP NOW!';start.disabled=false;sound(880,.09);},delay);
+    drawTimer=null; drawReady=false;
+    let phase='idle';
+    message.textContent='Press the button to begin. Wait for GO! — tapping early is a false start.';
+    start.disabled=false; start.textContent='Start test';
     start.onclick=()=>{
-      if(!drawReady){if(drawTimer)window.clearTimeout(drawTimer);drawTimer=null;message.textContent='FALSE START! Try again after the signal.';start.textContent='Try again';start.disabled=false;sound(180,.14);start.onclick=startDraw;return;}
-      const ms=Math.round(performance.now()-drawStarted);message.textContent='Your reaction time: '+ms+' ms. '+(ms<250?'Lightning fast!':ms<400?'Quick hands!':'Keep practicing!');start.textContent='Run it again';start.disabled=false;drawReady=false;sound(ms<250?900:500,.12);start.onclick=startDraw;
+      if(phase==='idle'||phase==='done'){
+        phase='armed'; start.textContent='Wait for GO…'; message.textContent='Hold it… wait for the signal!';
+        drawTimer=window.setTimeout(()=>{
+          phase='go'; drawReady=true; drawStarted=performance.now();
+          message.textContent='GO! TAP THE BUTTON!'; start.textContent='TAP NOW!'; sound(880,.09);
+        },1200+Math.random()*2600);
+        return;
+      }
+      if(phase==='armed'){
+        window.clearTimeout(drawTimer); drawTimer=null; phase='done'; drawReady=false;
+        message.textContent='FALSE START! Wait for GO next time.'; start.textContent='Try again'; sound(180,.14); return;
+      }
+      if(phase==='go'&&drawReady){
+        const ms=Math.round(performance.now()-drawStarted); drawReady=false; phase='done';
+        message.textContent='Your reaction time: '+ms+' ms. '+(ms<250?'Lightning fast!':ms<400?'Quick hands!':'Keep practicing!');
+        start.textContent='Run it again'; sound(ms<250?900:500,.12);
+      }
     };
   }
   function watchMoveButtons(){
