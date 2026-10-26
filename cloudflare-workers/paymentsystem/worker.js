@@ -6,7 +6,7 @@ var SITE_ORIGIN = "https://www.stone-paper-scissors.com";
 var PRICE_IDS = {
   plus: { month: "price_1UUhriKoGEk54c2MpTJE5ZeU", year: "price_1UUhsAKoGEk54c2MdGMZUy78" },
   pro: { month: "price_1UUhruKoGEk54c2MjOKQpnlJ", year: "price_1UUhsCKoGEk54c2M8idWNdBy" },
-  legend: { month: "price_1UUhrwKoGEk54c2MQfCrqPq09", year: "price_1UUhsEKoGEk54c2MfZGTd6Gk" }
+  legend: { month: "price_1UUhrwKoGEk54c2MQfCrqPfy", year: "price_1UUhsEKoGEk54c2MfZGTd6Gk" }
 };
 var EXTRA_PRICE_IDS = {
   plus: { month: "price_1UUhryKoGEk54c2MKJ5gKIUL", year: "price_1UUhsUKoGEk54c2Mgf1wIM4U" },
