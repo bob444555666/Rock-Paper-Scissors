@@ -189,7 +189,7 @@
     const total = (billingPeriod === 'year' ? ANNUAL_BASE_PRICES[selectedPlan] : BASE_PRICES[selectedPlan]) + count * perAccountForPeriod;
     seatPrice.textContent = 'Estimated total: ' + money(total) +
       ' (' + count + ' extra account' + (count === 1 ? '' : 's') +
-      ' at 
+      ' at $' + perAccountForPeriod.toFixed(2) + ' each per ' + (billingPeriod === 'year' ? 'year' : 'month') + ').';
   }
 
   function getExtraSeatCount() {
