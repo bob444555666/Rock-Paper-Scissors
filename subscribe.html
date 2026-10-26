@@ -21,7 +21,41 @@
 .plan .button{font-size:17px;min-height:54px}
 .plan.featured .button{background:#0b3151}
 .plan.ultimate .button{background:#392507}
-@media(min-width:761px){.plan.featured{transform:scale(1.025);z-index:1}.plan.featured:hover{transform:scale(1.04) translateY(-4px)}}@media(max-width:520px){.plans{grid-template-columns:1fr}.plan.featured{transform:none}}\n.plan.free{border-color:#64748b;background:linear-gradient(180deg,#111827 0%,#050914 75%);box-shadow:0 0 0 2px #64748b22,0 0 20px #64748b22}.plan.free h2,.plan.free .price{color:#dbeafe}.plan.free .eyebrow{color:#bfdbfe;background:#1e293b;border-color:#64748b}.plan.free .button{display:flex;align-items:center;justify-content:center;text-decoration:none;color:#dbeafe;border:1px solid #64748b;background:#111827;box-shadow:none}\n</style>
+@media(min-width:761px){.plan.featured{transform:scale(1.025);z-index:1}.plan.featured:hover{transform:scale(1.04) translateY(-4px)}}@media(max-width:520px){.plans{grid-template-columns:1fr}.plan.featured{transform:none}}\n.plan.free{border-color:#64748b;background:linear-gradient(180deg,#111827 0%,#050914 75%);box-shadow:0 0 0 2px #64748b22,0 0 20px #64748b22}.plan.free h2,.plan.free .price{color:#dbeafe}.plan.free .eyebrow{color:#bfdbfe;background:#1e293b;border-color:#64748b}.plan.free .button{display:flex;align-items:center;justify-content:center;text-decoration:none;color:#dbeafe;border:1px solid #64748b;background:#111827;box-shadow:none}\n
+/* SUNBURST POP upgrade page */
+:root{color-scheme:light;--sp-cream:#fff6e5;--sp-ink:#1b1530;--sp-orange:#ff6a1f;--sp-pink:#ff3d8b;--sp-lime:#b6f01f;--sp-sky:#2ec5ff;--sp-yellow:#ffd23f}
+body{color:var(--sp-ink);background:radial-gradient(circle at 8% 4%,#ffd23f88,transparent 27%),radial-gradient(circle at 92% 10%,#ff3d8b30,transparent 30%),var(--sp-cream);font-family:"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif}
+.card{background:#fffaf0;border:3px solid var(--sp-ink);border-radius:22px;box-shadow:7px 8px 0 var(--sp-ink)}
+h1{font-size:clamp(2.2rem,7vw,4rem);letter-spacing:-.06em;text-shadow:3px 3px 0 var(--sp-yellow)}
+.eyebrow{color:#8c2757}.pill{border:2px solid var(--sp-ink);background:#fff;color:var(--sp-ink);font-weight:900}
+.billing-switch button{border:2px solid var(--sp-ink);background:#fff;color:var(--sp-ink);box-shadow:2px 3px 0 var(--sp-ink)}
+.billing-switch button.selected{background:var(--sp-yellow);color:var(--sp-ink);border-color:var(--sp-ink);box-shadow:3px 4px 0 var(--sp-ink)}
+.saving-note{color:#7b2b51}.trial{background:#f1ffd0;color:var(--sp-ink);border:3px solid var(--sp-ink);border-radius:16px;box-shadow:3px 4px 0 var(--sp-ink)}
+.plans{gap:16px}.plan{background:#fffaf0;border:3px solid var(--sp-ink);border-radius:18px;box-shadow:4px 5px 0 var(--sp-ink);color:var(--sp-ink)}
+.plan.featured{background:#e9f8ff;border:3px solid var(--sp-ink);box-shadow:5px 6px 0 var(--sp-ink)}
+.plan.ultimate{background:#fff0b6;border:3px solid var(--sp-ink);box-shadow:5px 6px 0 var(--sp-ink)}
+.plan.free{background:#f5f0ff;border-color:var(--sp-ink);box-shadow:4px 5px 0 var(--sp-ink)}
+.plan h2,.plan:not(.featured):not(.ultimate) h2,.plan.featured h2,.plan.ultimate h2{color:var(--sp-ink);text-shadow:2px 2px 0 var(--sp-yellow)}
+.plan .price,.plan:not(.featured):not(.ultimate) .price,.plan.featured .price,.plan.ultimate .price{color:var(--sp-ink);text-shadow:none}
+.plan p,.plan ul{color:#4f435e}.plan li::before,.plan.featured li::before,.plan.ultimate li::before{color:#357b00}
+.plan .eyebrow,.plan.featured .eyebrow,.plan.ultimate .eyebrow{background:#fff;border:2px solid var(--sp-ink);color:var(--sp-ink)}
+.tier-art,.featured .tier-art,.ultimate .tier-art{background:radial-gradient(circle at 50% 40%,#ffd23f,#ff3d8b55 52%,#2ec5ff55);border:2px solid var(--sp-ink);box-shadow:3px 4px 0 var(--sp-ink)}
+.plan .button,.plan.featured .button,.plan.ultimate .button{color:var(--sp-ink);background:var(--sp-yellow);border:2px solid var(--sp-ink);box-shadow:3px 4px 0 var(--sp-ink);text-decoration:none}
+.plan.featured .button{background:var(--sp-sky)}.plan.ultimate .button{background:var(--sp-pink)}
+.member-manager{background:#fffaf0;border:3px solid var(--sp-ink);border-radius:17px;box-shadow:3px 4px 0 var(--sp-ink)}
+.member-manager h2{color:var(--sp-ink)}.member-manager p,.fine,.status{color:#65596e}
+.button{color:var(--sp-ink);background:var(--sp-yellow);border:2px solid var(--sp-ink);border-radius:12px;box-shadow:3px 4px 0 var(--sp-ink)}
+.button.secondary{color:var(--sp-ink);background:#fff}
+input{color:var(--sp-ink);background:white;border:2px solid var(--sp-ink)}
+.sp-comparison{margin:24px 0;padding:16px;background:#fffaf0;border:3px solid var(--sp-ink);border-radius:18px;box-shadow:4px 5px 0 var(--sp-ink);overflow-x:auto}
+.sp-comparison h2{margin-top:0}.sp-comparison table{width:100%;border-collapse:collapse;min-width:560px;text-align:left}
+.sp-comparison th,.sp-comparison td{padding:10px;border-bottom:1px solid #d9cddd}.sp-comparison th{background:#ffd23f;color:#1b1530}
+.sp-peek-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}
+.sp-peek{padding:14px;background:#fff;border:2px solid var(--sp-ink);border-radius:14px;box-shadow:3px 4px 0 var(--sp-ink)}
+.sp-peek summary{cursor:pointer;font-weight:900}.sp-peek p{font-size:13px;line-height:1.5}
+@media(max-width:700px){.sp-peek-grid{grid-template-columns:1fr}.card{padding:18px}.plans{grid-template-columns:1fr}}
+
+</style>
 <link rel="stylesheet" href="/site-wide.css?v=4">
 </head>
 <body>
@@ -48,6 +82,31 @@
 <article class="plan featured"><div class="tier-art"><img class="tier-image" src="ultra-card.webp" alt="Pro membership artwork" loading="lazy"></div><div class="eyebrow">PRO · 7-day free trial · 1 account</div><h2>Pro</h2><p><strong>For competitive players.</strong> Get deeper insights and tools for organized matches.</p><div class="price" data-plan-price="pro">$7.99 <small>CAD / month</small></div><p>Everything in Plus, with advanced competition and analytics tools.</p><ul><li>Everything in Plus</li><li>Boss Rush and advanced match formats</li><li>Private lobbies, custom rules and spectator tools</li><li>Full match history with filters and search</li><li>AI Coach and adaptive practice opponent</li><li>Placement matches and rating trend charts</li><li>Replay sharing and custom room branding</li><li>Optional extra accounts</li></ul><button id="pro-plan" class="button" type="button">Start 7-day free trial</button></article>
 <article class="plan ultimate"><div class="tier-art"><img class="tier-image" src="ultra-plus-card.webp" alt="Legend membership artwork" loading="lazy"></div><div class="eyebrow">LEGEND · no trial · 1 account</div><h2>Legend</h2><p><strong>For creators and community leaders.</strong> Get the full membership experience and prestige tools.</p><div class="price" data-plan-price="legend">$14.99 <small>CAD / month</small></div><p>Everything in Plus and Pro, plus creator and tournament tools.</p><ul><li>Everything in Plus and Pro</li><li>Chaos Mode and custom move-set builder</li><li>Host tournaments and organize crews</li><li>Theme Studio and legendary cosmetic effects</li><li>Opponent scouting and CSV data export</li><li>Nemesis AI training opponent</li><li>Hall of Legends, founder flair and custom profile URL</li><li>Streamer overlay, early access and priority support</li><li>Optional extra accounts</li></ul><button id="legend-plan" class="button" type="button">Choose Legend</button></article>
 </section>
+
+<section class="sp-comparison" aria-labelledby="sp-comparison-title">
+  <h2 id="sp-comparison-title">Pick your power-up</h2>
+  <p>Membership perks are for variety, customization and creator tools — never an advantage in ranked throws.</p>
+  <table>
+    <thead><tr><th scope="col">Feature</th><th scope="col">Free</th><th scope="col">Plus</th><th scope="col">Pro</th><th scope="col">Legend</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Core online and computer games</th><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><th scope="row">Cosmetics and extra variety</th><td>Starter</td><td>More</td><td>More</td><td>All tiers</td></tr>
+      <tr><th scope="row">Advanced analytics and AI Coach</th><td>—</td><td>Basic stats</td><td>✓</td><td>Advanced</td></tr>
+      <tr><th scope="row">Creator and tournament tools</th><td>—</td><td>—</td><td>Some</td><td>Most</td></tr>
+      <tr><th scope="row">Ranked pay-to-win bonuses</th><td colspan="4">Never — ranked play stays fair</td></tr>
+    </tbody>
+  </table>
+  <p class="fine">This comparison summarizes the current membership direction. Some roadmap items are previews, not yet live features.</p>
+</section>
+<section aria-label="Locked feature previews">
+  <h2>Peek inside the roadmap</h2>
+  <div class="sp-peek-grid">
+    <details class="sp-peek"><summary>🔒 Peek inside! — Story Mode</summary><p>Meet the mascots and explore the six-region Great Hand Games world. Story chapters are roadmap previews until the campaign is built.</p></details>
+    <details class="sp-peek"><summary>🔒 Peek inside! — Mini-game arcade</summary><p>Reaction tests, memory challenges and playful side activities are planned. The Quick Draw and Coin Flip on the home screen are the first local mini-games.</p></details>
+    <details class="sp-peek"><summary>🔒 Peek inside! — Creator tools</summary><p>Custom arenas, rule sharing and tournament tools are being developed in stages. Custom Arena Lab remains available from the current game.</p></details>
+  </div>
+</section>
+
 <section id="member-manager" class="member-manager" hidden aria-label="Manage plan members">
   <h2>Manage your plan members</h2>
   <p id="member-help">Each paid plan includes one account. Extra-account rates: Plus $3, Pro $5, Legend $7 CAD per account per month. Members use their own game accounts.</p>
