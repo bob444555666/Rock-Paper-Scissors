@@ -145,17 +145,23 @@ function saveOnlineRoom(code, key) {
 }
 async function createOnlineRoom() {
   try {
+    if (!window.diceAccount?.ready) { $('online-status').textContent = 'Sign in to your Rock Paper Scissors account first, then return here to play online.'; return; }
+    const playerName = $('online-name').value.trim() || window.diceAccount.user.name;
+    $('online-name').value = playerName;
     $('online-status').textContent = 'Creating room…';
-    const data = await diceApi('/room/create', { name: $('online-name').value.trim() || 'Player 1', target: Number($('target-score').value) || 100 });
+    const data = await diceApi('/room/create', { name: playerName, token: window.diceAccount.token, target: Number($('target-score').value) || 100 });
     saveOnlineRoom(data.roomCode, data.secret); onlineState = data; $('online-status').textContent = 'Room created. Waiting for a friend to join…'; startPolling(); render();
   } catch (e) { $('online-status').textContent = e.message; }
 }
 async function joinOnlineRoom() {
   try {
+    if (!window.diceAccount?.ready) { $('online-status').textContent = 'Sign in to your Rock Paper Scissors account first, then return here to play online.'; return; }
     const roomCode = $('join-code').value.trim().toUpperCase();
     if (!roomCode) { $('online-status').textContent = 'Enter your friend’s room code first.'; return; }
     $('online-status').textContent = 'Joining room…';
-    const data = await diceApi('/room/join', { roomCode, name: $('online-name').value.trim() || 'Player 2' });
+    const playerName = $('online-name').value.trim() || window.diceAccount.user.name;
+    $('online-name').value = playerName;
+    const data = await diceApi('/room/join', { roomCode, name: playerName, token: window.diceAccount.token });
     saveOnlineRoom(roomCode, data.secret); onlineState = data; $('online-status').textContent = 'Joined! You are Player 2.'; startPolling(); render();
   } catch (e) { $('online-status').textContent = e.message; }
 }
