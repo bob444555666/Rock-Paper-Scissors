@@ -340,6 +340,13 @@
     if (monthlyButton) { monthlyButton.setAttribute('aria-pressed', String(billingPeriod === 'month')); monthlyButton.classList.toggle('selected', billingPeriod === 'month'); }
     if (annualButton) { annualButton.setAttribute('aria-pressed', String(billingPeriod === 'year')); annualButton.classList.toggle('selected', billingPeriod === 'year'); }
     const prices = { plus: billingPeriod === 'year' ? 39.90 : 3.99, pro: billingPeriod === 'year' ? 79.90 : 7.99, legend: billingPeriod === 'year' ? 149.90 : 14.99 };
+    document.querySelectorAll('img[data-art-plan]').forEach(img => {
+      const plan = img.getAttribute('data-art-plan');
+      if (['plus', 'pro', 'legend'].includes(plan)) {
+        img.src = '/images/' + plan + '-' + (billingPeriod === 'year' ? 'yearly' : 'monthly') + '.svg';
+        img.alt = plan.charAt(0).toUpperCase() + plan.slice(1) + ' ' + (billingPeriod === 'year' ? 'yearly' : 'monthly') + ' membership artwork';
+      }
+    });
     document.querySelectorAll('[data-plan-price]').forEach(el => {
       const plan = el.getAttribute('data-plan-price');
       if (prices[plan] !== undefined) el.innerHTML = '$' + prices[plan].toFixed(2) + ' <small>CAD / ' + (billingPeriod === 'year' ? 'year' : 'month') + '</small>';
