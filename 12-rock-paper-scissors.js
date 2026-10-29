@@ -1650,8 +1650,8 @@ setInterval(() => {
     if (detail.which === 'computer' && detail.result === 'win' && dailyChallenge && detail.yourMove === dailyChallenge.requiredMove) {
       completeDailyChallenge();
     }
-    // XP cannot fall below zero, so new players never enter a negative level.
-    progress.xp = Math.max(0, progress.xp + earned);
+    // Losses subtract the full five XP, even if the total becomes negative.
+    progress.xp += earned;
     saveProgress();
     result.classList.remove('arena-round-pop');
     void result.offsetWidth;
