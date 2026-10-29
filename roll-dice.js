@@ -73,7 +73,7 @@ async function roll() {
   $('status').textContent = names[turn] + ' rolled ' + total + ' · Roll ' + rolls + ' of ' + MAX_ROLLS;
   $('hint').textContent = rolls < MAX_ROLLS ? 'Lock dice you want to keep, reroll, or bank your points.' : 'Last roll complete. Bank your points to finish this turn.';
   $('round-result').innerHTML = 'Current turn: <strong>' + total + ' points</strong> · ' + (MAX_ROLLS - rolls) + ' reroll' + (MAX_ROLLS - rolls === 1 ? '' : 's') + ' left';
-  if (total >= 25) { stats.bigTurns++; stats.missions[today] = true; updateDaily(); }
+  
 }
 async function cpuTurn() {
   busy = true; active = false; render(); setStatus('Computer is rolling…'); await wait(350);
@@ -95,7 +95,7 @@ async function bank() {
   const earned = sum(dice); score[turn] += earned; stats.totalPoints += earned; round++;
   $('round-result').innerHTML = names[turn] + ' banked <strong>+' + earned + ' points</strong>.';
   sound(earned >= 25 ? 880 : 620, .12);
-  if (earned >= 25) { stats.bigTurns++; stats.missions[today] = true; }
+  if (earned >= 25) { stats.bigTurns++; stats.missions[today] = true; updateDaily(); }
   if (mode === 'cpu' && turn === 0 && score[0] < target) {
     active = false; busy = true; $('player-last').textContent = '+' + earned + ' this turn'; render();
     await wait(400); await cpuTurn(); return;
