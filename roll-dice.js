@@ -98,7 +98,7 @@ async function bank() {
   const earned = sum(dice); score[turn] += earned; stats.totalPoints += earned; round++; save(); updateStats();
   $('round-result').innerHTML = names[turn] + ' banked <strong>+' + earned + ' points</strong>.';
   sound(earned >= 25 ? 880 : 620, .12);
-  if (earned >= 25) { stats.bigTurns++; stats.missions[today] = true; updateDaily(); }
+  if (earned >= 25) { stats.bigTurns++; stats.missions[today] = true; save(); updateStats(); updateDaily(); }
   if (mode === 'cpu' && turn === 0 && score[0] < target) {
     active = false; busy = true; $('player-last').textContent = '+' + earned + ' this turn'; render();
     await wait(400); await cpuTurn(); return;
@@ -227,7 +227,7 @@ $('new-game-top').addEventListener('click', start);
 $('game-mode').addEventListener('change', start);
 $('target-score').addEventListener('change', start);
 $('ai-level').addEventListener('change', start);
-$('sound-toggle').addEventListener('click', () => { soundOn = !soundOn; $('sound-toggle').textContent = soundOn ? '🔊 Sound on' : '🔇 Sound off'; $('sound-toggle').setAttribute('aria-pressed', String(soundOn)); sound(700); });
+$('sound-toggle').addEventListener('click', () => { soundOn = !soundOn; $('sound-toggle').textContent = soundOn ? '🔊 Sound on' : '🔇 Sound off'; $('sound-toggle').setAttribute('aria-pressed', String(soundOn)); try { localStorage.setItem('diceDuelSettings.v1', JSON.stringify({ target, mode, level, soundOn })); } catch {} sound(700); });
 $('stats-toggle').addEventListener('click', () => { $('stats-panel').hidden = !$('stats-panel').hidden; updateStats(); });
 $('daily-toggle').addEventListener('click', () => { $('daily-panel').hidden = !$('daily-panel').hidden; updateDaily(); });
 updateStats(); updateDaily(); start();
