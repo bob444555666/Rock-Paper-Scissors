@@ -1102,6 +1102,10 @@ async function startAuth() {
       if (res.ok) {
         setUser((await res.json()).user)
         loadProfile()
+        if (new URLSearchParams(location.search).get('openProfile') === '1') {
+          openProfile()
+          history.replaceState(null, '', location.pathname + location.hash)
+        }
         return
       }
     } catch (error) {}
