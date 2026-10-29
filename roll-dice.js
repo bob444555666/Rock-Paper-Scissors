@@ -14,7 +14,7 @@ let stats = { ...defaults };
 try { stats = { ...defaults, ...JSON.parse(localStorage.getItem('diceDuelStats.v2') || '{}') }; } catch {}
 const history = (() => { try { return JSON.parse(localStorage.getItem('diceDuelHistory.v1') || '[]').slice(0, 8); } catch { return []; } })();
 const dieFace = n => ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][n];
-const randomDie = () => 1 + Math.floor(Math.random() * 6);
+const randomDie = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return 1 + (a[0] % 6); };
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const sum = arr => arr.reduce((a, b) => a + b, 0);
 function save() {
@@ -52,7 +52,9 @@ function render() {
 function start() {
   target = Number($('target-score').value) || 100; mode = $('game-mode').value; level = $('ai-level').value;
   $('online-panel').hidden = mode !== 'online';
-  if (mode === 'online') { active = false; busy = false; if (onlineState) { render(); } else { score=[0,0]; dice=Array(COUNT).fill(1); locked=Array(COUNT).fill(false); rolls=0; names=['You','Opponent']; setStatus('Create a room or join a friend with a code.'); $('round-result').textContent='Online multiplayer · target '+target+' points'; render(); } return; }
+  try { localStorage.setItem('diceDuelSettings.v1', JSON.stringify({ target, mode, level, soundOn })); } catch {}
+  if (mode === 'online') { active = false; busy = false; if (onlineRoomCode && !pollTimer) startPolling(); if (onlineState) { render(); } else { score=[0,0]; dice=Array(COUNT).fill(1); locked=Array(COUNT).fill(false); rolls=0; names=['You','Opponent']; setStatus('Create a room or join a friend with a code.'); $('round-result').textContent='Online multiplayer · target '+target+' points'; render(); } return; }
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   onlineState = null;
   names = mode === 'local' ? ['Player 1', 'Player 2'] : ['You', 'Computer'];
   score = [0, 0]; dice = Array(COUNT).fill(1); locked = Array(COUNT).fill(false); rolls = 0; active = true; busy = false; round = 0; turn = 0;
@@ -70,6 +72,7 @@ async function roll() {
   dice = next; rolls++; busy = false; render();
   const total = sum(dice);
   if (dice.includes(6)) stats.sixes++;
+  save(); updateStats();
   $('status').textContent = names[turn] + ' rolled ' + total + ' · Roll ' + rolls + ' of ' + MAX_ROLLS;
   $('hint').textContent = rolls < MAX_ROLLS ? 'Lock dice you want to keep, reroll, or bank your points.' : 'Last roll complete. Bank your points to finish this turn.';
   $('round-result').innerHTML = 'Current turn: <strong>' + total + ' points</strong> · ' + (MAX_ROLLS - rolls) + ' reroll' + (MAX_ROLLS - rolls === 1 ? '' : 's') + ' left';
@@ -92,7 +95,7 @@ async function cpuTurn() {
 async function bank() {
   if (mode === 'online') { await onlineAction('bank'); return; }
   if (!active || busy || rolls === 0) return;
-  const earned = sum(dice); score[turn] += earned; stats.totalPoints += earned; round++;
+  const earned = sum(dice); score[turn] += earned; stats.totalPoints += earned; round++; save(); updateStats();
   $('round-result').innerHTML = names[turn] + ' banked <strong>+' + earned + ' points</strong>.';
   sound(earned >= 25 ? 880 : 620, .12);
   if (earned >= 25) { stats.bigTurns++; stats.missions[today] = true; updateDaily(); }
@@ -113,7 +116,7 @@ function endTurn() {
   render();
 }
 function finishMatch() {
-  active = false; busy = false; stats.played++;
+  active = false; busy = false; stats.played++; stats.best = Math.max(stats.best, score[0]);
   let outcome;
   if (score[0] === score[1]) { stats.ties++; outcome = 'TIE'; stats.streak = 0; setStatus('🤝 Draw! Both players reached the target together.'); }
   else if (score[0] > score[1]) { outcome = 'WIN'; stats.wins++; stats.streak++; stats.bestStreak = Math.max(stats.bestStreak, stats.streak); stats.best = Math.max(stats.best, score[0]); setStatus(mode === 'local' ? '🏆 Player 1 wins!' : '🏆 You win the Dice Duel!'); sound(920, .35); }
@@ -124,7 +127,12 @@ function finishMatch() {
 }
 
 async function diceApi(path, body) {
-  const res = await fetch(DICE_API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  let res;
+  try { res = await fetch(DICE_API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal }); }
+  catch (e) { throw new Error(e.name === 'AbortError' ? 'The multiplayer server took too long to respond. Please try again.' : 'Could not connect to multiplayer. Check your connection and try again.'); }
+  finally { clearTimeout(timeout); }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Online multiplayer is unavailable right now.');
   return data;
@@ -153,16 +161,29 @@ async function joinOnlineRoom() {
 }
 async function onlineAction(action, extra = {}) {
   if (!onlineRoomCode || !onlineSecret || onlineBusy) return;
+  const previousScore = onlineState && onlineState.score ? onlineState.score.slice() : null;
   onlineBusy = true; render();
-  try { onlineState = await diceApi('/room/action', { roomCode: onlineRoomCode, secret: onlineSecret, action, ...extra }); sound(action === 'roll' ? 500 : 700); }
+  try { onlineState = await diceApi('/room/action', { roomCode: onlineRoomCode, secret: onlineSecret, action, ...extra }); sound(action === 'roll' ? 500 : 700); if (action === 'bank' && previousScore && onlineState.score && onlineState.score[onlineState.me] - previousScore[onlineState.me] >= 25) { stats.bigTurns++; stats.missions[today] = true; save(); updateDaily(); updateStats(); } }
   catch (e) { $('online-status').textContent = e.message; }
   finally { onlineBusy = false; await refreshOnlineRoom(); }
+}
+function recordOnlineMatch(s) {
+  const key = 'diceOnlineRecorded:' + s.roomCode;
+  try { if (localStorage.getItem(key)) return; } catch {}
+  stats.played++;
+  const won = s.winner === s.me;
+  if (won) { stats.wins++; stats.streak++; stats.bestStreak = Math.max(stats.bestStreak, stats.streak); stats.best = Math.max(stats.best, s.score[s.me] || 0); }
+  else { stats.losses++; stats.streak = 0; }
+  history.unshift({ date: new Date().toLocaleDateString(), mode: 'Online', result: won ? 'WIN' : 'LOSS', score: s.score[0] + '–' + s.score[1] });
+  history.splice(8); try { localStorage.setItem(key, '1'); } catch {}
+  save(); updateStats();
 }
 async function refreshOnlineRoom() {
   if (!onlineRoomCode || !onlineSecret) return;
   try {
     const s = await diceApi('/room/state', { roomCode: onlineRoomCode, secret: onlineSecret });
     onlineState = s;
+    if (s.status === 'finished') recordOnlineMatch(s);
     $('online-status').textContent = s.status === 'waiting' ? 'Waiting for your friend to join…' : s.status === 'finished' ? (s.winner === s.me ? '🏆 You won the online duel!' : 'Match finished. Your friend won this round.') : s.turn === s.me ? 'Your turn! Roll the dice.' : 'Waiting for ' + s.players[s.turn] + ' to take their turn…';
     $('online-room-label').textContent = 'Room: ' + s.roomCode + ' · ' + (s.players[0] || 'Player 1') + ' vs ' + (s.players[1] || 'Waiting…');
     $('round-result').textContent = s.last || 'Online match in progress.';
@@ -174,7 +195,7 @@ function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   refreshOnlineRoom(); pollTimer = setInterval(refreshOnlineRoom, 1600);
 }
-try { onlineRoomCode = sessionStorage.getItem('diceRoomCode') || ''; onlineSecret = sessionStorage.getItem('diceRoomSecret') || ''; } catch {}
+try { onlineRoomCode = sessionStorage.getItem('diceRoomCode') || ''; onlineSecret = sessionStorage.getItem('diceRoomSecret') || ''; const prefs = JSON.parse(localStorage.getItem('diceDuelSettings.v1') || 'null'); if (prefs) { if ([50,100,150,200].includes(Number(prefs.target))) $('target-score').value = String(prefs.target); if (['cpu','local','online'].includes(prefs.mode)) $('game-mode').value = prefs.mode; if (['casual','balanced','tactical'].includes(prefs.level)) $('ai-level').value = prefs.level; soundOn = !!prefs.soundOn; $('sound-toggle').textContent = soundOn ? '🔊 Sound on' : '🔇 Sound off'; $('sound-toggle').setAttribute('aria-pressed', String(soundOn)); } } catch {}
 if (onlineRoomCode && onlineSecret) { $('game-mode').value = 'online'; mode = 'online'; $('online-panel').hidden = false; $('join-code').value = onlineRoomCode; $('online-room-label').textContent = 'Reconnecting to room ' + onlineRoomCode + '…'; startPolling(); }
 $('create-room').addEventListener('click', createOnlineRoom);
 $('join-room').addEventListener('click', joinOnlineRoom);
