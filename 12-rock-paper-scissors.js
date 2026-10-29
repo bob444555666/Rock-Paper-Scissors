@@ -1580,7 +1580,7 @@ setInterval(() => {
     try { saved = JSON.parse(localStorage.getItem(dailyKey) || 'null'); } catch (_) {}
     if (saved && saved.id === dailyChallenge.id && saved.completed) return 0;
     try { localStorage.setItem(dailyKey, JSON.stringify({ id: dailyChallenge.id, date: dailyChallenge.date, completed: true })); } catch (_) {}
-    dailyStatus.textContent = '✓ Challenge complete! +75 bonus XP';
+    dailyStatus.textContent = '✓ Daily challenge complete! No bonus XP';
     document.getElementById('arena-daily-challenge').classList.add('is-complete');
     return 0;
   }
