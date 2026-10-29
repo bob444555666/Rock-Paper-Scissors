@@ -665,7 +665,7 @@ async function playComputer(move) {
   movesElement.innerHTML = ''
   resultElement.textContent = 'Computer is thinking…'
   // Keep the opponent's response deliberate instead of revealing the move instantly.
-  const thinkDelay = 1400 + Math.floor(randomFloat() * 1101)
+  const thinkDelay = 700 + Math.floor(randomFloat() * 601)
 
   // normally the server picks the computer's move; if it can't be reached, play offline
   try {
