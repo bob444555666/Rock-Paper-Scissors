@@ -15,20 +15,20 @@ const MOVES = ['rock', 'paper', 'scissors']
 
 const LEVELS = {
   easy: {
-    smart: 0,
-    text: 'Totally random. Good for warming up.'
+    smart: 0.45,
+    text: 'Still challenging: watches your habits and sometimes counters your likely move.'
   },
   medium: {
-    smart: 0.5,
-    text: 'Notices which move you use the most.'
+    smart: 0.72,
+    text: 'Frequently predicts your habits and counters your likely move.'
   },
   hard: {
-    smart: 0.75,
-    text: 'Learns what you tend to throw after each move.'
+    smart: 0.88,
+    text: 'Strong pattern tracking with very frequent counters.'
   },
   insane: {
-    smart: 0.95,
-    text: 'Hunts for patterns in your last moves. Good luck.'
+    smart: 0.97,
+    text: 'Aggressively predicts patterns. Expect a tough match.'
   }
 }
 
@@ -663,7 +663,9 @@ async function playComputer(move) {
 
   computerBusy = true
   movesElement.innerHTML = ''
-  resultElement.textContent = 'Computer is choosing...'
+  resultElement.textContent = 'Computer is thinking…'
+  // Keep the opponent's response deliberate instead of revealing the move instantly.
+  const thinkDelay = 1400 + Math.floor(randomFloat() * 1101)
 
   // normally the server picks the computer's move; if it can't be reached, play offline
   try {
@@ -700,9 +702,10 @@ async function playComputer(move) {
       }
     }
 
-    if (!data) {
-      data = playComputerOffline(level, playerHistory.slice(-50), move)
-    }
+    // Use the same local opponent logic at every level so Easy is not a free XP farm.
+    // The API check above still handles account/session errors, but its move is not used here.
+    data = playComputerOffline(level, playerHistory.slice(-50), move)
+    await new Promise(resolve => setTimeout(resolve, thinkDelay))
 
     playerHistory.push(move)
 
@@ -1524,7 +1527,7 @@ setInterval(() => {
       <div><span>🏆 BEST STREAK</span><strong id="arena-best-streak">0</strong></div>
       <div><span>🎯 ROUNDS PLAYED</span><strong id="arena-rounds">0</strong></div>
     </div>
-    <p class="arena-progression-note">Earn XP every round. Win streaks add bonus XP. Progress is saved on this device.</p>
+    <p class="arena-progression-note">Wins: +5 XP · Losses: −5 XP · Ties: 0 XP. Progress is saved on this device.</p>
     <div class="arena-daily-challenge" id="arena-daily-challenge">
       <div class="arena-daily-icon" aria-hidden="true">⚡</div>
       <div class="arena-daily-copy">
@@ -1533,7 +1536,7 @@ setInterval(() => {
         <p id="arena-daily-goal">Connecting to the Python game service.</p>
         <span id="arena-daily-status" class="arena-daily-status" aria-live="polite">Checking challenge…</span>
       </div>
-      <div class="arena-daily-reward">+75 <small>XP</small></div>
+      <div class="arena-daily-reward">DAILY <small>CHALLENGE</small></div>
     </div>
   `;
   score.insertAdjacentElement('afterend', hud);
@@ -1579,12 +1582,12 @@ setInterval(() => {
     try { localStorage.setItem(dailyKey, JSON.stringify({ id: dailyChallenge.id, date: dailyChallenge.date, completed: true })); } catch (_) {}
     dailyStatus.textContent = '✓ Challenge complete! +75 bonus XP';
     document.getElementById('arena-daily-challenge').classList.add('is-complete');
-    return Number(dailyChallenge.rewardXp) || 75;
+    return 0;
   }
 
   function renderProgress() {
-    const level = Math.floor(progress.xp / 250) + 1;
-    const intoLevel = progress.xp % 250;
+    const level = Math.max(1, Math.floor(Math.max(0, progress.xp) / 250) + 1);
+    const intoLevel = ((Math.max(0, progress.xp) % 250) + 250) % 250;
     $('arena-level').textContent = 'LEVEL ' + level;
     $('arena-xp-label').textContent = progress.xp.toLocaleString() + ' XP';
     $('arena-next-label').textContent = (250 - intoLevel) + ' XP to next level';
@@ -1632,22 +1635,23 @@ setInterval(() => {
     const detail = event.detail || {};
     if (!['win', 'loss', 'tie'].includes(detail.result)) return;
     progress.rounds += 1;
-    let earned = 5;
+    let earned = 0;
     if (detail.result === 'win') {
       progress.streak += 1;
       progress.wins += 1;
       progress.bestStreak = Math.max(progress.bestStreak, progress.streak);
-      earned = 25 + Math.min(25, Math.max(0, progress.streak - 1) * 5);
+      earned = 5;
     } else if (detail.result === 'tie') {
-      earned = 8;
+      earned = 0;
     } else {
       progress.streak = 0;
+      earned = -5;
     }
     if (detail.which === 'computer' && detail.result === 'win' && dailyChallenge && detail.yourMove === dailyChallenge.requiredMove) {
-      const bonus = completeDailyChallenge();
-      if (bonus > 0) earned += bonus;
+      completeDailyChallenge();
     }
-    progress.xp += earned;
+    // XP cannot fall below zero, so new players never enter a negative level.
+    progress.xp = Math.max(0, progress.xp + earned);
     saveProgress();
     result.classList.remove('arena-round-pop');
     void result.offsetWidth;
@@ -1659,7 +1663,7 @@ setInterval(() => {
     if (prior) prior.remove();
     const reward = document.createElement('span');
     reward.className = 'arena-xp-earned';
-    reward.textContent = '+' + earned + ' XP';
+    reward.textContent = (earned > 0 ? '+' : '') + earned + ' XP';
     result.appendChild(reward);
   });
 
