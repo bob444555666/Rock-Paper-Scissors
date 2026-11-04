@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow">
+<title>RPS Owner Control Centre</title><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root{color-scheme:dark;--bg:#070b16;--panel:#10182b;--line:#253452;--muted:#9ba9c3;--text:#f5f7ff;--cyan:#63d8ff;--purple:#a78bfa;--green:#43e6a0;--red:#fb7185}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#1b2850 0,transparent 45%),radial-gradient(ellipse at 90% 10%,#341b58 0,transparent 35%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px max(18px,calc((100vw - 1180px)/2));border-bottom:1px solid var(--line);background:#080d19e8;position:sticky;top:0;z-index:5;backdrop-filter:blur(16px)}
+.brand{font-weight:900;letter-spacing:.08em}.brand span{color:var(--cyan)}.head-actions{display:flex;align-items:center;gap:8px}.pill{border:1px solid #5b4c91;background:#241b43;color:#ddd6fe;padding:6px 11px;border-radius:99px;font-size:12px;font-weight:800}
+main{width:min(1180px,calc(100% - 28px));margin:28px auto 70px}.hero{margin-bottom:20px}.eyebrow{color:var(--cyan);font-size:11px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.hero h1{font-size:clamp(28px,5vw,44px);line-height:1.05;margin:8px 0}.hero p{color:var(--muted);max-width:700px;margin:8px 0}
+.card{background:linear-gradient(145deg,#121d33f2,#0b1222f2);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 20px 60px #0005;margin:14px 0}.card h2,.card h3{margin:0 0 12px}.muted,small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+input,select,textarea{width:100%;background:#080f1e;border:1px solid #344462;border-radius:10px;color:var(--text);padding:12px 13px;font:inherit;margin:5px 0;outline:none}input:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #63d8ff20}
+button,.button{border:1px solid #4d72a8;background:linear-gradient(110deg,#155b91,#44358c);color:white;border-radius:10px;padding:11px 15px;font:700 14px system-ui;cursor:pointer;text-decoration:none;display:inline-flex;justify-content:center;align-items:center;gap:8px;margin:5px 3px 5px 0}
+button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.secondary{background:#17243a;border-color:#3b4b67}button.danger{background:#521c32;border-color:#9f3456}button.good{background:#104633;border-color:#1f9d6c}button:disabled{opacity:.5;cursor:not-allowed}
+.tabs{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0}.tabs button{background:#121d32;border-color:#2e405e}.tabs button.active{background:linear-gradient(110deg,#155b91,#44358c);border-color:var(--cyan)}
+.hidden{display:none!important}.msg{min-height:22px;color:var(--muted);font-size:13px}.error{color:#fecdd3}.success{color:#bbf7d0}.notice{padding:12px 14px;border:1px solid #385276;background:#101f36;border-radius:12px;color:#d9eaff;margin:12px 0}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:12px}.employee-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #273650}.employee-row:last-child{border:0}.employee-row strong{display:block}.tag{font-size:11px;color:#c4b5fd;border:1px solid #5b4c91;padding:3px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.08em}.status{font-weight:800}.status.on{color:var(--green)}.status.off{color:var(--red)}.actions{display:flex;flex-wrap:wrap;gap:5px}.table-list{max-height:470px;overflow:auto}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#qr-canvas{background:white;border-radius:12px;padding:12px;display:inline-block;margin:12px auto}#qr-canvas canvas{display:block;max-width:100%;height:auto!important}
+@media(max-width:600px){header{padding:13px 14px}.card{padding:15px}.employee-row{align-items:flex-start;flex-direction:column}.two{grid-template-columns:1fr}}
+@media print{body{background:white;color:#111}body *{visibility:hidden!important}#qr-print-area,#qr-print-area *{visibility:visible!important}#qr-print-area{position:absolute;left:0;top:0;width:100%;background:white;color:#111;border:0;box-shadow:none;text-align:center}#qr-canvas{background:white}#qr-canvas canvas{margin:auto}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+</head>
+<body>
+<header><div class="brand">STONE PAPER <span>SCISSORS</span> / OWNER CONTROL</div><div class="head-actions"><span id="role-pill" class="pill hidden"></span><a class="button secondary" href="/staff-portal.html">Staff Portal</a><a class="button secondary" href="/">Game</a></div></header>
+<main>
+<section class="hero"><div class="eyebrow">Restricted management system</div><h1>Owner Control Centre</h1><p>Manage employees, account access, server operations, challenges, tournaments and Plus / Pro / Legend memberships. Every action is checked by the RPS server.</p></section>
+<section id="login-card" class="card" style="max-width:480px;margin:28px auto">
+<h2>Owner sign in</h2><p class="muted">Sign in with your owner or co-owner RPS account.</p>
+<input id="login-id" placeholder="Username or email" autocomplete="username"><input id="login-password" type="password" placeholder="Password" autocomplete="current-password">
+<button id="login-go" style="width:100%">Sign in to Owner Control</button><p id="login-msg" class="msg" role="status"></p>
+</section>
+<section id="app" class="hidden">
+<div class="section-title"><div><div class="eyebrow">Verified administrator</div><h2 id="welcome">Owner workspace</h2><p class="muted">Your role: <strong id="role-name"></strong></p></div><button id="logout" class="secondary">Log out</button></div>
+<nav id="tabs" class="tabs"></nav><div id="workspace"></div><p id="work-msg" class="msg" role="status"></p>
+<article id="qr-print-area" class="card hidden"><div class="section-title"><div><h2>Employee QR pass</h2><p id="qr-caption" class="muted"></p></div><button id="qr-print">Print QR code</button></div><div class="center" style="text-align:center"><div id="qr-canvas"></div></div><p id="qr-url" class="muted"></p><p class="muted">This code is single-use, linked to one employee account, and expires after 15 minutes.</p></article>
+</section>
+</main>
+<script src="/owner-control.js?v=1"></script>
+</body></html>
