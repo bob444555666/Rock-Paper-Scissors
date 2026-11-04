@@ -27,12 +27,14 @@
 <main>
   <div class="eyebrow">🎵 Your next match, your soundtrack</div>
   <h1>Gaming Music</h1>
-  <p class="intro">Everyone can listen to the gaming playlists below. Pick a soundtrack and jump back into the game.</p>
+  <p class="intro">Everyone can listen to the Spotify gaming playlists below. Pick a soundtrack for your next match and jump back into the game.</p>
   <section class="playlist-grid" aria-label="Choose a playlist">
     <button class="pick" type="button" data-title="Epic Gaming" data-description="EDM, remixes, and high-energy gaming tracks" aria-pressed="true"><span class="emoji">⚔️</span><strong>Epic Gaming</strong><small>EDM • Remixes • Hype</small></button>
     <button class="pick" type="button" data-title="Gaming Phonk" data-description="Hard-hitting phonk for intense matches" aria-pressed="false"><span class="emoji">🔥</span><strong>Gaming Phonk</strong><small>Fast • Heavy • Intense</small></button>
     <button class="pick" type="button" data-title="Chill Gaming" data-description="Relaxed music for laid-back sessions" aria-pressed="false"><span class="emoji">🌌</span><strong>Chill Gaming</strong><small>Relax • Explore • Unwind</small></button>
     <button class="pick" type="button" data-title="Focus Mode" data-description="Chillstep, bass, and trap for focused play" aria-pressed="false"><span class="emoji">🎯</span><strong>Focus Mode</strong><small>Focus • Chillstep • Bass</small></button>
+    <button class="pick" type="button" data-title="Ultra Gaming" data-description="Spotify gaming mix with dance, bass, EDM, trap, and phonk" aria-pressed="false"><span class="emoji">🚀</span><strong>Ultra Gaming</strong><small>EDM • Bass • Phonk</small></button>
+    <button class="pick" type="button" data-title="ULTIMATE GAMING ROCK &amp; METAL" data-description="Hard-hitting rock and metal for intense matches" aria-pressed="false"><span class="emoji">🎸</span><strong>Gaming Rock &amp; Metal</strong><small>Rock • Metal • Boss fights</small></button>
   </section>
   <section class="player-panel" id="music-player-panel" aria-live="polite">
     <div id="premium-lock" style="padding:22px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.03);">
@@ -52,12 +54,14 @@
   const title = document.getElementById('player-title');
   const open = document.getElementById('spotify-open');
   const lockMessage = document.getElementById('premium-lock-message');
-  const icons = {'Epic Gaming':'⚔️','Gaming Phonk':'🔥','Chill Gaming':'🌌','Focus Mode':'🎯'};
+  const icons = {'Epic Gaming':'⚔️','Gaming Phonk':'🔥','Chill Gaming':'🌌','Focus Mode':'🎯','Ultra Gaming':'🚀','ULTIMATE GAMING ROCK & METAL':'🎸'};
   const playlistIds = {
     'Epic Gaming': '5Xc1NNrWAur7yiF8jEVH2E',
     'Gaming Phonk': '2JIYAj2FshBa8KoQ3qd9vR',
     'Chill Gaming': '64sgSeHtgXoo2quNMLau7S',
-    'Focus Mode': '0PwUptCn6kNx1Ihk9NHqzz'
+    'Focus Mode': '0PwUptCn6kNx1Ihk9NHqzz',
+    'Ultra Gaming': '37i9dQZF1DWYN9NBqvY7Tx',
+    'ULTIMATE GAMING ROCK & METAL': '4Oa2hO5tZ1MSH5FRedWyOB'
   };
   function loadPlaylist(button) {
     const name = button.dataset.title;
@@ -66,7 +70,7 @@
     buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
     title.textContent = (icons[name] || '🎵') + ' ' + name;
     player.src = 'https://open.spotify.com/embed/playlist/' + encodeURIComponent(id) + '?utm_source=generator';
-    open.href = 'https://open.spotify.com/playlist/' + encodeURIComponent(id);
+    open.href = name === 'Ultra Gaming' ? 'https://open.spotify.com/playlist/37i9dQZF1DWYN9NBqvY7Tx?utm_source=openai&utm_medium=chatgpt&go=1&nap_web=1&request_id=c9177bd3-3e72-41ea-b4f7-eefa596e1b09' : name === 'ULTIMATE GAMING ROCK & METAL' ? 'https://open.spotify.com/playlist/4Oa2hO5tZ1MSH5FRedWyOB?utm_source=openai&utm_medium=chatgpt&go=1&nap_web=1&request_id=c9177bd3-3e72-41ea-b4f7-eefa596e1b09' : 'https://open.spotify.com/playlist/' + encodeURIComponent(id);
     lockMessage.textContent = button.dataset.description || 'Now playing ' + name + '.';
   }
   buttons.forEach(button => button.addEventListener('click', () => loadPlaylist(button)));
