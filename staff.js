@@ -30,7 +30,8 @@
         cache: 'no-store'
       });
       const data = await response.json();
-      currentRole = response.ok && data.staff === true ? (data.role || 'staff') : '';\n      button.hidden = !currentRole;
+      currentRole = response.ok && data.staff === true ? (data.role || 'staff') : '';
+      button.hidden = !currentRole;
     } catch (_) { button.hidden = true; }
   }
   check();
