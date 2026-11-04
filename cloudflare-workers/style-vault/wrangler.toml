@@ -1,0 +1,8 @@
+name = "rps-style-vault-api"
+main = "worker.js"
+compatibility_date = "2026-11-04"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "STYLE_VAULT"
+id = "0f68e6eb1a564de39f2a0f6bad3a0bdf"
