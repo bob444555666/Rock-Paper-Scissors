@@ -20,9 +20,11 @@ button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.seco
 .tabs{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0}.tabs button{background:#121d32;border-color:#2e405e}.tabs button.active{background:linear-gradient(110deg,#155b91,#44358c);border-color:var(--cyan)}
 .notice{padding:12px 14px;border:1px solid #385276;background:#101f36;border-radius:12px;color:#d9eaff;margin:12px 0}.error{color:#fecdd3}.success{color:#bbf7d0}.hidden{display:none!important}
 #qr-reader{width:min(100%,420px);margin:12px auto;border-radius:14px;overflow:hidden;background:#050914}#qr-reader video{border-radius:12px}.center{text-align:center}.employee-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #273650}.employee-row:last-child{border:0}.employee-row strong{display:block}.tag{font-size:11px;color:#c4b5fd;border:1px solid #5b4c91;padding:3px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.08em}.status{font-weight:800}.status.on{color:var(--green)}.status.off{color:var(--red)}.actions{display:flex;flex-wrap:wrap;gap:5px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:12px}.table-list{max-height:440px;overflow:auto}.msg{min-height:22px;color:var(--muted);font-size:13px}
+@media print{body{background:#fff;color:#111}body *{visibility:hidden!important}#qr-output,#qr-output *{visibility:visible!important}#qr-output{position:absolute;left:0;top:0;width:100%;background:#fff;color:#111;border:0;box-shadow:none;text-align:center}#qr-canvas{background:#fff}#qr-canvas canvas{margin:auto}}
 @media(max-width:600px){header{padding:13px 14px}.card{padding:15px}.two{grid-template-columns:1fr}.employee-row{align-items:flex-start;flex-direction:column}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 </head>
 <body>
 <header><div class="brand">STONE PAPER <span>SCISSORS</span> / STAFF</div><div class="header-right"><span id="role-pill" class="pill hidden"></span><a class="button secondary" href="/">Back to game</a></div></header>
