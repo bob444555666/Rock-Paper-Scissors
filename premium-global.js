@@ -325,7 +325,7 @@
 
   async function refresh() {
     const t = token();
-    if (!t) { apply({}, false); applyVaultLook(''); return; }
+    if (!t) { apply({}, false); window.setTimeout(() => applyVaultLook(''), 0); return; }
     try {
       const res = await fetch(API + '/account/premium', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
