@@ -380,7 +380,6 @@
     document.documentElement.dataset.vaultAccent = a;
     vaultStyleNode.textContent = `
       #pf-avatar { outline:3px solid ${a} !important; outline-offset:3px; box-shadow:0 0 0 6px color-mix(in srgb,${b} 45%,transparent),0 0 28px color-mix(in srgb,${a} 55%,transparent) !important; }
-      .lb-pic { outline:2px solid ${a} !important; outline-offset:2px; box-shadow:0 0 15px color-mix(in srgb,${b} 65%,transparent) !important; }
       #user-chip { border-color:${a} !important; box-shadow:0 0 16px color-mix(in srgb,${a} 35%,transparent) !important; }
       body.vault-win .js-result, body.vault-win .result { animation:vault-win-pop .95s cubic-bezier(.2,.8,.2,1) both; box-shadow:0 0 0 4px color-mix(in srgb,${b} 55%,transparent),0 0 34px color-mix(in srgb,${a} 75%,transparent) !important; }
       @keyframes vault-win-pop { 0%{transform:scale(.96);filter:brightness(1)} 42%{transform:scale(1.09);filter:brightness(1.45)} 100%{transform:scale(1);filter:brightness(1)} }
