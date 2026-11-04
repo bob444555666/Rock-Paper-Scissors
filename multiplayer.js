@@ -9,10 +9,10 @@
   const token = () => { try { return localStorage.getItem('token'); } catch (_) { return null; } };
   async function premiumCheck() {
     const t = token();
-    if (!t) throw new Error('Log in on the main game page first. 3–4 player mode is Premium-only.');
+    if (!t) throw new Error('Log in on the main game page first. 3–4 player mode requires a paid plan (Plus, Pro, or Legend).');
     const res = await fetch(API + '/account/premium', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t}),cache:'no-store'});
     const data = await res.json().catch(()=>({}));
-    if (!res.ok || data.premium !== true) throw new Error('3–4 player games are for Premium members only.');
+    if (!res.ok || data.premium !== true) throw new Error('3–4 player games require Plus, Pro, or Legend.');
   }
   function code() { return Math.random().toString(36).slice(2,8).toUpperCase(); }
   function showSetup(message='') { closeSocket(); setup.classList.remove('hidden'); game.classList.add('hidden'); setupMsg.textContent=message; }
@@ -34,7 +34,7 @@
     closeSocket();
     room=roomCode.toUpperCase(); size=playerSize; picked=false;
     setup.classList.add('hidden'); game.classList.remove('hidden');
-    codeDisplay.textContent=room; resultBox.textContent='Connecting to room…'; gameStatus.textContent='Checking Premium access…';
+    codeDisplay.textContent=room; resultBox.textContent='Connecting to room…'; gameStatus.textContent='Checking membership access…';
     const t=token();
     ws = new WebSocket('wss://rps-server.heyboernathan.workers.dev/multi-room?room='+encodeURIComponent(room)+'&size='+size+'&token='+encodeURIComponent(t||''));
     const own=ws;
@@ -63,7 +63,7 @@
   }
   async function start(mode) {
     try {
-      setupMsg.textContent='Checking Premium…';
+      setupMsg.textContent='Checking membership…';
       await premiumCheck();
       const selected=Number(countSelect.value);
       const roomCode=mode==='create'?code():$('room-code-input').value.trim().toUpperCase();
@@ -83,5 +83,5 @@
   }));
   $('leave-btn').addEventListener('click',()=>showSetup('You left the room. Create or join another one.'));
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&ws&&ws.readyState===WebSocket.OPEN){/* Keep the room connected while briefly switching apps. */}});
-  premiumCheck().catch(e=>{setupMsg.textContent=e.message||'Premium verification required.';});
+  premiumCheck().catch(e=>{setupMsg.textContent=e.message||'Membership verification required.';});
 })();
