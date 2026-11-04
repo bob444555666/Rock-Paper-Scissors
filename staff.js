@@ -233,7 +233,7 @@
     list.forEach(t => {
       const box = make('div', { className: 'st-box' })
       box.append(make('b', { textContent: `${t.name} · ${tourStatus(t)}` }),
-        make('small', { className: 'st-small', textContent: `Prize: ${t.prizeType === 'premium' ? '⭐ Premium' : t.prizeText || '(none)'} · ${left(t.expiresAt - Date.now())}` }))
+        make('small', { className: 'st-small', textContent: `Prize: ${t.prizeType === 'premium' ? '⭐ Plus membership' : t.prizeText || '(none)'} · ${left(t.expiresAt - Date.now())}` }))
       if (t.champion) box.append(make('small', { className: 'st-small', textContent: '🏆 Winner: ' + t.champion }))
       t.live.forEach(m => box.append(make('small', { className: 'st-small', textContent: `${m.round}: ${m.a || '?'} vs ${m.b || '?'} (${m.wins[0]}-${m.wins[1]})` })))
 
@@ -307,7 +307,7 @@
     list.forEach(p => {
       const rm = make('button', { className: 'st-mini red', type: 'button', textContent: 'Remove' })
       rm.addEventListener('click', () => { if (confirm('Remove plan access from ' + p.username + '?')) act('prem-remove', { id: p.id }, 'Plan access removed.') })
-      const planName = ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' })[p.plan] || 'Premium'
+      const planName = ({ individual: 'Plus', duo: 'Pro', family: 'Legend' })[p.plan] || 'Plus'
       const detail = (p.lifetime ? 'Lifetime ' : '') + planName + ' · ' + (p.source === 'tournament' ? 'won in a tournament' : 'granted by staff')
       content.append(make('div', { className: 'st-pl' }, pic(p.username, p.avatarAt),
         make('span', { className: 'st-grow' }, make('b', { textContent: p.username }), make('small', { textContent: detail })), rm))
