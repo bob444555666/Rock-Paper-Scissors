@@ -334,13 +334,14 @@
       if (!res.ok) { apply({}, false); return; }
       const data = await res.json();
       apply(data.prefs || {}, data.premium === true);
+      await refreshVaultLook(t, data.premium === true);
       try {
         if (data.premium) localStorage.setItem(CACHE, JSON.stringify({ premium: true, prefs: data.prefs || {} }));
         else localStorage.removeItem(CACHE);
       } catch (e) {}
     } catch (e) {
       const cached = readCache();
-      if (cached && cached.premium && token()) apply(cached.prefs || {}, true);
+      if (cached && cached.premium && token()) { apply(cached.prefs || {}, true); refreshVaultLook(token(), true); }
     }
   }
 
@@ -349,4 +350,69 @@
   refresh();
   let lastToken = token();
   setInterval(() => { if (token() !== lastToken) { lastToken = token(); refresh(); } }, 1500);
+
+  // ---------- account-saved Style Vault appearance ----------
+  const VAULT_API = 'https://rps-style-vault-api.heyboernathan.workers.dev';
+  const VAULT_LOOKS = {
+    'neon-challenger': ['#22f5a0', '#3b82f6'],
+    'royal-champion': ['#fbbf24', '#f59e0b'],
+    'galaxy-runner': ['#a78bfa', '#38bdf8'],
+    'dragon-ace': ['#fb7185', '#f97316'],
+    'void-reaper': ['#c084fc', '#6366f1'],
+    'solar-vanguard': ['#fde047', '#fb923c'],
+    'apex-legend': ['#38bdf8', '#f0abfc'],
+    'celestial-monarch': ['#e9d5ff', '#f9a8d4']
+  };
+  const vaultStyleNode = document.createElement('style');
+  vaultStyleNode.id = 'vault-style-runtime';
+  document.head.appendChild(vaultStyleNode);
+
+  function applyVaultLook(styleId) {
+    const colors = VAULT_LOOKS[styleId];
+    if (!colors) {
+      vaultStyleNode.textContent = '';
+      delete document.documentElement.dataset.vaultStyle;
+      delete document.documentElement.dataset.vaultAccent;
+      return;
+    }
+    const [a, b] = colors;
+    document.documentElement.dataset.vaultStyle = styleId;
+    document.documentElement.dataset.vaultAccent = a;
+    vaultStyleNode.textContent = `
+      #pf-avatar { outline:3px solid ${a} !important; outline-offset:3px; box-shadow:0 0 0 6px color-mix(in srgb,${b} 45%,transparent),0 0 28px color-mix(in srgb,${a} 55%,transparent) !important; }
+      .lb-pic { outline:2px solid ${a} !important; outline-offset:2px; box-shadow:0 0 15px color-mix(in srgb,${b} 65%,transparent) !important; }
+      #user-chip { border-color:${a} !important; box-shadow:0 0 16px color-mix(in srgb,${a} 35%,transparent) !important; }
+      body.vault-win .js-result, body.vault-win .result { animation:vault-win-pop .95s cubic-bezier(.2,.8,.2,1) both; box-shadow:0 0 0 4px color-mix(in srgb,${b} 55%,transparent),0 0 34px color-mix(in srgb,${a} 75%,transparent) !important; }
+      @keyframes vault-win-pop { 0%{transform:scale(.96);filter:brightness(1)} 42%{transform:scale(1.09);filter:brightness(1.45)} 100%{transform:scale(1);filter:brightness(1)} }
+      @media(prefers-reduced-motion:reduce){body.vault-win .js-result,body.vault-win .result{animation:none!important}}
+    `;
+  }
+
+  async function refreshVaultLook(sessionToken, premium) {
+    if (!premium || !sessionToken) { applyVaultLook(''); return; }
+    try {
+      const response = await fetch(VAULT_API + '/vault', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({token:sessionToken,action:'load'}), cache:'no-store'
+      });
+      if (!response.ok) { applyVaultLook(''); return; }
+      const data = await response.json();
+      applyVaultLook(data.styleId || (data.style && data.style.id) || '');
+    } catch (error) {
+      // Keep the last verified look during a temporary network failure.
+    }
+  }
+
+  window.addEventListener('rps-vault-style-updated', event => {
+    const id = event.detail && event.detail.styleId;
+    if (id) applyVaultLook(id);
+  });
+  window.addEventListener('rps-result', event => {
+    if (!event.detail || event.detail.result !== 'win' || !document.documentElement.dataset.vaultStyle) return;
+    document.body.classList.remove('vault-win');
+    void document.body.offsetWidth;
+    document.body.classList.add('vault-win');
+    window.setTimeout(() => document.body.classList.remove('vault-win'), 1100);
+  });
+
 })();
