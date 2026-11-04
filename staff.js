@@ -6,21 +6,21 @@
   if (!profile) return;
   const accountHeading = Array.from(profile.querySelectorAll('h3')).find(el => (el.textContent || '').trim().toLowerCase() === 'account');
   if (!accountHeading) return;
-  const button = document.createElement('button');
+  let currentRole = '';\n  const button = document.createElement('button');
   button.type = 'button';
   button.id = 'rps-staff-member';
   button.className = 'big alt';
   button.textContent = 'Staff Member';
   button.hidden = true;
   button.style.cssText = 'margin:10px 0;border:1px solid #8b5cf6;background:linear-gradient(110deg,#312e81,#581c87);color:#fff';
-  button.addEventListener('click', () => { window.location.href = '/staff-portal.html'; });
+  button.addEventListener('click', () => { window.location.href = ['owner','co-owner'].includes(currentRole) ? '/owner-control.html' : '/staff-portal.html'; });
   profile.insertBefore(button, accountHeading);
   let lastToken = null;
   async function check() {
     let token = '';
     try { token = localStorage.getItem('token') || ''; } catch (_) {}
     lastToken = token;
-    if (!token) { button.hidden = true; return; }
+    if (!token) { currentRole = ''; button.hidden = true; return; }
     try {
       const response = await fetch(API + '/staff/me', {
         method: 'POST',
@@ -29,7 +29,7 @@
         cache: 'no-store'
       });
       const data = await response.json();
-      button.hidden = !(response.ok && data.staff === true);
+      currentRole = response.ok && data.staff === true ? (data.role || 'staff') : '';\n      button.hidden = !currentRole;
     } catch (_) { button.hidden = true; }
   }
   check();
