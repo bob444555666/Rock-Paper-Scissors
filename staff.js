@@ -1,6 +1,6 @@
 /* Staff Control Panel (v2). Self-contained and safe: the button only shows for accounts the owner gave access to.
    It talks to the server with the account's login, so nobody ever sees the admin key or a secret URL.
-   Tabs: Server (on/off + winners), Challenges, Tournaments, Premium. */
+   Tabs: Server (on/off + winners), Challenges, Tournaments, Memberships. */
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev'
   const LEVELS = ['Easy', 'Medium', 'Hard', 'Insane']
@@ -122,7 +122,7 @@
 
   function renderTabs() {
     tabsBox.textContent = ''
-    ;[['server', '🖥️ Server'], ['challenges', '🎯 Challenges'], ['tournaments', '🏟️ Tournaments'], ['premium', '⭐ Premium']].forEach(([id, label]) => {
+    ;[['server', '🖥️ Server'], ['challenges', '🎯 Challenges'], ['tournaments', '🏟️ Tournaments'], ['premium', '⭐ Memberships']].forEach(([id, label]) => {
       const t = make('button', { className: 'tab' + (tab === id ? ' on' : ''), type: 'button', textContent: label })
       t.addEventListener('click', () => { tab = id; msg.textContent = ''; render() })
       tabsBox.append(t)
@@ -147,7 +147,7 @@
     content.append(make('div', { className: 'st-two' }, onBtn, offBtn))
 
     const won = (data.challenges || []).filter(c => c.status === 'won').map(c => ({ name: c.playerName, at: c.avatarAt, when: c.wonAt, what: 'Challenge' + (c.prize ? ' · ' + c.prize : '') }))
-    const champs = (data.tournaments || []).filter(t => t.champion).map(t => ({ name: t.champion, at: t.championAvatarAt, when: t.wonAt, what: t.name + ' · ' + (t.prizeType === 'premium' ? '⭐ Premium' : t.prizeText || 'tournament') }))
+    const champs = (data.tournaments || []).filter(t => t.champion).map(t => ({ name: t.champion, at: t.championAvatarAt, when: t.wonAt, what: t.name + ' · ' + (t.prizeType === 'premium' ? '⭐ Plus membership' : t.prizeText || 'tournament') }))
     const all = [...won, ...champs].sort((a, b) => (b.when || 0) - (a.when || 0))
     content.append(make('h3', { textContent: `Who won (${all.length})` }))
     if (!all.length) content.append(make('p', { className: 'msg', textContent: 'Nobody has won yet.' }))
@@ -209,7 +209,7 @@
     const k = keep.tour
     const nm = make('input', { type: 'text', placeholder: 'Room name (optional)', maxLength: 40, autocomplete: 'off', value: k.name })
     const pt = make('select')
-    pt.append(make('option', { value: 'text', textContent: 'Text prize' }), make('option', { value: 'premium', textContent: '⭐ Premium (winner gets it automatically)' }))
+    pt.append(make('option', { value: 'text', textContent: 'Text prize' }), make('option', { value: 'premium', textContent: '⭐ Plus membership (winner gets it automatically)' }))
     pt.value = k.ptype
     const pz = make('input', { type: 'text', placeholder: 'Prize text (for a text prize)', maxLength: 300, autocomplete: 'off', value: k.prize })
     const hrs = hourSelect(k.hours)
@@ -277,22 +277,22 @@
     const u = make('input', { type: 'text', placeholder: 'Account username', maxLength: 16, autocomplete: 'off', value: keep.prem.username })
     u.addEventListener('input', () => { keep.prem.username = u.value })
 
-    const give = make('button', { className: 'big', type: 'button', textContent: 'Give Premium' })
+    const give = make('button', { className: 'big', type: 'button', textContent: 'Grant Plus membership' })
     give.addEventListener('click', async () => {
-      const r = await act('prem-add', { username: u.value }, 'Premium given.')
+      const r = await act('prem-add', { username: u.value }, 'Plus membership granted.')
       if (r.ok) { keep.prem.username = ''; render() }
     })
-    content.append(make('h3', { textContent: 'Give Premium' }),
-      make('p', { className: 'st-small', textContent: 'Premium is also won automatically in tournaments that have Premium as the prize.' }), u, give)
+    content.append(make('h3', { textContent: 'Grant Plus membership' }),
+      make('p', { className: 'st-small', textContent: 'Plus membership is also awarded automatically in tournaments that offer it as the prize.' }), u, give)
 
     const plan = make('select')
-    ;[['individual', 'Premium'], ['duo', 'Ultra'], ['family', 'Ultra Plus']].forEach(([value, label]) => {
+    ;[['individual', 'Plus'], ['duo', 'Pro'], ['family', 'Legend']].forEach(([value, label]) => {
       plan.append(make('option', { value, textContent: label }))
     })
     const lifetime = make('button', { className: 'big', type: 'button', textContent: 'Grant selected plan for life' })
     lifetime.addEventListener('click', async () => {
       if (!u.value.trim()) { msg.textContent = 'Enter an account username first.'; return }
-      const label = ({ individual: 'Premium', duo: 'Ultra', family: 'Ultra Plus' })[plan.value] || 'Premium'
+      const label = ({ individual: 'Plus', duo: 'Pro', family: 'Legend' })[plan.value] || 'Plus'
       if (!confirm('Grant ' + label + ' for life to ' + u.value.trim() + '?')) return
       const r = await act('prem-plan', { username: u.value.trim(), plan: plan.value, lifetime: true }, label + ' granted for life.')
       if (r.ok) { keep.prem.username = ''; render() }
