@@ -1,4 +1,105 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07060d"><title>Premium Style Vault</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>
-:root{color-scheme:dark;--green:#22f5a0;--blue:#3b82f6;--purple:#a855f7;--panel:rgba(18,16,30,.94)}*{box-sizing:border-box}body{margin:0;padding:22px 14px 50px;min-height:100vh;background:#07060d;color:#fff;font:16px system-ui,sans-serif}.wrap{max-width:900px;margin:auto}.top{display:flex;justify-content:space-between;gap:12px;margin-bottom:20px}.back{color:var(--blue);text-decoration:none;font-weight:800}.hero,.card{border:1px solid #39334b;border-radius:22px;padding:clamp(20px,4vw,32px);background:var(--panel);margin-bottom:14px}.hero{background:radial-gradient(ellipse at top right,#552b7955,transparent 60%),var(--panel)}.eyebrow{color:var(--green);font-size:12px;letter-spacing:.12em;font-weight:900}h1{font-size:clamp(30px,6vw,44px);margin:8px 0}.sub{color:#aaa7bd;line-height:1.5}.preview{border:1px solid #54436e;border-radius:18px;padding:25px;text-align:center;background:radial-gradient(circle at 50% 0,#4d2b7855,transparent 75%),#0c0a15;margin:18px 0}.avatar{height:88px;width:88px;border-radius:50%;margin:auto;display:grid;place-items:center;font-size:40px;background:linear-gradient(135deg,#22f5a0,#3b82f6,#a855f7);box-shadow:0 0 30px #a855f766}.preview h2{margin:12px 0 3px}.preview p{margin:0;color:#aaa7bd}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.item{border:1px solid #383247;border-radius:15px;padding:17px;background:#0d0b16}.item .emoji{font-size:30px}.item h3{margin:8px 0}.item p{color:#aaa7bd;font-size:13px;line-height:1.45;min-height:38px}.item button{width:100%;border:1px solid #4a405f;border-radius:10px;background:#211b32;color:#fff;padding:10px;font:inherit;font-weight:800;cursor:pointer}.item button.active{border-color:var(--green);color:var(--green)}.premium-tag{display:inline-block;border-radius:999px;background:#40225f;color:#e2baff;font-size:10px;padding:4px 7px;font-weight:900}.message{color:#fbbf24;min-height:24px}.hidden{display:none!important}
-</style><script src="premium-global.js?v=20" defer></script><script src="vault.js?v=3" defer></script><link rel="stylesheet" href="/site-wide.css?v=4">
-</head><body><main class="wrap"><div class="top"><a class="back" href="arcade-hub.html">← Arcade hub</a><a class="back" href="/">Main game</a></div><section class="hero"><div class="eyebrow">PREMIUM STYLE VAULT</div><h1>Make your entrance. ✨</h1><p class="sub">Preview exclusive arcade titles, victory effects, and profile styles. These are local vault previews for this browser; your existing Premium appearance settings remain in the main game's Premium settings.</p><span class="premium-tag">PREMIUM EXPERIENCE</span><div class="preview" id="preview"><div id="avatar" class="avatar">⚡</div><h2 id="title-preview">Neon Challenger</h2><p id="effect-preview">Victory effect: Pulse</p></div><p id="message" class="message" role="status"></p></section><section class="card"><h2>Choose a style to preview</h2><p class="sub">Premium access is required to select these styles. You can change your preview any time.</p><div class="grid" id="vault-grid"><article class="item"><div class="emoji">⚡</div><span class="premium-tag">PREMIUM</span><h3>Neon Challenger</h3><p>Bright neon identity with a pulse effect.</p><button data-title="Neon Challenger" data-icon="⚡" data-effect="Pulse" data-bg="linear-gradient(135deg,#173d35,#17102b)">Preview style</button></article><article class="item"><div class="emoji">👑</div><span class="premium-tag">PREMIUM</span><h3>Royal Champion</h3><p>A royal badge and golden victory glow.</p><button data-title="Royal Champion" data-icon="👑" data-effect="Golden burst" data-bg="linear-gradient(135deg,#503a12,#21152d)">Preview style</button></article><article class="item"><div class="emoji">🌌</div><span class="premium-tag">PREMIUM</span><h3>Galaxy Runner</h3><p>Cosmic color and starry victory flair.</p><button data-title="Galaxy Runner" data-icon="🌌" data-effect="Starfall" data-bg="linear-gradient(135deg,#24134e,#0c3044)">Preview style</button></article><article class="item"><div class="emoji">🐉</div><span class="premium-tag">PREMIUM</span><h3>Dragon Ace</h3><p>Mythic avatar badge with a flame finish.</p><button data-title="Dragon Ace" data-icon="🐉" data-effect="Dragon flame" data-bg="linear-gradient(135deg,#591c20,#29122f)">Preview style</button></article></div><button id="reset" style="margin-top:15px;border:1px solid #4a405f;border-radius:10px;background:#211b32;color:white;padding:10px 14px;font:inherit;font-weight:800;cursor:pointer">Reset preview</button></section></main></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07060d">
+  <meta name="description" content="Equip account-saved profile styles and victory effects in Rock Paper Scissors.">
+  <title>Style Vault | Rock Paper Scissors</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/site-wide.css?v=5">
+  <style>
+    :root{color-scheme:dark;--bg:#07060d;--panel:#11101d;--line:rgba(255,255,255,.12);--muted:#a9a6bb;--green:#22f5a0;--blue:#3b82f6;--purple:#a855f7}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 78% -8%,rgba(124,58,237,.23),transparent 42%),radial-gradient(ellipse at 4% 25%,rgba(34,245,160,.09),transparent 32%),var(--bg);color:#f8f7ff;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+    .wrap{width:min(1100px,100%);margin:auto;padding:24px 18px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;flex-wrap:wrap}.top a{color:#9db7ff;text-decoration:none;font-weight:800}.top a:hover{text-decoration:underline}
+    .hero,.section{border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(23,20,39,.96),rgba(12,11,21,.96));box-shadow:0 20px 65px rgba(0,0,0,.2)}
+    .hero{padding:clamp(22px,4vw,38px);background:radial-gradient(ellipse at 88% 0%,rgba(168,85,247,.2),transparent 48%),linear-gradient(145deg,#17152a,#0c0b16)}
+    .eyebrow{font-size:11px;letter-spacing:.19em;font-weight:900;color:var(--green);text-transform:uppercase}.hero h1{font-size:clamp(34px,6vw,54px);letter-spacing:-.045em;line-height:1.03;margin:9px 0 12px}.sub{color:var(--muted);max-width:720px;margin:0}
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.hero-actions a{display:inline-flex;align-items:center;justify-content:center;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#fff;text-decoration:none;font-weight:800}.hero-actions a.primary{background:linear-gradient(100deg,#167a5b,#2457a6);border-color:transparent}
+    .preview-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:14px;margin:16px 0}.section{padding:20px}.section h2{font-size:19px;margin:0 0 7px}.section p{color:var(--muted);margin:0}
+    .preview{--a:#22f5a0;--b:#3b82f6;position:relative;overflow:hidden;min-height:210px;display:grid;place-items:center;text-align:center;border:1px solid color-mix(in srgb,var(--a) 55%,transparent);border-radius:18px;padding:24px;background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--a) 25%,transparent),transparent 65%),#0b0a14}
+    .avatar{width:84px;height:84px;border-radius:26px;display:grid;place-items:center;margin:auto;font-size:39px;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 0 28px color-mix(in srgb,var(--a) 45%,transparent);border:2px solid rgba(255,255,255,.22)}
+    .preview h2{font-size:23px;margin:12px 0 2px;color:#fff}.preview .effect{color:#d6d2e7;font-size:13px}.preview .tier-note{display:inline-block;margin-top:12px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:#e7e4f5;font-size:10px;font-weight:900;letter-spacing:.1em}
+    .status{min-height:24px;margin-top:12px;color:#c4fce5;font-size:13px}.status.error{color:#fca5a5}
+    .vault-head{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:25px 2px 12px}.vault-head h2{margin:0;font-size:23px}.vault-head p{color:var(--muted);margin:4px 0 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}.item{--a:#22f5a0;--b:#3b82f6;position:relative;padding:17px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(150deg,rgba(255,255,255,.065),rgba(255,255,255,.018));transition:transform .18s,border-color .18s,box-shadow .18s}.item:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--a) 65%,transparent);box-shadow:0 12px 30px rgba(0,0,0,.2)}.item.equipped{border-color:var(--a);box-shadow:0 0 0 1px color-mix(in srgb,var(--a) 28%,transparent),0 0 24px color-mix(in srgb,var(--a) 13%,transparent)}
+    .item-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.item-icon{width:50px;height:50px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(135deg,var(--a),var(--b));font-size:26px;box-shadow:0 0 22px color-mix(in srgb,var(--a) 25%,transparent)}.tier{font-size:10px;font-weight:950;letter-spacing:.1em;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:#ddd8ef}.item h3{margin:12px 0 4px;font-size:17px}.item p{min-height:42px;color:var(--muted);font-size:13px;margin:0 0 14px}.item-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.item button,.reset{border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.07);color:#fff;padding:10px 9px;font:inherit;font-weight:850;cursor:pointer}.item button.preview-btn{background:rgba(255,255,255,.04)}.item button.equip-btn{background:linear-gradient(100deg,color-mix(in srgb,var(--a) 75%,#111),color-mix(in srgb,var(--b) 75%,#111));border-color:transparent}.item button:disabled{opacity:.45;cursor:not-allowed}.item button:focus-visible,.reset:focus-visible,.hero-actions a:focus-visible{outline:2px solid #fff;outline-offset:3px}
+    .bottom-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}.bottom-actions small{color:var(--muted)}.reset{padding:10px 14px}
+    @media(max-width:720px){.preview-layout{grid-template-columns:1fr}.wrap{padding:18px 13px 40px}.section{padding:16px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+  </style>
+  <script src="/premium-global.js?v=21" defer></script>
+  <script src="/vault.js?v=4" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <nav class="top" aria-label="Page navigation">
+      <a href="arcade-hub.html">← Arcade hub</a>
+      <a href="/">Main game</a>
+    </nav>
+    <section class="hero">
+      <div class="eyebrow">PLAYER CUSTOMIZATION / STYLE VAULT</div>
+      <h1>Build your look.<br>Own the arena.</h1>
+      <p class="sub">Preview every style, equip the ones included with your membership, and take your profile ring and victory effect into the main game. Your equipped style is saved to your account.</p>
+      <div class="hero-actions">
+        <a class="primary" href="/subscribe.html">Explore memberships</a>
+        <a href="/music.html">🎵 Game soundtrack</a>
+      </div>
+    </section>
+
+    <section class="preview-layout" aria-label="Style preview and account status">
+      <div class="section">
+        <h2>Live preview</h2>
+        <p>Choose Preview on any item to see it here before equipping it.</p>
+        <div class="preview" id="preview" data-style="neon-challenger">
+          <div>
+            <div class="avatar" id="avatar">⚡</div>
+            <h2 id="title-preview">Neon Challenger</h2>
+            <div class="effect" id="effect-preview">Victory effect: Pulse</div>
+            <span class="tier-note" id="tier-preview">PLUS STYLE</span>
+          </div>
+        </div>
+        <p class="status" id="message" role="status" aria-live="polite">Loading your saved Style Vault selection…</p>
+      </div>
+      <div class="section">
+        <h2>Your equipped style</h2>
+        <p id="equipped-copy">Your saved style will appear here after your account is checked.</p>
+        <div class="bottom-actions">
+          <small>Styles apply to your profile and win animations on supported game pages.</small>
+          <button class="reset" id="reset" type="button">Equip default</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="vault-head">
+      <div><h2>Style collection</h2><p>Preview all styles. Equipping requires the matching membership.</p></div>
+    </div>
+    <section class="grid" id="vault-grid" aria-label="Available profile styles">
+      <article class="item" data-style="neon-challenger" data-tier="plus" data-icon="⚡" data-effect="Pulse" data-colors="#22f5a0,#3b82f6">
+        <div class="item-top"><span class="item-icon">⚡</span><span class="tier">PLUS</span></div><h3>Neon Challenger</h3><p>Bright neon identity with a clean pulse effect when you win.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+      <article class="item" data-style="royal-champion" data-tier="plus" data-icon="👑" data-effect="Golden burst" data-colors="#fbbf24,#f59e0b">
+        <div class="item-top"><span class="item-icon">👑</span><span class="tier">PLUS</span></div><h3>Royal Champion</h3><p>A gold-trimmed champion look with a golden win burst.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+      <article class="item" data-style="galaxy-runner" data-tier="plus" data-icon="🌌" data-effect="Starfall" data-colors="#a78bfa,#38bdf8">
+        <div class="item-top"><span class="item-icon">🌌</span><span class="tier">PLUS</span></div><h3>Galaxy Runner</h3><p>Cosmic colors with a starfall-style victory flash.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+      <article class="item" data-style="dragon-ace" data-tier="plus" data-icon="🐉" data-effect="Dragon flame" data-colors="#fb7185,#f97316">
+        <div class="item-top"><span class="item-icon">🐉</span><span class="tier">PLUS</span></div><h3>Dragon Ace</h3><p>A fiery profile glow and flame-style win effect.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+      <article class="item" data-style="void-reaper" data-tier="pro" data-icon="🌑" data-effect="Void surge" data-colors="#c084fc,#6366f1">
+        <div class="item-top"><span class="item-icon">🌑</span><span class="tier">PRO</span></div><h3>Void Reaper</h3><p>A deep violet aura with a sharp void surge when you win.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+      <article class="item" data-style="solar-vanguard" data-tier="pro" data-icon="☀️" data-effect="Solar flare" data-colors="#fde047,#fb923c">
+        <div class="item-top"><span class="item-icon">☀️</span><span class="tier">PRO</span></div><h3>Solar Vanguard</h3><p>A radiant solar profile ring and bright flare effect.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+      <article class="item" data-style="apex-legend" data-tier="legend" data-icon="🏆" data-effect="Champion shockwave" data-colors="#38bdf8,#f0abfc">
+        <div class="item-top"><span class="item-icon">🏆</span><span class="tier">LEGEND</span></div><h3>Apex Legend</h3><p>An elite champion frame with a match-winning shockwave.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+      <article class="item" data-style="celestial-monarch" data-tier="legend" data-icon="✨" data-effect="Celestial burst" data-colors="#e9d5ff,#f9a8d4">
+        <div class="item-top"><span class="item-icon">✨</span><span class="tier">LEGEND</span></div><h3>Celestial Monarch</h3><p>A celestial profile glow with a bright burst when you win.</p><div class="item-actions"><button class="preview-btn" type="button">Preview</button><button class="equip-btn" type="button">Equip</button></div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
