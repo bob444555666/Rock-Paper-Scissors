@@ -6,7 +6,8 @@
   if (!profile) return;
   const accountHeading = Array.from(profile.querySelectorAll('h3')).find(el => (el.textContent || '').trim().toLowerCase() === 'account');
   if (!accountHeading) return;
-  let currentRole = '';\n  const button = document.createElement('button');
+  let currentRole = '';
+  const button = document.createElement('button');
   button.type = 'button';
   button.id = 'rps-staff-member';
   button.className = 'big alt';
