@@ -110,11 +110,15 @@ async function makeQr(username){
  try{
   const data=await post('/staff/invite-create',{username});
   if(!data.token)throw new Error('The server did not return an invitation token. No QR code was created.');
-  if(!window.QRCode||typeof QRCode.toCanvas!=='function')throw new Error('The QR generator did not load. Refresh the page and try again.');
   const url=new URL('/staff-portal.html',location.origin);url.searchParams.set('invite',data.token);
   const fullUrl=url.toString();
-  const canvas=await QRCode.toCanvas(fullUrl,{width:320,margin:3,errorCorrectionLevel:'H'});
-  if(!canvas||!canvas.toDataURL)throw new Error('The QR generator did not return a printable image.');
+  const generated=await post('/staff/qr-generate',{invite:data.token});
+  if(!generated.dataUrl||!generated.dataUrl.startsWith('data:image/'))throw new Error('OpenQR did not return a usable QR image.');
+  const image=new Image();image.src=generated.dataUrl;
+  await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('The generated QR image could not be loaded.'));});
+  const canvas=document.createElement('canvas');canvas.width=image.naturalWidth||640;canvas.height=image.naturalHeight||640;
+  const context=canvas.getContext('2d');if(!context)throw new Error('Your browser could not prepare the QR image for printing.');
+  context.drawImage(image,0,0,canvas.width,canvas.height);
   $('qr-print-area').classList.remove('hidden');
   const caption=username+' · '+labelRole(data.role);
   $('qr-caption').textContent=caption+' · expires in 15 minutes';
