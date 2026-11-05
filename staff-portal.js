@@ -54,6 +54,7 @@ async function claim() {
     role=data.role;
     sessionStorage.removeItem('rps-staff-invite');
     history.replaceState({},'',location.pathname);
+    invite='';
     return true;
   } catch(e) { say(gateMsg,e.message,true); return false; }
 }
