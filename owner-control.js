@@ -96,13 +96,33 @@ async function employees(){
  $('workspace').querySelectorAll('[data-remove-role]').forEach(b=>b.onclick=async()=>{if(!confirm('Remove employee access from '+b.dataset.removeRole+'?'))return;try{await post('/staff/role-set',{username:b.dataset.removeRole,role:''});say($('work-msg'),'Employee access removed.');employees();}catch(e){say($('work-msg'),e.message,true);}});
  $('workspace').querySelectorAll('[data-make-qr]').forEach(b=>b.onclick=()=>makeQr(b.dataset.makeQr));
 }
+function printQr(canvas,caption,url){
+ const popup=window.open('','_blank');
+ if(!popup){say($('work-msg'),'Your browser blocked the print window. Allow pop-ups for this site and try again.',true);return;}
+ const image=canvas.toDataURL('image/png');
+ popup.document.open();
+ popup.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Employee QR pass</title><style>body{font:16px system-ui,sans-serif;text-align:center;color:#111;padding:32px}img{display:block;width:320px;height:320px;max-width:85vw;margin:24px auto}p{overflow-wrap:anywhere;color:#444}@media print{body{padding:12mm}img{width:75mm;height:75mm}}</style></head><body><h1>Employee QR pass</h1><h2>'+esc(caption)+'</h2><img src="'+image+'" alt="Scannable employee invitation QR code"><p>'+esc(url)+'</p><p>This invitation expires in 15 minutes and can only be used once.</p></body></html>');
+ popup.document.close();
+ popup.focus();
+ popup.onload=()=>popup.print();
+}
 async function makeQr(username){
  try{
   const data=await post('/staff/invite-create',{username});
-  const url=location.origin+'/staff-portal.html?invite='+encodeURIComponent(data.token);
-  $('qr-print-area').classList.remove('hidden');$('qr-caption').textContent=username+' · '+labelRole(data.role)+' · expires in 15 minutes';$('qr-url').textContent=url;$('qr-canvas').innerHTML='';
-  await new Promise((resolve,reject)=>QRCode.toCanvas(url,{width:280,margin:2},(err,canvas)=>{if(err)return reject(err);$('qr-canvas').appendChild(canvas);resolve();}));
-  $('qr-print').onclick=()=>window.print();
+  if(!data.token)throw new Error('The server did not return an invitation token. No QR code was created.');
+  if(!window.QRCode||typeof QRCode.toCanvas!=='function')throw new Error('The QR generator did not load. Refresh the page and try again.');
+  const url=new URL('/staff-portal.html',location.origin);url.searchParams.set('invite',data.token);
+  const fullUrl=url.toString();
+  const canvas=await QRCode.toCanvas(fullUrl,{width:320,margin:3,errorCorrectionLevel:'H'});
+  if(!canvas||!canvas.toDataURL)throw new Error('The QR generator did not return a printable image.');
+  $('qr-print-area').classList.remove('hidden');
+  const caption=username+' · '+labelRole(data.role);
+  $('qr-caption').textContent=caption+' · expires in 15 minutes';
+  $('qr-url').textContent=fullUrl;
+  $('qr-canvas').replaceChildren(canvas);
+  canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Scannable employee invitation QR code for '+username);
+  $('qr-print').disabled=false;
+  $('qr-print').onclick=()=>printQr(canvas,caption,fullUrl);
   $('qr-print-area').scrollIntoView({behavior:'smooth',block:'center'});
  }catch(e){say($('work-msg'),e.message,true);}
 }
