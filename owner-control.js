@@ -48,7 +48,7 @@ async function boot(){
 }
 let tab='overview';
 function buildTabs(){
- const items=[['overview','Overview'],['employees','Employees & QR codes'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans']];
+ const items=[['overview','Overview'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans']];
  $('tabs').innerHTML=items.map(([id,name])=>'<button data-tab="'+id+'" class="'+(tab===id?'active':'')+'">'+name+'</button>').join('');
  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;buildTabs();render();});
 }
@@ -90,10 +90,12 @@ async function extend(act,id){await action(act,{id,tid:id,hours:1},'Expiry exten
 async function remove(act,id){if(!confirm('Delete this item?'))return;await action(act,{id,tid:id},'Deleted.');}
 async function addPlayer(tid){const username=prompt('Player account username');if(!username)return;const password=prompt('Temporary tournament password (4+ characters)');if(!password)return;await action('tadd',{tid,username,password},'Player added.');}
 async function employees(){
- const data=await post('/staff/role-list'),list=data.staff||[];
- $('workspace').innerHTML='<div class="grid"><article class="card"><h2>Assign employee permissions</h2><input id="emp-user" placeholder="Existing RPS username"><select id="emp-role"><option value="staff">Staff</option><option value="manager">Manager</option><option value="co-owner">Co-owner</option></select><button id="emp-assign">Assign role</button><p class="muted">The person must already have an RPS account. After assigning a role, generate a unique employee QR pass for them.</p></article><article class="card"><h2>Employee directory ('+list.length+')</h2><div class="table-list">'+list.map(e=>'<div class="employee-row"><div><strong>'+esc(e.username)+'</strong><small>'+esc(e.email||'')+' · '+esc(labelRole(e.role))+'</small></div><div><button data-make-qr="'+esc(e.username)+'">Generate QR</button><button class="danger" data-remove-role="'+esc(e.username)+'">Remove access</button></div></div>').join('')+'</div></article></div>';
+ const [data,accountData]=await Promise.all([post('/staff/role-list'),post('/staff/account-list')]);
+ const list=data.staff||[],accountsByUsername=new Map((accountData.users||[]).map(u=>[String(u.username||'').toLowerCase(),u]));
+ $('workspace').innerHTML='<div class="grid"><article class="card"><h2>Assign employee permissions</h2><input id="emp-user" placeholder="Existing RPS username"><select id="emp-role"><option value="staff">Staff</option><option value="manager">Manager</option><option value="co-owner">Co-owner</option></select><button id="emp-assign">Assign role</button><p class="muted">The person must already have an RPS account. After assigning a role, generate a unique employee QR pass for them.</p></article><article class="card"><h2>Employee directory ('+list.length+')</h2><div class="table-list">'+list.map(e=>'<div class="employee-row"><div><strong>'+esc(e.username)+'</strong><small>'+esc(e.email||'')+' · '+esc(labelRole(e.role))+'</small></div><div><button class="secondary" data-reset-staff="'+esc((accountsByUsername.get(String(e.username||'').toLowerCase())||{}).id||'')+'" data-staff-name="'+esc(e.username)+'">Change password</button><button data-make-qr="'+esc(e.username)+'">Generate QR</button><button class="danger" data-remove-role="'+esc(e.username)+'">Remove access</button></div></div>').join('')+'</div></article></div>';
  $('emp-assign').onclick=async()=>{try{await post('/staff/role-set',{username:$('emp-user').value,role:$('emp-role').value});say($('work-msg'),'Employee permissions saved.');employees();}catch(e){say($('work-msg'),e.message,true);}};
  $('workspace').querySelectorAll('[data-remove-role]').forEach(b=>b.onclick=async()=>{if(!confirm('Remove employee access from '+b.dataset.removeRole+'?'))return;try{await post('/staff/role-set',{username:b.dataset.removeRole,role:''});say($('work-msg'),'Employee access removed.');employees();}catch(e){say($('work-msg'),e.message,true);}});
+ $('workspace').querySelectorAll('[data-reset-staff]').forEach(b=>b.onclick=()=>resetAccountPassword(b.dataset.resetStaff,b.dataset.staffName));
  $('workspace').querySelectorAll('[data-make-qr]').forEach(b=>b.onclick=()=>makeQr(b.dataset.makeQr));
 }
 function printQr(canvas,caption,url){
@@ -129,6 +131,18 @@ async function makeQr(username){
   $('qr-print').onclick=()=>printQr(canvas,caption,fullUrl);
   $('qr-print-area').scrollIntoView({behavior:'smooth',block:'center'});
  }catch(e){say($('work-msg'),e.message,true);}
+}
+async function resetAccountPassword(id,username){
+ if(!id){say($('work-msg'),'Could not match this staff member to a game account. Refresh the page and try again.',true);return;}
+ const password=prompt('Set a new password for '+username+' (8-128 characters). Existing passwords cannot be viewed.');
+ if(password===null)return;
+ if(password.length<8||password.length>128){say($('work-msg'),'Password must be 8-128 characters.',true);return;}
+ const confirmPassword=prompt('Enter the new password again.');
+ if(confirmPassword===null)return;
+ if(password!==confirmPassword){say($('work-msg'),'The passwords do not match.',true);return;}
+ if(!confirm('Change the password for '+username+'?'))return;
+ try{await post('/staff/account-password-reset',{id,password});say($('work-msg'),'Password changed successfully for '+username+'.');}
+ catch(e){say($('work-msg'),e.message,true);}
 }
 async function accounts(){
  const data=await post('/staff/account-list'),list=data.users||[];
