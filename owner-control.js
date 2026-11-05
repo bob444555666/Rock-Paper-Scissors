@@ -104,5 +104,6 @@ async function accounts(){
 }
 $('login-go').onclick=login;$('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 $('logout').onclick=()=>{localStorage.removeItem('token');token='';$('app').classList.add('hidden');$('login-card').classList.remove('hidden');say($('login-msg'),'Signed out.');};
+if(!$('login-id').value)$('login-id').value='Ashton';
 boot();
 })();
