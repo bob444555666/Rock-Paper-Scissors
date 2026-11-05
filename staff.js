@@ -48,8 +48,8 @@
       });
       const data = await response.json();
       const role = response.ok && data.staff === true ? String(data.role || 'staff').toLowerCase() : '';
-      ownerButton.hidden = role !== 'owner';
-      staffButton.hidden = !['staff', 'manager', 'co-owner'].includes(role);
+      ownerButton.hidden = !['owner', 'co-owner'].includes(role);
+      staffButton.hidden = !['staff', 'manager', 'co-owner', 'owner'].includes(role);
       portalGroup.hidden = ownerButton.hidden && staffButton.hidden;
     } catch (_) {
       ownerButton.hidden = true;
