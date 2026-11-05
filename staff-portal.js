@@ -174,7 +174,7 @@ function printQr(canvas,caption,url){
   popup.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Employee QR pass</title><style>body{font:16px system-ui,sans-serif;text-align:center;color:#111;padding:32px}img{display:block;width:320px;height:320px;max-width:85vw;margin:24px auto}p{overflow-wrap:anywhere;color:#444}@media print{body{padding:12mm}img{width:75mm;height:75mm}}</style></head><body><h1>Employee QR pass</h1><h2>'+esc(caption)+'</h2><img src="'+image+'" alt="Scannable employee invitation QR code"><p>'+esc(url)+'</p><p>This invitation expires in 15 minutes and can only be used once.</p></body></html>');
   popup.document.close();
   popup.focus();
-  popup.onload=()=>popup.print();
+  window.setTimeout(()=>{if(!popup.closed)popup.print();},350);
 }
 async function makeQr(username){
   try{
