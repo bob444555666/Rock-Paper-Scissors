@@ -13,12 +13,17 @@ async function post(path,body={}) {
  return data;
 }
 async function login(){
- const password=$('login-password').value;
+ const id=$('login-id').value.trim(),password=$('login-password').value;
  if(!password){say($('login-msg'),'Enter your account password.',true);return;}
  $('login-go').disabled=true;say($('login-msg'),'Verifying password…');
  try{
   token=localStorage.getItem('token')||token;
-  if(!token)throw new Error('Log in to your game account first.');
+  if(!token){
+   if(!id)throw new Error('Enter your username/email and password.');
+   const auth=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,password})});
+   const signed=await auth.json();if(!auth.ok)throw new Error(signed.error||'Sign in failed.');
+   token=signed.token;localStorage.setItem('token',token);
+  }
   const res=await fetch(API+'/staff/reauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,password}),cache:'no-store'});
   const data=await res.json();if(!res.ok)throw new Error(data.error||'Password verification failed.');
   gateToken=data.gate;$('login-password').value='';await boot();
@@ -28,7 +33,7 @@ async function login(){
 async function boot(){
  token=localStorage.getItem('token')||token;
  $('app').classList.add('hidden');
- if(!token){$('login-card').classList.remove('hidden');say($('login-msg'),'Log in to your RPS account first.');return;}
+ if(!token){$('login-card').classList.remove('hidden');say($('login-msg'),'Enter your RPS username and password to sign in, then verify your password for Owner Control.');return;}
  try{
   const me=await post('/staff/me');role=me.role||'';
   if(!['owner','co-owner'].includes(role))throw new Error('This account is not an owner or co-owner. Access denied.');
