@@ -5,13 +5,13 @@ const $=id=>document.getElementById(id);
 const gate=$('gate'), dashboard=$('dashboard'), gateMsg=$('gate-msg'), workMsg=$('work-msg');
 let invite=sessionStorage.getItem('rps-staff-invite')||new URLSearchParams(location.search).get('invite')||'';
 let token=localStorage.getItem('token')||'';
-let role='', panel={}, activeTab='overview', scanner=null, qrTimer=null;
+let role='', gateToken='', panel={}, activeTab='overview', scanner=null, qrTimer=null;
 const roles=['staff','manager','co-owner','owner'];
 const labelRole=r=>({'staff':'Staff','manager':'Manager','co-owner':'Co-owner','owner':'Owner'}[r]||'');
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const say=(el,msg,bad=false)=>{el.textContent=msg||'';el.className='msg'+(bad?' error':'');};
 async function post(path,body={}) {
-  const res=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,token}),cache:'no-store'});
+  const res=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,token,gate:gateToken}),cache:'no-store'});
   const data=await res.json().catch(()=>({error:'The server returned an unreadable response.'}));
   if(!res.ok) throw new Error(data.error||'Request failed.');
   return data;
@@ -53,10 +53,9 @@ async function claim() {
     const data=await post('/staff/claim',{invite});
     role=data.role;
     sessionStorage.removeItem('rps-staff-invite');
-    sessionStorage.setItem('rps-staff-verified',role);
     history.replaceState({},'',location.pathname);
-    await openDashboard();
-  } catch(e) { say(gateMsg,e.message,true); }
+    return true;
+  } catch(e) { say(gateMsg,e.message,true); return false; }
 }
 async function startScanner() {
   if(!window.Html5Qrcode) { say(gateMsg,'Camera scanning is unavailable in this browser. Paste the QR link or code instead.',true); return; }
@@ -68,15 +67,27 @@ async function startScanner() {
 }
 async function login() {
   const id=$('login-id').value.trim(), password=$('login-password').value;
-  if(!id||!password) { say(gateMsg,'Enter your username/email and password.',true); return; }
-  $('login-go').disabled=true; say(gateMsg,'Signing in…');
+  if(!password) { say(gateMsg,'Enter your account password.',true); return; }
+  $('login-go').disabled=true; say(gateMsg,'Verifying your password…');
   try {
-    const res=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,password})});
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error||'Sign in failed.');
-    token=data.token; localStorage.setItem('token',token);
-    if(!invite) throw new Error('Scan your employee QR code before signing in.');
-    await claim();
+    if(invite) {
+      if(!id) throw new Error('Enter your username/email for the employee QR pass.');
+      const res=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,password})});
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.error||'Sign in failed.');
+      token=data.token; localStorage.setItem('token',token);
+      const claimed=await claim();
+      if(!claimed) return;
+    } else {
+      token=localStorage.getItem('token')||token;
+      if(!token) throw new Error('Scan your employee QR pass and sign in first.');
+    }
+    const verify=await fetch(API+'/staff/reauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,password}),cache:'no-store'});
+    const verified=await verify.json();
+    if(!verify.ok) throw new Error(verified.error||'Password verification failed.');
+    gateToken=verified.gate;
+    $('login-password').value='';
+    await openDashboard();
   } catch(e) { say(gateMsg,e.message,true); }
   finally { $('login-go').disabled=false; }
 }
@@ -84,6 +95,7 @@ async function openDashboard() {
   try {
     token=localStorage.getItem('token')||token;
     if(!token) throw new Error('Sign in to continue.');
+    if(!gateToken) { dashboard.classList.add('hidden'); gate.classList.remove('hidden'); showLogin(); say(gateMsg,'Enter your password to open the Staff Portal.'); return; }
     panel=await post('/staff/panel');
     role=panel.role||role;
     gate.classList.add('hidden'); dashboard.classList.remove('hidden');
@@ -173,8 +185,8 @@ $('scan-stop').addEventListener('click',stopScanner);
 $('manual-go').addEventListener('click',()=>setInvite($('manual-invite').value));
 $('login-go').addEventListener('click',login);
 $('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
-$('logout').addEventListener('click',()=>{localStorage.removeItem('token');sessionStorage.removeItem('rps-staff-verified');location.href='/';});
+$('logout').addEventListener('click',()=>{gateToken='';sessionStorage.removeItem('rps-staff-verified');location.href='/';});
 window.addEventListener('beforeunload',()=>{if(scanner)scanner.stop().catch(()=>{});});
-if(sessionStorage.getItem('rps-staff-verified') && token){role=sessionStorage.getItem('rps-staff-verified');openDashboard();}
-else if(invite){sessionStorage.setItem('rps-staff-invite',invite);showLogin();if(token)claim();}
+if(invite){sessionStorage.setItem('rps-staff-invite',invite);showLogin();if(token)claim();}
+else if(token){post('/staff/me').then(me=>{if(me.staff){role=me.role;showLogin();$('gate-title').textContent='Staff Portal sign in';$('gate-copy').textContent='Enter your password every time you open the Staff Portal.';}}).catch(()=>{});}
 })();
