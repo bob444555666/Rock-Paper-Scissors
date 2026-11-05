@@ -208,6 +208,6 @@ $('login-go').addEventListener('click',login);
 $('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 $('logout').addEventListener('click',()=>{gateToken='';sessionStorage.removeItem('rps-staff-verified');location.href='/';});
 window.addEventListener('beforeunload',()=>{if(scanner)scanner.stop().catch(()=>{});});
-if(invite){sessionStorage.setItem('rps-staff-invite',invite);showLogin();if(token)claim();}
+if(invite){sessionStorage.setItem('rps-staff-invite',invite);showLogin();}
 else if(token){post('/staff/me').then(me=>{if(me.staff){role=me.role;showLogin();$('gate-title').textContent='Staff Portal sign in';$('gate-copy').textContent='Enter your password every time you open the Staff Portal.';}}).catch(()=>{});}
 })();
