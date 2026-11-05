@@ -2,39 +2,44 @@
 'use strict';
 const API='https://rps-server.heyboernathan.workers.dev';
 const $=id=>document.getElementById(id);
-let token=localStorage.getItem('token')||'',role='',panel={};
+let token=localStorage.getItem('token')||'',gateToken='',role='',panel={};
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labelRole=r=>({'staff':'Staff','manager':'Manager','co-owner':'Co-owner','owner':'Owner'}[r]||'');
 const say=(el,msg,bad=false)=>{el.textContent=msg||'';el.className='msg'+(bad?' error':'');};
 async function post(path,body={}) {
- const res=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,token}),cache:'no-store'});
+ const res=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,token,gate:gateToken}),cache:'no-store'});
  const data=await res.json().catch(()=>({error:'Unreadable server response.'}));
  if(!res.ok)throw new Error(data.error||'Request failed.');
  return data;
 }
 async function login(){
- const id=$('login-id').value.trim(),password=$('login-password').value;
- if(!id||!password){say($('login-msg'),'Enter your username/email and password.',true);return;}
- $('login-go').disabled=true;say($('login-msg'),'Signing in…');
+ const password=$('login-password').value;
+ if(!password){say($('login-msg'),'Enter your account password.',true);return;}
+ $('login-go').disabled=true;say($('login-msg'),'Verifying password…');
  try{
-  const res=await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,password})});
-  const data=await res.json();if(!res.ok)throw new Error(data.error||'Sign in failed.');
-  token=data.token;localStorage.setItem('token',token);await boot();
+  token=localStorage.getItem('token')||token;
+  if(!token)throw new Error('Log in to your game account first.');
+  const res=await fetch(API+'/staff/reauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,password}),cache:'no-store'});
+  const data=await res.json();if(!res.ok)throw new Error(data.error||'Password verification failed.');
+  gateToken=data.gate;$('login-password').value='';await boot();
  }catch(e){say($('login-msg'),e.message,true);}
  finally{$('login-go').disabled=false;}
 }
 async function boot(){
  token=localStorage.getItem('token')||token;
- if(!token){$('login-card').classList.remove('hidden');$('app').classList.add('hidden');return;}
+ $('app').classList.add('hidden');
+ if(!token){$('login-card').classList.remove('hidden');say($('login-msg'),'Log in to your RPS account first.');return;}
  try{
   const me=await post('/staff/me');role=me.role||'';
   if(!['owner','co-owner'].includes(role))throw new Error('This account is not an owner or co-owner. Access denied.');
+  $('login-id').value=me.username||'';
+  if(!gateToken){$('login-card').classList.remove('hidden');say($('login-msg'),'Enter your password each time you open Owner Control.');return;}
   panel=await post('/staff/panel');
   $('login-card').classList.add('hidden');$('app').classList.remove('hidden');
   $('role-pill').textContent=labelRole(role);$('role-pill').classList.remove('hidden');
   $('role-name').textContent=labelRole(role);$('welcome').textContent='Welcome, '+(me.username||'administrator');
   buildTabs();render();
- }catch(e){$('login-card').classList.remove('hidden');$('app').classList.add('hidden');say($('login-msg'),e.message,true);}
+ }catch(e){gateToken='';$('login-card').classList.remove('hidden');$('app').classList.add('hidden');say($('login-msg'),e.message,true);}
 }
 let tab='overview';
 function buildTabs(){
@@ -103,7 +108,6 @@ async function accounts(){
  $('workspace').querySelectorAll('[data-delete-account]').forEach(b=>b.onclick=async()=>{if(!confirm('Permanently delete this account?'))return;try{await post('/staff/account-delete',{id:b.dataset.deleteAccount});say($('work-msg'),'Account deleted.');accounts();}catch(e){say($('work-msg'),e.message,true);}});
 }
 $('login-go').onclick=login;$('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
-$('logout').onclick=()=>{localStorage.removeItem('token');token='';$('app').classList.add('hidden');$('login-card').classList.remove('hidden');say($('login-msg'),'Signed out.');};
-if(!$('login-id').value)$('login-id').value='Ashton';
+$('logout').onclick=()=>{gateToken='';$('login-password').value='';$('app').classList.add('hidden');$('login-card').classList.remove('hidden');say($('login-msg'),'Signed out.');};
 boot();
 })();
