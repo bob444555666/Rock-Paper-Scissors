@@ -89,6 +89,9 @@ const roomInput =
 const joinButton =
   document.querySelector('#join-button')
 
+const leaveRoomButton =
+  document.querySelector('#leave-room-button')
+
 const connectionStatus =
   document.querySelector('#connection-status')
 
@@ -159,6 +162,15 @@ scissorsButton.addEventListener(
   () => makeMove('scissors')
 )
 
+
+leaveRoomButton?.addEventListener('click', () => {
+  disconnect()
+  currentRoom = null
+  roomInput.value = ''
+  movesElement.textContent = ''
+  resultElement.textContent = 'You left the room. Enter a room code to join another game.'
+  updateScoreElement()
+})
 
 joinButton.addEventListener(
   'click',
@@ -358,6 +370,8 @@ function setMode(newMode) {
 
 function disconnect() {
 
+  if (leaveRoomButton) leaveRoomButton.hidden = true
+
   if (socket) {
 
     const oldSocket = socket
@@ -448,6 +462,8 @@ function joinGame() {
 
       connectionStatus.textContent =
         `Connected to room ${room}`
+
+      if (leaveRoomButton) leaveRoomButton.hidden = false
 
       resultElement.textContent =
         'Waiting for another player...'
