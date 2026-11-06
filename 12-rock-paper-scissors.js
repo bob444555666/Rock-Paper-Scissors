@@ -164,11 +164,12 @@ scissorsButton.addEventListener(
 
 
 leaveRoomButton?.addEventListener('click', () => {
+  const wasConnected = connected
   disconnect()
   currentRoom = null
   roomInput.value = ''
   movesElement.textContent = ''
-  resultElement.textContent = connected ? 'You left the room. Enter a room code to join another game.' : 'You are not currently connected to a room.'
+  resultElement.textContent = wasConnected ? 'You left the room. Enter a room code to join another game.' : 'You are not currently connected to a room.'
   updateScoreElement()
 })
 
