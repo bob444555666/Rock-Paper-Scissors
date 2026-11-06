@@ -86,6 +86,7 @@
         <a class="rps-nav-link" href="/multiplayer.html"><span class="rps-nav-icon">👥</span>3–4 Player Rooms</a>
         <a class="rps-nav-link" href="/arcade-hub.html"><span class="rps-nav-icon">🕹️</span>Arcade Hub</a>
         <a class="rps-nav-link" href="/game-lab.html"><span class="rps-nav-icon">🧪</span>Custom Arena</a>
+        <a class="rps-nav-link" href="/developer-lab.html"><span class="rps-nav-icon">🛡️</span>Try and Hack</a>
         <a class="rps-nav-link" href="/competitive-lab.html"><span class="rps-nav-icon">⚔️</span>Competitive Lab</a>
         <a class="rps-nav-link" href="/music.html"><span class="rps-nav-icon">🎵</span>Gaming Music</a>
         <a class="rps-nav-link" href="/quests.html"><span class="rps-nav-icon">🎯</span>Quests</a>
