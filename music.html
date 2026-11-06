@@ -27,7 +27,7 @@
 <main>
   <div class="eyebrow">🎵 Your next match, your soundtrack</div>
   <h1>Gaming Music</h1>
-  <p class="intro">Everyone can listen to the Spotify gaming playlists below. Pick a soundtrack for your next match and jump back into the game.</p>
+  <p class="intro">Choose a soundtrack for your next match. Gaming Music listening is included with Pro and Legend memberships.</p>
   <section class="playlist-grid" aria-label="Choose a playlist">
     <button class="pick" type="button" data-title="Epic Gaming" data-description="EDM, remixes, and high-energy gaming tracks" aria-pressed="true"><span class="emoji">⚔️</span><strong>Epic Gaming</strong><small>EDM • Remixes • Hype</small></button>
     <button class="pick" type="button" data-title="Gaming Phonk" data-description="Hard-hitting phonk for intense matches" aria-pressed="false"><span class="emoji">🔥</span><strong>Gaming Phonk</strong><small>Fast • Heavy • Intense</small></button>
@@ -40,20 +40,23 @@
     <div id="premium-lock" style="padding:22px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.03);">
       <div style="font-size:28px;margin-bottom:8px">🎧</div>
       <h2 style="margin:0 0 8px">Gaming playlists</h2>
-      <p id="premium-lock-message" style="color:var(--muted);margin:0 0 16px">Choose a playlist above to start listening.</p>
+      <p id="premium-lock-message" style="color:var(--muted);margin:0 0 16px">Checking your membership…</p><a id="music-upgrade-link" class="spotify-link" href="/subscribe.html">View memberships ↗</a>
     </div>
-    <div id="premium-player"><div class="player-heading"><h2 id="player-title">⚔️ Epic Gaming</h2><a class="spotify-link" id="spotify-open" target="_blank" rel="noopener noreferrer">Open playlist in Spotify ↗</a></div>
+    <div id="premium-player" hidden><div class="player-heading"><h2 id="player-title">⚔️ Epic Gaming</h2><a class="spotify-link" id="spotify-open" target="_blank" rel="noopener noreferrer">Open playlist in Spotify ↗</a></div>
     <iframe id="spotify-player" title="Spotify gaming playlist player" src="about:blank" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-    <p class="note">These curated playlists are available to everyone. Some playback features may require a Spotify account or Spotify Premium plan.</p></div>
+    <p class="note">Spotify account requirements and playback availability are controlled by Spotify.</p></div>
   </section>
 </main>
 <script>
 (() => {
   const buttons = [...document.querySelectorAll('.pick')];
   const player = document.getElementById('spotify-player');
+  const playerPanel = document.getElementById('premium-player');
+  const lockPanel = document.getElementById('premium-lock');
   const title = document.getElementById('player-title');
   const open = document.getElementById('spotify-open');
   const lockMessage = document.getElementById('premium-lock-message');
+  const upgradeLink = document.getElementById('music-upgrade-link');
   const icons = {'Epic Gaming':'⚔️','Gaming Phonk':'🔥','Chill Gaming':'🌌','Focus Mode':'🎯','Ultra Gaming':'🚀','ULTIMATE GAMING ROCK & METAL':'🎸'};
   const playlistIds = {
     'Epic Gaming': '5Xc1NNrWAur7yiF8jEVH2E',
@@ -63,18 +66,58 @@
     'Ultra Gaming': '37i9dQZF1DWYN9NBqvY7Tx',
     'ULTIMATE GAMING ROCK & METAL': '4Oa2hO5tZ1MSH5FRedWyOB'
   };
+  let canListen = false;
   function loadPlaylist(button) {
+    if (!canListen) return;
     const name = button.dataset.title;
     const id = playlistIds[name];
     if (!id) return;
     buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
     title.textContent = (icons[name] || '🎵') + ' ' + name;
     player.src = 'https://open.spotify.com/embed/playlist/' + encodeURIComponent(id) + '?utm_source=generator';
-    open.href = name === 'Ultra Gaming' ? 'https://open.spotify.com/playlist/37i9dQZF1DWYN9NBqvY7Tx?utm_source=openai&utm_medium=chatgpt&go=1&nap_web=1&request_id=c9177bd3-3e72-41ea-b4f7-eefa596e1b09' : name === 'ULTIMATE GAMING ROCK & METAL' ? 'https://open.spotify.com/playlist/4Oa2hO5tZ1MSH5FRedWyOB?utm_source=openai&utm_medium=chatgpt&go=1&nap_web=1&request_id=c9177bd3-3e72-41ea-b4f7-eefa596e1b09' : 'https://open.spotify.com/playlist/' + encodeURIComponent(id);
-    lockMessage.textContent = button.dataset.description || 'Now playing ' + name + '.';
+    open.href = 'https://open.spotify.com/playlist/' + encodeURIComponent(id);
   }
   buttons.forEach(button => button.addEventListener('click', () => loadPlaylist(button)));
-  if (buttons[0]) loadPlaylist(buttons[0]);
+  async function checkMembership() {
+    buttons.forEach(button => { button.disabled = true; });
+    playerPanel.hidden = true;
+    lockPanel.hidden = false;
+    player.src = 'about:blank';
+    let token = null;
+    try { token = localStorage.getItem('token'); } catch (_) {}
+    if (!token) {
+      lockMessage.textContent = 'Log in with an eligible Pro or Legend account to listen to gaming music.';
+      upgradeLink.textContent = 'Log in or view memberships ↗';
+      return;
+    }
+    try {
+      const response = await fetch('https://rps-server.heyboernathan.workers.dev/account/premium', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({token})
+      });
+      if (!response.ok) throw new Error('Membership check failed');
+      const membership = await response.json();
+      const plan = String(membership.plan || '').trim().toLowerCase();
+      const eligiblePlan = ['pro','duo','ultra','legend','family','ultra plus'].includes(plan);
+      canListen = membership.premium === true && eligiblePlan;
+    } catch (_) {
+      canListen = false;
+      lockMessage.textContent = 'We could not verify your membership. Please refresh and try again.';
+      upgradeLink.textContent = 'Membership details ↗';
+      return;
+    }
+    if (!canListen) {
+      lockMessage.textContent = 'Gaming Music is locked. Upgrade to Pro or Legend to listen to the playlists.';
+      upgradeLink.textContent = 'Upgrade to Pro ↗';
+      return;
+    }
+    lockPanel.hidden = true;
+    playerPanel.hidden = false;
+    buttons.forEach(button => { button.disabled = false; });
+    if (buttons[0]) loadPlaylist(buttons[0]);
+  }
+  checkMembership();
 })();
 </script>
 </body>
