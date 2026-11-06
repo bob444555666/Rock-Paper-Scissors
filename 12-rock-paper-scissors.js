@@ -168,7 +168,7 @@ leaveRoomButton?.addEventListener('click', () => {
   currentRoom = null
   roomInput.value = ''
   movesElement.textContent = ''
-  resultElement.textContent = 'You left the room. Enter a room code to join another game.'
+  resultElement.textContent = connected ? 'You left the room. Enter a room code to join another game.' : 'You are not currently connected to a room.'
   updateScoreElement()
 })
 
@@ -369,8 +369,6 @@ function setMode(newMode) {
 
 
 function disconnect() {
-
-  if (leaveRoomButton) leaveRoomButton.hidden = true
 
   if (socket) {
 
