@@ -747,7 +747,7 @@ async function playComputer(move) {
     const aiWins = score.losses + (data.result === 'loss' ? 1 : 0)
     const playerWins = score.wins + (data.result === 'win' ? 1 : 0)
     const ties = score.ties + (data.result === 'tie' ? 1 : 0)
-    resultElement.textContent =
+    const engineReport =
       '🤖 MATCHMAKING ENGINE REPORT\\n' +
       'Ruleset: Classic | Difficulty: ' + level.toUpperCase() + '\\n' +
       'Player Deployed: ' + move.toUpperCase() + '\\n' +
@@ -758,6 +758,7 @@ async function playComputer(move) {
       'Online Scoreboard: Wins: ' + aiWins + ', Losses: ' + playerWins + ', Ties: ' + ties + '\\n' +
       'Next Action: Awaiting your next move.'
     if (mode === 'computer') applyResult('computer', data.result, move, data.computerMove, 'Computer')
+    resultElement.textContent = engineReport
   } finally {
     computerBusy = false
   }
