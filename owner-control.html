@@ -22,6 +22,7 @@ button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.seco
 @media print{body{background:white;color:#111}body *{visibility:hidden!important}#qr-print-area,#qr-print-area *{visibility:visible!important}#qr-print-area{position:absolute;left:0;top:0;width:100%;background:white;color:#111;border:0;box-shadow:none;text-align:center}#qr-canvas{background:white}#qr-canvas canvas{margin:auto}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <header><div class="brand">STONE PAPER <span>SCISSORS</span> / OWNER CONTROL</div><div class="head-actions"><span id="role-pill" class="pill hidden"></span><a class="button secondary" href="/staff-portal.html">Staff Portal</a><a class="button secondary" href="/">Game</a></div></header>
@@ -30,7 +31,7 @@ button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.seco
 <section id="login-card" class="card" style="max-width:480px;margin:28px auto">
 <h2>Owner sign in</h2><p class="muted">Enter your RPS account password every time you open Owner Control.</p>
 <input id="login-id" placeholder="Account username" autocomplete="username"><input id="login-password" type="password" placeholder="Password" autocomplete="current-password">
-<button id="login-go" style="width:100%">Sign in to Owner Control</button><p id="login-msg" class="msg" role="status"></p>
+<button id="login-go" style="width:100%">Sign in to Owner Control</button><div id="owner-google" style="margin:12px 0"></div><p class="muted">Google sign-in is available for the verified Owner account. Co-owners must scan their staff QR in the Staff Portal first.</p><p id="login-msg" class="msg" role="status"></p>
 </section>
 <section id="app" class="hidden">
 <div class="section-title"><div><div class="eyebrow">Verified administrator</div><h2 id="welcome">Owner workspace</h2><p class="muted">Your role: <strong id="role-name"></strong></p></div><button id="logout" class="secondary">Log out</button></div>
