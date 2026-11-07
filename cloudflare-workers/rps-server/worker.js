@@ -163,52 +163,53 @@ If you did not ask for this, ignore this email.`
 }
 __name(sendCode, "sendCode");
 var MOVES = ["rock", "paper", "scissors"];
-var BEATS = { rock: "scissors", paper: "rock", scissors: "paper" };
+var BEATS = { rock: ["scissors"], paper: ["rock"], scissors: ["paper"] };
 var COUNTER = { rock: "paper", paper: "scissors", scissors: "rock" };
-var SMART = { easy: 0, medium: 0.5, hard: 0.75, insane: 0.95 };
+var SMART = { easy: 0, medium: 0.65, hard: 0.82, insane: 0.93 };
 var rand = /* @__PURE__ */ __name(() => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32, "rand");
 var pick = /* @__PURE__ */ __name((list) => list[Math.floor(rand() * list.length)], "pick");
 function mostCommon(counts) {
   const best = Math.max(...MOVES.map((m) => counts[m]));
   return pick(MOVES.filter((m) => counts[m] === best));
 }
-__name(mostCommon, "mostCommon");
-function predict(level, h) {
-  const fresh = /* @__PURE__ */ __name(() => ({ rock: 0, paper: 0, scissors: 0 }), "fresh");
-  let c, total;
-  if (level === "insane" && h.length >= 3) {
-    c = fresh();
-    total = 0;
-    const a = h[h.length - 2], b = h[h.length - 1];
-    for (let i = 0; i < h.length - 2; i++) {
-      if (h[i] === a && h[i + 1] === b) {
-        c[h[i + 2]]++;
-        total++;
-      }
-    }
-    if (total) return mostCommon(c);
+function markovPredict(history, order) {
+  if (history.length <= order) return null;
+  const counts = { rock: 0, paper: 0, scissors: 0 };
+  const suffix = history.slice(-order);
+  for (let i = 0; i <= history.length - order - 1; i++) {
+    if (suffix.every((m, n) => history[i + n] === m)) counts[history[i + order]]++;
   }
-  if ((level === "hard" || level === "insane") && h.length >= 2) {
-    c = fresh();
-    total = 0;
-    const last = h[h.length - 1];
-    for (let i = 0; i < h.length - 1; i++) {
-      if (h[i] === last) {
-        c[h[i + 1]]++;
-        total++;
-      }
-    }
-    if (total) return mostCommon(c);
-  }
-  c = fresh();
-  (level === "medium" ? h.slice(-10) : h).forEach((m) => c[m]++);
-  return mostCommon(c);
+  return Object.values(counts).some(Boolean) ? mostCommon(counts) : null;
 }
-__name(predict, "predict");
-function computerPlay(level, history, move) {
-  const computerMove = history.length && rand() < SMART[level] ? COUNTER[predict(level, history)] : pick(MOVES);
-  const result = move === computerMove ? "tie" : BEATS[move] === computerMove ? "win" : "loss";
-  return { computerMove, result };
+function computerPlay(level, history, move, rounds = []) {
+  let predicted = null, reason = "Easy mode chooses randomly and does not inspect player history.";
+  if (level === "medium" && history.length) {
+    const counts = { rock: 0, paper: 0, scissors: 0 };
+    history.forEach((m) => counts[m]++);
+    predicted = mostCommon(counts);
+    reason = "Compared overall move frequencies and selected a counter to the most common choice.";
+  } else if (level === "hard" && history.length) {
+    predicted = markovPredict(history, 2) || markovPredict(history, 1) || (history.length ? history[history.length - 1] : null);
+    reason = "Used one- and two-move Markov sequence frequencies to estimate the next move.";
+  } else if (level === "insane" && history.length) {
+    const last = rounds[rounds.length - 1];
+    if (last && last.result === "win") {
+      predicted = last.you;
+      reason = "Win bias: weighted the chance that the player repeats their previous winning move.";
+    } else if (last && last.result === "loss") {
+      predicted = COUNTER[last.computer];
+      reason = "Loss bias: weighted the chance the player switches to the move that beats the AI's last winning move.";
+    } else if (last && last.result === "tie") {
+      predicted = COUNTER[last.you];
+      reason = "Tie bias: weighted the chance the player switches to a move that beats the tied move.";
+    }
+    predicted = predicted || markovPredict(history, 2) || markovPredict(history, 1) || history[history.length - 1];
+    reason += " Combined this behavioural estimate with Markov sequence learning.";
+  }
+  const shouldCounter = level !== "easy" && predicted && rand() < SMART[level];
+  const computerMove = shouldCounter ? COUNTER[predicted] : pick(MOVES);
+  const result = move === computerMove ? "tie" : BEATS[move].includes(computerMove) ? "win" : "loss";
+  return { computerMove, result, predictedMove: predicted, reason };
 }
 __name(computerPlay, "computerPlay");
 var CH_STAGES = ["easy", "medium", "hard", "insane"];
@@ -2703,13 +2704,16 @@ var RPSRoom = class extends DurableObject {
       }
       if (path === "/acct/play") {
         const h = me.histLevel === d.level ? me.history || [] : [];
-        const { computerMove, result } = computerPlay(d.level, h, d.move);
+        const priorRounds = me.histLevel === d.level ? me.computerRounds || [] : [];
+        const played = computerPlay(d.level, h, d.move, priorRounds);
+        const { computerMove, result } = played;
         me.history = [...h, d.move].slice(-50);
+        me.computerRounds = [...priorRounds, { you: d.move, computer: computerMove, result }].slice(-50);
         me.histLevel = d.level;
         me.stats = statsOf(me);
         me.stats.computer[{ win: "wins", loss: "losses", tie: "ties" }[result]]++;
         await S.put("user:" + me.id, me);
-        return Response.json({ computerMove, result });
+        return Response.json(played);
       }
       const gate = "fail:acct:" + me.id;
       const g = await S.get(gate) || { count: 0, until: 0 };
