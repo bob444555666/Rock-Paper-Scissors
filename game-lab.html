@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#070d16"><meta name="description" content="Build custom Rock Paper Scissors matches, practice with different AI styles, and track training missions.">
 <title>Custom Arena Lab · Stone Paper Scissors</title>
-<link rel="stylesheet" href="/site-wide.css?v=5"><link rel="stylesheet" href="/game-lab.css?v=2">
+<link rel="stylesheet" href="/site-wide.css?v=5"><link rel="stylesheet" href="/game-lab.css?v=3">
 </head>
 <body>
 <main class="lab-wrap">
@@ -52,6 +52,22 @@
  <div class="armor-log" id="armor-log" aria-live="polite"></div>
  <div class="armor-foot"><span>First to 100 wins · Bust on 1 · Shield blocks one bust</span><button class="back" id="armor-reset" type="button">Reset match</button></div>
 </section>
+
+<section class="lab-panel gauntlet-panel" id="gauntlet-mode">
+ <div class="lab-section-head"><div><p class="eyebrow">SURVIVAL CRAWL · ROGUE LABORATORY</p><h2>🟥 THE ARENA LAB: GAUNTLET RUN</h2><p>Fight through shifting sectors, charge attacks with dice, collect credits, and survive the rogue entities.</p></div><span class="lab-status" id="gauntlet-status">RUN READY</span></div>
+ <div class="gauntlet-config"><label>Combat rules<select id="gauntlet-rules"><option value="classic">Classic · Rock Paper Scissors</option><option value="extended" selected>Extended · Lizard-Spock</option></select></label><label>Rogue entity<select id="gauntlet-difficulty"><option value="easy">Easy · Glitch-Bot</option><option value="medium" selected>Medium · The Scanner</option><option value="hard">Hard · Markov Reaper</option><option value="insane">Insane · The Architect</option></select></label><button class="go" id="gauntlet-start" type="button">⚔️ Start / Restart Run</button></div>
+ <div class="gauntlet-room"><div><small>CURRENT FLOOR</small><strong id="gauntlet-floor">1</strong></div><div><small>LABORATORY SECTOR</small><strong id="gauntlet-room-name">Training Deck</strong></div><div><small>ROUND</small><strong id="gauntlet-round">1 / 5</strong></div></div>
+ <div class="gauntlet-vitals"><div class="gauntlet-vital"><div><b>👤 PLAYER HP</b><strong id="gauntlet-player-hp">100 / 100</strong></div><div class="gauntlet-bar"><i id="gauntlet-player-bar"></i></div><small>Cyber-Credits: <b id="gauntlet-credits">0</b></small></div><div class="gauntlet-vital enemy"><div><b>🤖 ENEMY HP</b><strong id="gauntlet-enemy-hp">100 / 100</strong></div><div class="gauntlet-bar"><i id="gauntlet-enemy-bar"></i></div><small id="gauntlet-boss-name">GLITCH-BOT</small></div></div>
+ <div class="gauntlet-trait" id="gauntlet-trait">Active Environmental Trait: None · Standard dice and weapons.</div>
+ <div class="gauntlet-market"><div class="lab-section-head"><div><p class="eyebrow">ARCANE POWER-UP MARKET</p><h3>🧪 Supply Terminal</h3></div><small>Buy between rounds</small></div><div class="gauntlet-shop"><button class="back" data-buy="serum" type="button">🧪 Vampiric Serum <b>30 cr</b><small>Next bank heals 50% of damage dealt</small></button><button class="back" data-buy="emp" type="button">💣 EMP Grenade <b>40 cr</b><small>Suppress enemy traits for 3 rounds</small></button><button class="back" data-buy="core" type="button">🧲 Magnetic Core <b>25 cr</b><small>Bust threshold becomes 2 this room</small></button></div><div class="gauntlet-inventory" id="gauntlet-inventory">Inventory: Empty</div></div>
+ <p class="gauntlet-instruction" id="gauntlet-instruction" aria-live="polite">Start your run. The enemy secretly locks its weapon before you choose.</p>
+ <div class="gauntlet-moves" id="gauntlet-moves"></div>
+ <div class="gauntlet-dice-actions" id="gauntlet-dice-actions" hidden><button class="go" id="gauntlet-roll" type="button">🎲 Charge attack</button><button class="back" id="gauntlet-release" type="button">⚡ RELEASE UNLEASHED ATTACK</button></div>
+ <div class="gauntlet-dashboard" id="gauntlet-dashboard" role="status" aria-live="polite">Your combat telemetry will appear here.</div>
+ <div class="gauntlet-dialogue"><b>🎙️ ROGUE ENTITY INTERCEPT</b><p id="gauntlet-dialogue">“Welcome to the laboratory. Your survival odds are being calculated.”</p></div>
+ <div class="gauntlet-log" id="gauntlet-log" aria-live="polite"></div>
+ <div class="gauntlet-bottom"><span>Clear floors by defeating rogue entities. Every 5 rounds, the sector changes.</span><button class="back" id="gauntlet-reset" type="button">Reset saved run</button></div>
+</section>
 <section class="lab-panel mission-panel">
 <div class="lab-section-head"><div><p class="eyebrow">TRAINING BOARD</p><h2>100 missions. Your next personal best.</h2><p>Mission progress is tracked locally as you play. Search or filter the board.</p></div><div class="lab-mission-total" id="mission-total">0 / 100</div></div>
 <div class="lab-filters"><input id="mission-search" type="search" placeholder="Search missions…" aria-label="Search missions"><select id="mission-filter" aria-label="Filter missions"><option value="all">All missions</option><option value="active">In progress</option><option value="complete">Completed</option><option value="free">Free goals</option><option value="premium">Premium ideas</option></select><select id="mission-sort" aria-label="Sort missions"><option value="default">Recommended order</option><option value="progress">Most progress</option><option value="name">Name A–Z</option></select></div>
@@ -64,5 +80,5 @@
 </section>
 <footer class="lab-footer"><a href="/">Game</a><a href="/quests.html">Quests</a><a href="/achievements.html">Achievements</a><a href="/competitive-lab.html">Competitive Lab</a><a href="/privacy.html">Privacy</a></footer>
 </main>
-<script src="/game-lab.js?v=1"></script><script src="/armored-championship.js?v=2"></script>
+<script src="/game-lab.js?v=1"></script><script src="/armored-championship.js?v=2"></script><script src="/gauntlet-run.js?v=1"></script>
 </body></html>
