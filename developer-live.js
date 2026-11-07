@@ -19,7 +19,7 @@ fetch(API+'/developer/published-config',{cache:'no-store'}).then(r=>r.ok?r.json(
   document.head.appendChild(style);
  }
  const css=typeof c.customCss==='string'?c.customCss:'';
- if(css&&!/@import|url\\s*\\(|expression\\s*\\(|javascript:/i.test(css)){const custom=document.createElement('style');custom.id='owner-approved-developer-css';custom.textContent=css;document.head.appendChild(custom);}
+ if(css&&!/@import|url\s*\(|expression\s*\(|javascript:/i.test(css)){const custom=document.createElement('style');custom.id='owner-approved-developer-css';custom.textContent=css;document.head.appendChild(custom);}
  const difficulty=['easy','medium','hard','insane'].includes(c.difficulty)?c.difficulty:'medium';
  const levelButton=document.querySelector('.level-button[data-level="'+difficulty+'"]');
  if(levelButton)levelButton.click();
