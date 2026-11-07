@@ -1119,11 +1119,33 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
         let dataOut = {}; try { dataOut = await response.json(); } catch {}
         return { status: response.status, ok: response.ok, data: dataOut };
       };
-      if (act === "reauth") {
-        const verified = await ask("/acct/login", { id: session.name || "", password: String(body.password || "") });
-        if (!verified.ok || !verified.data.user || verified.data.user.id !== session.sub) return json(env, { error: "Password verification failed." }, 401);
+      if (act === "reauth" || act === "reauth-google") {
+        if (act === "reauth") {
+          const verified = await ask("/acct/login", { id: session.name || "", password: String(body.password || "") });
+          if (!verified.ok || !verified.data.user || verified.data.user.id !== session.sub) return json(env, { error: "Password verification failed." }, 401);
+        } else {
+          let google;
+          try { google = await verifyGoogleToken(String(body.credential || ""), GOOGLE_CLIENT_ID); }
+          catch { return json(env, { error: "Google sign-in could not be verified." }, 401); }
+          if (google.email_verified !== true) return json(env, { error: "Your Google email must be verified." }, 401);
+          const linked = await ask("/acct/google", { sub: google.sub, email: google.email, picture: google.picture });
+          if (!linked.ok || !linked.data.user || linked.data.user.id !== session.sub) return json(env, { error: "This Google account is not linked to the RPS account." }, 403);
+        }
+        let access = await ask("/chal/role-get", { id: session.sub });
+        let accessRole = access.data.role || "";
+        if (accessRole !== "owner" && String(session.name || "").toLowerCase() === "ashton") {
+          const boot = await ask("/chal/role-bootstrap", { id: session.sub });
+          if (boot.ok) accessRole = "owner";
+        }
+        if (!accessRole) return json(env, { error: "This account does not have staff access." }, 403);
+        if (accessRole !== "owner") {
+          const invite = String(body.invite || "");
+          if (!invite) return json(env, { error: "Scan your permanent staff QR code for every sign-in." }, 403);
+          const claimed = await ask("/chal/role-claim", { id: session.sub, token: invite });
+          if (!claimed.ok) return json(env, claimed.data, claimed.status);
+        }
         const gate = await makeSession(env, { sub: session.sub, name: session.name || "" }, { staffGate: true }, 30 * 60 * 1000);
-        return json(env, { ok: true, gate });
+        return json(env, { ok: true, gate, role: accessRole });
       }
       let roleResult = await ask("/chal/role-get", { id: session.sub });
       let role = roleResult.data.role || "";
@@ -2059,21 +2081,21 @@ var RPSRoom = class extends DurableObject {
         const role = roleRec && roleRec.role || (legacy ? "staff" : "");
         if (!user || !role) return bad("Assign an employee role before making a QR code.", 404);
         const token = b64urlEncode(crypto.getRandomValues(new Uint8Array(32)));
-        const expiresAt = now + 15 * 60 * 1000;
-        await S.put("staffinvite:" + token, { userId: uid, role, expiresAt, createdBy: String(d.createdBy || "").slice(0, 80) });
+        const expiresAt = 0;
+        await S.put("staffinvite:" + token, { userId: uid, role, expiresAt, persistent: true, createdBy: String(d.createdBy || "").slice(0, 80) });
         return Response.json({ token, expiresAt, username: user.username, role });
       }
       if (path === "/chal/role-claim") {
         const token = String(d.token || "").slice(0, 100);
         const id = String(d.id || "").slice(0, 80);
         const invite = token ? await S.get("staffinvite:" + token) : null;
-        if (!invite || invite.expiresAt < now) return bad("This employee QR code has expired or was already used.", 410);
+        if (!invite || (!invite.persistent && invite.expiresAt < now)) return bad("This employee QR code has expired or is invalid.", 410);
         if (invite.userId !== id) return bad("This QR code belongs to a different account. Log in with the employee account assigned by the owner.", 403);
         const rec = await S.get("role:" + id);
         const legacy = await S.get("staff:" + id);
         const role = rec && rec.role || (legacy ? "staff" : "");
         if (!role || role !== invite.role) return bad("Employee access has changed. Ask the owner for a new QR code.", 403);
-        await S.delete("staffinvite:" + token);
+        if (!invite.persistent) await S.delete("staffinvite:" + token);
         return Response.json({ ok: true, role });
       }
       if (path === "/chal/is-staff") return Response.json({ staff: !!(d.id && await S.get("staff:" + d.id)) });
