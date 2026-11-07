@@ -1203,6 +1203,52 @@ function renderProfile() {
   $('#pf-email').textContent = profile && profile.email ? profile.email : ''
   $('#pf-online').textContent = 'Online: ' + line(scores.online)
   $('#pf-computer').textContent = 'Computer: ' + line(scores.computer)
+  refreshDeveloperAccount()
+}
+
+async function refreshDeveloperAccount() {
+  const status = $('#pf-developer-status'), button = $('#pf-developer-action'), message = $('#pf-developer-msg')
+  if (!status || !button || !message) return
+  button.disabled = true
+  message.textContent = ''
+  if (!token) { status.textContent = 'Sign in to your RPS account to create or access a developer account.'; button.textContent = 'Sign in first'; return }
+  try {
+    const response = await fetch(API + '/developer/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store' })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data.error || 'Could not check developer access.')
+    if (data.status === 'approved') {
+      status.textContent = 'Developer account active · approved access'
+      button.textContent = 'Open Hack Lab'
+      button.disabled = false
+      button.onclick = () => { location.href = '/developer-lab.html' }
+    } else if (data.status === 'pending') {
+      status.textContent = 'Developer account created · waiting for owner approval'
+      button.textContent = 'Request pending'
+    } else if (data.status === 'revoked') {
+      status.textContent = 'Developer access is currently revoked. Contact the owner if you need access restored.'
+      button.textContent = 'Access revoked'
+    } else {
+      status.textContent = 'No developer account is linked to this RPS account yet.'
+      button.textContent = 'Create developer account'
+      button.disabled = false
+      button.onclick = async () => {
+        button.disabled = true; button.textContent = 'Sending request…'
+        try {
+          const res = await fetch(API + '/developer/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }), cache: 'no-store' })
+          const out = await res.json().catch(() => ({}))
+          if (!res.ok) throw new Error(out.error || 'Could not create developer account.')
+          message.textContent = 'Developer account created. Your request is waiting for owner approval.'
+          await refreshDeveloperAccount()
+        } catch (error) { message.textContent = error.message; button.disabled = false; button.textContent = 'Try again' }
+      }
+    }
+  } catch (error) {
+    status.textContent = 'Developer account status could not be checked.'
+    message.textContent = error.message
+    button.textContent = 'Retry status check'
+    button.disabled = false
+    button.onclick = refreshDeveloperAccount
+  }
 }
 
 function openProfile() {
