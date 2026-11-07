@@ -9,7 +9,8 @@ fetch(API+'/developer/published-config',{cache:'no-store'}).then(r=>r.ok?r.json(
  if(page)root.style.setProperty('--bg',page);
  if(panel)root.style.setProperty('--panel',panel);
  if(accent){root.style.setProperty('--blue',accent);root.style.setProperty('--green',accent);root.style.setProperty('--accent',accent);}
- if(text)root.style.setProperty('--text',text);\n const button=hex(c.buttonBg);if(button)root.style.setProperty('--button-bg',button);
+ if(text)root.style.setProperty('--text',text);
+ const button=hex(c.buttonBg);if(button)root.style.setProperty('--button-bg',button);
  const radius=Number(c.radius);
  if(Number.isFinite(radius)&&radius>=4&&radius<=28){
   root.style.setProperty('--dev-button-radius',radius+'px');
