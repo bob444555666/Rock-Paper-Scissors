@@ -742,23 +742,10 @@ async function playComputer(move) {
     playerHistory.push(move)
     computerRoundHistory.push({ you: move, computer: data.computerMove, result: data.result })
     computerRoundHistory = computerRoundHistory.slice(-50)
-    const score = scores.computer
-    const outcomeLabel = data.result === 'win' ? 'PLAYER WINS' : data.result === 'loss' ? 'AI WINS' : 'TIE'
-    const aiWins = score.losses + (data.result === 'loss' ? 1 : 0)
-    const playerWins = score.wins + (data.result === 'win' ? 1 : 0)
-    const ties = score.ties + (data.result === 'tie' ? 1 : 0)
-    const engineReport =
-      '🤖 MATCHMAKING ENGINE REPORT\\n' +
-      'Ruleset: Classic | Difficulty: ' + level.toUpperCase() + '\\n' +
-      'Player Deployed: ' + move.toUpperCase() + '\\n' +
-      'AI Deployed: ' + data.computerMove.toUpperCase() + '\\n\\n' +
-      '🏆 RESULT: ' + outcomeLabel + '\\n\\n' +
-      '⚙️ TELEMETRY\\n' +
-      'The Prediction: ' + (data.predictedMove ? data.predictedMove.toUpperCase() : 'RANDOM') + ' — ' + (data.reason || 'Random move selection.') + '\\n' +
-      'Online Scoreboard: Wins: ' + aiWins + ', Losses: ' + playerWins + ', Ties: ' + ties + '\\n' +
-      'Next Action: Awaiting your next move.'
+    // Keep the original Play Computer presentation: the normal result line,
+    // move icons, and score are rendered by applyResult().
     if (mode === 'computer') applyResult('computer', data.result, move, data.computerMove, 'Computer')
-    resultElement.textContent = engineReport
+
   } finally {
     computerBusy = false
   }
