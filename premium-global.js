@@ -86,7 +86,7 @@
         <a class="rps-nav-link" href="/multiplayer.html"><span class="rps-nav-icon">👥</span>3–4 Player Rooms</a>
         <a class="rps-nav-link" href="/arcade-hub.html"><span class="rps-nav-icon">🕹️</span>Arcade Hub</a>
         <a class="rps-nav-link" href="/game-lab.html"><span class="rps-nav-icon">🧪</span>Custom Arena</a>
-        <a class="rps-nav-link" href="/developer-lab.html"><span class="rps-nav-icon">🛡️</span>Try and Hack</a>
+        <a class="rps-nav-link" id="rps-developer-nav" href="/developer-lab.html" hidden><span class="rps-nav-icon">🛡️</span>Hack Lab</a>
         <a class="rps-nav-link" href="/competitive-lab.html"><span class="rps-nav-icon">⚔️</span>Competitive Lab</a>
         <a class="rps-nav-link" href="/music.html"><span class="rps-nav-icon">🎵</span>Gaming Music</a>
         <a class="rps-nav-link" href="/quests.html"><span class="rps-nav-icon">🎯</span>Quests</a>
@@ -103,6 +103,20 @@
     document.body.insertBefore(backdrop, document.body.firstChild);
     document.body.insertBefore(drawer, document.body.firstChild);
     document.body.insertBefore(toggle, document.body.firstChild);
+    const developerLink = drawer.querySelector('#rps-developer-nav');
+    const syncDeveloperLink = async () => {
+      const t = token();
+      if (!developerLink || !t) { if (developerLink) developerLink.hidden = true; return; }
+      try {
+        const response = await fetch(API + '/developer/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: t }), cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        developerLink.hidden = !(response.ok && data.status === 'approved');
+      } catch (_) { developerLink.hidden = true; }
+    };
+    syncDeveloperLink();
+    let lastDeveloperToken = token();
+    window.setInterval(() => { const current = token(); if (current !== lastDeveloperToken) { lastDeveloperToken = current; syncDeveloperLink(); } }, 1800);
+    window.addEventListener('storage', syncDeveloperLink);
     const closeButton = drawer.querySelector('.rps-nav-close');
     const openMenu = () => {
       drawer.classList.add('is-open'); backdrop.classList.add('is-open');
