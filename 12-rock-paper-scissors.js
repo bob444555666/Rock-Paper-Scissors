@@ -8,6 +8,7 @@ let mode = 'online'
 let computerBusy = false
 let level = 'easy'
 let playerHistory = []
+let computerRoundHistory = []
 
 
 const MOVES = ['rock', 'paper', 'scissors']
@@ -270,6 +271,7 @@ levelButtons.forEach(button => {
 
     // fresh start so the computer forgets your old moves
     playerHistory = []
+    computerRoundHistory = []
 
     try {
       localStorage.setItem('level', level)
@@ -660,13 +662,28 @@ function predictMove(lvl, h) {
   return mostCommonMove(c)
 }
 
-function playComputerOffline(lvl, history, move) {
-  const smart = LEVELS[lvl] ? LEVELS[lvl].smart : 0
-  const computerMove = history.length && randomFloat() < smart
-    ? COUNTER[predictMove(lvl, history)]
-    : pickFrom(MOVES)
+function playComputerOffline(lvl, history, move, rounds = []) {
+  let predicted = null, reason = 'Easy mode chooses randomly and does not inspect player history.'
+  if (lvl === 'medium' && history.length) {
+    const counts = { rock: 0, paper: 0, scissors: 0 }
+    history.forEach(m => counts[m]++)
+    predicted = mostCommonMove(counts)
+    reason = 'Compared overall move frequencies and selected a counter to the most common choice.'
+  } else if (lvl === 'hard' && history.length) {
+    predicted = predictMove('hard', history)
+    reason = 'Used Markov sequence frequencies to estimate the next move.'
+  } else if (lvl === 'insane' && history.length) {
+    const last = rounds[rounds.length - 1]
+    if (last?.result === 'win') predicted = last.you
+    else if (last?.result === 'loss') predicted = COUNTER[last.computer]
+    else if (last?.result === 'tie') predicted = COUNTER[last.you]
+    predicted = predicted || predictMove('insane', history)
+    reason = 'Combined Markov sequence learning with probabilistic win, loss and tie behaviour patterns.'
+  }
+  const computerMove = lvl !== 'easy' && predicted && randomFloat() < LEVELS[lvl].smart
+    ? COUNTER[predicted] : pickFrom(MOVES)
   const result = move === computerMove ? 'tie' : BEATS[move] === computerMove ? 'win' : 'loss'
-  return { computerMove, result }
+  return { computerMove, result, predictedMove: predicted, reason }
 }
 
 
@@ -719,10 +736,12 @@ async function playComputer(move) {
 
     // The server's move is authoritative. Offline fallback uses the same
     // history-only prediction rules and never reads the current player selection.
-    if (!data) data = playComputerOffline(level, playerHistory.slice(-50), move)
+    if (!data) data = playComputerOffline(level, playerHistory.slice(-50), move, computerRoundHistory)
     await new Promise(resolve => setTimeout(resolve, thinkDelay))
 
     playerHistory.push(move)
+    computerRoundHistory.push({ you: move, computer: data.computerMove, result: data.result })
+    computerRoundHistory = computerRoundHistory.slice(-50)
     const score = scores.computer
     const outcomeLabel = data.result === 'win' ? 'PLAYER WINS' : data.result === 'loss' ? 'AI WINS' : 'TIE'
     const aiWins = score.losses + (data.result === 'loss' ? 1 : 0)
