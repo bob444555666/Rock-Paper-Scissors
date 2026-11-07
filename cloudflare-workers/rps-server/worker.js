@@ -163,7 +163,7 @@ If you did not ask for this, ignore this email.`
 }
 __name(sendCode, "sendCode");
 var MOVES = ["rock", "paper", "scissors"];
-var BEATS = { rock: ["scissors"], paper: ["rock"], scissors: ["paper"] };
+var BEATS = { rock: "scissors", paper: "rock", scissors: "paper" };
 var COUNTER = { rock: "paper", paper: "scissors", scissors: "rock" };
 var SMART = { easy: 0, medium: 0.65, hard: 0.82, insane: 0.93 };
 var rand = /* @__PURE__ */ __name(() => crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32, "rand");
@@ -208,7 +208,7 @@ function computerPlay(level, history, move, rounds = []) {
   }
   const shouldCounter = level !== "easy" && predicted && rand() < SMART[level];
   const computerMove = shouldCounter ? COUNTER[predicted] : pick(MOVES);
-  const result = move === computerMove ? "tie" : BEATS[move].includes(computerMove) ? "win" : "loss";
+  const result = move === computerMove ? "tie" : BEATS[move] === computerMove ? "win" : "loss";
   return { computerMove, result, predictedMove: predicted, reason };
 }
 __name(computerPlay, "computerPlay");
