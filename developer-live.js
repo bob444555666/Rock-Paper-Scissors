@@ -18,6 +18,11 @@ fetch(API+'/developer/published-config',{cache:'no-store'}).then(r=>r.ok?r.json(
   style.textContent='button,.big,.mode-button,.move-button,.level-button{border-radius:var(--dev-button-radius)!important;background-color:var(--button-bg)!important}';
   document.head.appendChild(style);
  }
+ const css=typeof c.customCss==='string'?c.customCss:'';
+ if(css&&!/@import|url\\s*\\(|expression\\s*\\(|javascript:/i.test(css)){const custom=document.createElement('style');custom.id='owner-approved-developer-css';custom.textContent=css;document.head.appendChild(custom);}
+ const difficulty=['easy','medium','hard','insane'].includes(c.difficulty)?c.difficulty:'medium';
+ const levelButton=document.querySelector('.level-button[data-level="'+difficulty+'"]');
+ if(levelButton)levelButton.click();
  window.RPS_APPROVED_DEVELOPER_CONFIG=Object.freeze({...c});
  document.body.classList.add('owner-approved-developer-theme');
 }).catch(()=>{});
