@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>Coin Store | Stone Paper Scissors</title>
+<style>
+:root{color-scheme:dark;--bg:#101722;--panel:#1a2635;--line:#34465b;--text:#f4f7fb;--muted:#a9b7c8;--accent:#e4b84e;--green:#4ac58a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#22344a 0,#101722 55%);color:var(--text);font:16px/1.5 system-ui,Segoe UI,sans-serif;min-height:100vh;padding:28px 16px}
+main{max-width:900px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}a{color:#8ecbff}.back{display:inline-block;padding:9px 13px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--text)}
+h1{font-size:clamp(28px,5vw,42px);margin:26px 0 6px}.sub{color:var(--muted);margin-top:0}.balance{display:flex;align-items:center;gap:12px;background:linear-gradient(120deg,#293c52,#1a2635);border:1px solid var(--line);border-radius:16px;padding:18px;margin:22px 0}.balance strong{font-size:30px;color:var(--accent);font-variant-numeric:tabular-nums}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.item,.terminal{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:18px}.item h2{font-size:18px;margin:0 0 6px}.price{color:var(--accent);font-weight:800;margin:12px 0}.item p{color:var(--muted);min-height:48px}.btn{border:0;border-radius:10px;padding:11px 15px;background:#d5a83f;color:#17202a;font-weight:800;cursor:pointer;width:100%}.btn:disabled{opacity:.45;cursor:not-allowed}.terminal{margin-top:24px}.terminal[hidden]{display:none}input{width:100%;padding:12px;border-radius:9px;border:1px solid var(--line);background:#0e1722;color:var(--text);margin:10px 0}.log{white-space:pre-wrap;background:#0b121b;border:1px solid var(--line);border-radius:9px;padding:12px;min-height:52px;margin-top:12px;color:#d7e3ef}.status{color:var(--muted);min-height:24px}.owned{color:var(--green);font-weight:700}
+</style>
+</head>
+<body><main>
+<div class="top"><a class="back" href="/">← Back to game</a><span>STONE PAPER SCISSORS · PLATFORM STORE</span></div>
+<h1>🪙 Coin Store</h1><p class="sub">Spend your platform coins on permanent account unlocks.</p>
+<section class="balance"><span>👛</span><div><div>YOUR WALLET</div><strong id="wallet-balance">Loading…</strong><div class="sub">$CR · shared account balance</div></div></section>
+<p id="store-status" class="status">Connecting to your account…</p>
+<div id="store-items" class="grid">
+<article class="item"><h2>🏆 Champion Title</h2><p>A permanent title for your player profile.</p><div class="price">100 $CR</div><button class="btn" disabled>Loading…</button></article>
+<article class="item"><h2>🛡️ Veteran Badge</h2><p>A permanent badge for your profile identity.</p><div class="price">75 $CR</div><button class="btn" disabled>Loading…</button></article>
+<article class="item"><h2>⚡ Shield Card</h2><p>A permanent power-up card unlock for supported game modes.</p><div class="price">150 $CR</div><button class="btn" disabled>Loading…</button></article>
+</div>
+<section id="developer-terminal" class="terminal" hidden>
+<h2>🛡️ Developer Account Terminal</h2><p class="sub">Server-verified developer access. Commands are checked on the Cloudflare server.</p>
+<input id="developer-command" autocomplete="off" spellcheck="false" placeholder="/sudo inject_coins 100">
+<button id="developer-run" class="btn">Execute command</button>
+<div id="developer-log" class="log">Developer node approved.</div>
+</section>
+<div id="store-message" class="log" role="status">Sign in to load your wallet.</div>
+</main><script src="/coin-store.js?v=1"></script></body></html>
