@@ -15,20 +15,20 @@ const MOVES = ['rock', 'paper', 'scissors']
 
 const LEVELS = {
   easy: {
-    smart: 0.45,
-    text: 'Still challenging: watches your habits and sometimes counters your likely move.'
+    smart: 0,
+    text: 'Random moves only. No player history or pattern tracking.'
   },
   medium: {
-    smart: 0.72,
-    text: 'Frequently predicts your habits and counters your likely move.'
+    smart: 0.65,
+    text: 'Tracks overall move frequencies and sometimes counters your most common move.'
   },
   hard: {
-    smart: 0.88,
-    text: 'Strong pattern tracking with very frequent counters.'
+    smart: 0.82,
+    text: 'Uses Markov sequence patterns to estimate your next move.'
   },
   insane: {
-    smart: 0.97,
-    text: 'Aggressively predicts patterns. Expect a tough match.'
+    smart: 0.93,
+    text: 'Combines sequence learning with probabilistic win, loss and tie behaviour patterns.'
   }
 }
 
@@ -717,16 +717,28 @@ async function playComputer(move) {
       }
     }
 
-    // Use the same local opponent logic at every level so Easy is not a free XP farm.
-    // The API check above still handles account/session errors, but its move is not used here.
-    data = playComputerOffline(level, playerHistory.slice(-50), move)
+    // The server's move is authoritative. Offline fallback uses the same
+    // history-only prediction rules and never reads the current player selection.
+    if (!data) data = playComputerOffline(level, playerHistory.slice(-50), move)
     await new Promise(resolve => setTimeout(resolve, thinkDelay))
 
     playerHistory.push(move)
-
-    if (mode === 'computer') {
-      applyResult('computer', data.result, move, data.computerMove, 'Computer')
-    }
+    const score = scores.computer
+    const outcomeLabel = data.result === 'win' ? 'PLAYER WINS' : data.result === 'loss' ? 'AI WINS' : 'TIE'
+    const aiWins = score.losses + (data.result === 'loss' ? 1 : 0)
+    const playerWins = score.wins + (data.result === 'win' ? 1 : 0)
+    const ties = score.ties + (data.result === 'tie' ? 1 : 0)
+    resultElement.textContent =
+      '🤖 MATCHMAKING ENGINE REPORT\\n' +
+      'Ruleset: Classic | Difficulty: ' + level.toUpperCase() + '\\n' +
+      'Player Deployed: ' + move.toUpperCase() + '\\n' +
+      'AI Deployed: ' + data.computerMove.toUpperCase() + '\\n\\n' +
+      '🏆 RESULT: ' + outcomeLabel + '\\n\\n' +
+      '⚙️ TELEMETRY\\n' +
+      'The Prediction: ' + (data.predictedMove ? data.predictedMove.toUpperCase() : 'RANDOM') + ' — ' + (data.reason || 'Random move selection.') + '\\n' +
+      'Online Scoreboard: Wins: ' + aiWins + ', Losses: ' + playerWins + ', Ties: ' + ties + '\\n' +
+      'Next Action: Awaiting your next move.'
+    if (mode === 'computer') applyResult('computer', data.result, move, data.computerMove, 'Computer')
   } finally {
     computerBusy = false
   }
