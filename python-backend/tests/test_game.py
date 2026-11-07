@@ -23,12 +23,14 @@ class GameRulesTests(unittest.TestCase):
         self.assertEqual(result["engine"], "python")
 
     def test_custom_round_response_shape(self):
-        result = play_custom_round("lizard", "rpsls", "hard", ["rock"], "counter")
+        result = play_custom_round("lizard", "rpsls", "hard", ["rock"], "random", [{"you":"rock","computer":"paper","result":"loss"}])
         self.assertEqual(result["playerMove"], "lizard")
         self.assertIn(result["computerMove"], ("rock", "paper", "scissors", "lizard", "spock"))
         self.assertIn(result["result"], ("win", "loss", "tie"))
         self.assertEqual(result["engine"], "python")
         self.assertEqual(result["variant"], "rpsls")
+        self.assertIn("reason", result)
+        self.assertIn("telemetry", result)
 
     def test_round_rejects_invalid_move(self):
         with self.assertRaises(ValueError):
