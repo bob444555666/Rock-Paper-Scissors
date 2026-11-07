@@ -1504,7 +1504,7 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
     }
     const accountAction = url.pathname.startsWith("/account/") ? url.pathname.slice(9) : null;
     if (accountAction && request.method === "POST") {
-      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade"].includes(accountAction)) {
+      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade", "wallet", "developer-command"].includes(accountAction)) {
         return json(env, { error: "Unknown request" }, 404);
       }
       let body;
@@ -1515,6 +1515,11 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
       }
       const s = await readSession(env, body.token);
       if (!s || s.setup) return json(env, { error: "Please log in again." }, 401);
+      if (accountAction === "developer-command") {
+        if (!env.RPS_DATABASE) return json(env, { error: "Developer verification database unavailable." }, 503);
+        const approved = await env.RPS_DATABASE.prepare("SELECT status FROM developer_accounts WHERE account_id = ?").bind(String(s.sub)).first();
+        if (!approved || approved.status !== "approved") return json(env, { error: "Developer access is not approved for this account." }, 403);
+      }
       delete body.token;
       const users = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(USERS_NAME));
       const r = await users.fetch("https://users/acct/" + accountAction, {
@@ -2333,7 +2338,7 @@ var RPSRoom = class extends DurableObject {
         online: { ...zero(), ...u.stats && u.stats.online },
         computer: { ...zero(), ...u.stats && u.stats.computer }
       }), "statsOf");
-      const pub = /* @__PURE__ */ __name((u) => ({ name: u.username, email: u.email, avatarAt: u.avatarAt || 0, stats: statsOf(u) }), "pub");
+      const pub = /* @__PURE__ */ __name((u) => ({ name: u.username, email: u.email, avatarAt: u.avatarAt || 0, stats: statsOf(u), walletBalance: Math.max(0, Math.min(99999, Math.floor(Number(u.walletBalance) || 0))), friends: Array.isArray(u.friends) ? u.friends : [], inventory: u.inventory && typeof u.inventory === "object" ? u.inventory : { titles: [], badges: [], powerups: [] } }), "pub");
       const pwOk = /* @__PURE__ */ __name(async (u, pw) => !!u.hash && await hashPw(String(pw || ""), b64urlDecode(u.salt)) === u.hash, "pwOk");
       if (path === "/acct/exists") return Response.json({ ok: !!(d.id && await S.get("user:" + d.id)) });
       if (path === "/acct/admin-list") {
@@ -2391,6 +2396,58 @@ var RPSRoom = class extends DurableObject {
       }
       const me = await S.get("user:" + d.id);
       if (!me) return bad("Account not found.", 404);
+      if (path === "/acct/wallet") {
+        const catalog = {
+          title_champion: { price: 100, type: "titles", label: "Champion" },
+          badge_veteran: { price: 75, type: "badges", label: "Veteran Badge" },
+          powerup_shield: { price: 150, type: "powerups", label: "Shield Card" }
+        };
+        me.walletBalance = Math.max(0, Math.min(99999, Math.floor(Number(me.walletBalance) || 0)));
+        me.inventory = me.inventory && typeof me.inventory === "object" ? me.inventory : { titles: [], badges: [], powerups: [] };
+        for (const key of ["titles", "badges", "powerups"]) if (!Array.isArray(me.inventory[key])) me.inventory[key] = [];
+        if (d.action === "buy") {
+          const item = catalog[String(d.item || "")];
+          if (!item) return bad("Unknown store item.", 404);
+          if (me.inventory[item.type].includes(String(d.item))) return bad("You already own this item.", 409);
+          if (me.walletBalance < item.price) return bad("[ECONOMY SYNC ERROR: INSUFFICIENT PLATFORM COINS]", 400);
+          me.walletBalance = Math.min(99999, me.walletBalance - item.price);
+          me.inventory[item.type].push(String(d.item));
+          await S.put("user:" + me.id, me);
+        }
+        return Response.json({ walletBalance: me.walletBalance, inventory: me.inventory, catalog });
+      }
+      if (path === "/acct/developer-command") {
+        const command = String(d.command || "").trim();
+        me.walletBalance = Math.max(0, Math.min(99999, Math.floor(Number(me.walletBalance) || 0)));
+        me.stats = statsOf(me);
+        me.inventory = me.inventory && typeof me.inventory === "object" ? me.inventory : { titles: [], badges: [], powerups: [] };
+        for (const key of ["titles", "badges", "powerups"]) if (!Array.isArray(me.inventory[key])) me.inventory[key] = [];
+        let message = "";
+        let match;
+        if ((match = command.match(/^\/sudo\s+inject_coins\s+(-?\d+)$/i))) {
+          const amount = Number(match[1]);
+          me.walletBalance = Math.max(0, Math.min(99999, me.walletBalance + amount));
+          message = "🔧 [DEVELOPER SYSTEM EXPLOIT] Successfully injected " + amount + " $CR into user profile database.";
+        } else if ((match = command.match(/^\/sudo\s+modify_leaderboard\s+(wins|losses|ties)\s+(\d+)$/i))) {
+          const key = match[1].toLowerCase();
+          const value = Math.max(0, Math.min(1000000000, Number(match[2])));
+          me.stats.online[key] = value;
+          message = "🔧 [DEVELOPER SYSTEM EXPLOIT] Global user statistics forcefully calibrated.";
+        } else if (/^\/sudo\s+unlock_all_inventory$/i.test(command)) {
+          me.inventory.titles = ["title_champion"];
+          me.inventory.badges = ["badge_veteran"];
+          me.inventory.powerups = ["powerup_shield"];
+          message = "🔧 [DEVELOPER SYSTEM EXPLOIT] All restricted marketplace content unlocked.";
+        } else if (/^\/sudo\s+force_win$/i.test(command)) {
+          me.stats.computer.wins = Math.min(1000000000, me.stats.computer.wins + 1);
+          me.walletBalance = Math.min(99999, me.walletBalance + 15);
+          message = "🚨 [DEVELOPER FORCE BYPASS] Developer override recorded one computer-match win and its reward.";
+        } else {
+          return bad("Unknown developer command or invalid arguments.", 400);
+        }
+        await S.put("user:" + me.id, me);
+        return Response.json({ ok: true, message, walletBalance: me.walletBalance, stats: me.stats, inventory: me.inventory });
+      }
       if (path === "/acct/arcade") {
         const emptyArcade = { stats: { games: 0, wins: 0, losses: 0, ties: 0, streak: 0, bestStreak: 0 }, dailyUsedDate: "", vaultStyle: "" };
         const currentArcade = me.arcade && typeof me.arcade === "object" ? me.arcade : emptyArcade;
@@ -2712,8 +2769,10 @@ var RPSRoom = class extends DurableObject {
         me.histLevel = d.level;
         me.stats = statsOf(me);
         me.stats.computer[{ win: "wins", loss: "losses", tie: "ties" }[result]]++;
+        const reward = result === "win" ? 15 : result === "loss" ? 5 : 8;
+        me.walletBalance = Math.min(99999, Math.max(0, Math.floor(Number(me.walletBalance) || 0)) + reward);
         await S.put("user:" + me.id, me);
-        return Response.json(played);
+        return Response.json({ ...played, walletBalance: me.walletBalance, coinReward: reward });
       }
       const gate = "fail:acct:" + me.id;
       const g = await S.get(gate) || { count: 0, until: 0 };
