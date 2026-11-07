@@ -272,3 +272,24 @@ body .member-manager { background:#fffaf0; border:3px solid var(--sp-ink); borde
 body .member-manager h2 { color:var(--sp-ink); }
 body .member-manager p, body .fine, body .status { color:#65596e; }
 @media(max-width:700px) { body .sp-peek-grid { grid-template-columns:1fr; } }
+
+
+/* Main game restoration: keep the original Sunburst Pop paper background.
+   site-wide.css supplies button treatments, but its dark background must not
+   replace the original cream game canvas. */
+html { background: var(--sp-cream) !important; }
+body {
+  --black: var(--sp-cream);
+  --panel: #fffaf0;
+  --purple: var(--sp-pink);
+  --blue: var(--sp-sky);
+  --green: var(--sp-lime);
+  --text: var(--sp-ink);
+  --muted: #65596e;
+  color: var(--sp-ink) !important;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(255,210,63,.48), transparent 26%),
+    radial-gradient(circle at 92% 18%, rgba(255,61,139,.18), transparent 28%),
+    radial-gradient(circle at 45% 90%, rgba(46,197,255,.2), transparent 34%),
+    var(--sp-cream) !important;
+}
