@@ -69,16 +69,19 @@ class Default(WorkerEntrypoint):
                 return json_response({"error": "Level must be a string."}, 400)
             if not isinstance(history, list) or len(history) > 100 or any(not isinstance(item, str) for item in history):
                 return json_response({"error": "History must contain at most 100 move strings."}, 400)
+            rounds = body.get("rounds", [])
+            if not isinstance(rounds, list) or len(rounds) > 100 or any(not isinstance(item, dict) for item in rounds):
+                return json_response({"error": "Round history must contain at most 100 round records."}, 400)
             if path == "/v1/custom-round":
                 variant = body.get("variant", "classic")
                 style = body.get("style", "random")
                 if not isinstance(variant, str) or not isinstance(style, str):
                     return json_response({"error": "Variant and style must be strings."}, 400)
                 try:
-                    return json_response(play_custom_round(move, variant, level, history, style))
+                    return json_response(play_custom_round(move, variant, level, history, style, rounds))
                 except ValueError as error:
                     return json_response({"error": str(error)}, 400)
             if move not in MOVES or any(item not in MOVES for item in history):
                 return json_response({"error": "Move and history must use rock, paper, or scissors."}, 400)
-            return json_response(play_round(move, level, history))
+            return json_response(play_round(move, level, history, rounds))
         return json_response({"error": "Not found."}, 404)
