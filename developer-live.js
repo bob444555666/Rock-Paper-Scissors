@@ -19,7 +19,7 @@ function setConfig(c){
  if(!c||typeof c!=='object')return;
  const root=document.documentElement;
  const page=safeHex(c.pageBg),panel=safeHex(c.panelBg),accent=safeHex(c.accent),text=safeHex(c.textColour),button=safeHex(c.buttonBg);
- if(page)root.style.setProperty('--bg',page);
+ if(page){root.style.setProperty('--bg',page);root.style.setProperty('--black',page);}
  if(panel)root.style.setProperty('--panel',panel);
  if(accent){root.style.setProperty('--blue',accent);root.style.setProperty('--green',accent);root.style.setProperty('--accent',accent);}
  if(text)root.style.setProperty('--text',text);
