@@ -1504,7 +1504,7 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
     }
     const accountAction = url.pathname.startsWith("/account/") ? url.pathname.slice(9) : null;
     if (accountAction && request.method === "POST") {
-      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade", "wallet", "developer-command"].includes(accountAction)) {
+      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade", "wallet", "developer-command", "developer-status"].includes(accountAction)) {
         return json(env, { error: "Unknown request" }, 404);
       }
       let body;
@@ -1515,9 +1515,10 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
       }
       const s = await readSession(env, body.token);
       if (!s || s.setup) return json(env, { error: "Please log in again." }, 401);
-      if (accountAction === "developer-command") {
+      if (accountAction === "developer-status" || accountAction === "developer-command") {
         if (!env.RPS_DATABASE) return json(env, { error: "Developer verification database unavailable." }, 503);
         const approved = await env.RPS_DATABASE.prepare("SELECT status FROM developer_accounts WHERE account_id = ?").bind(String(s.sub)).first();
+        if (accountAction === "developer-status") return json(env, { approved: !!approved && approved.status === "approved" });
         if (!approved || approved.status !== "approved") return json(env, { error: "Developer access is not approved for this account." }, 403);
       }
       delete body.token;
