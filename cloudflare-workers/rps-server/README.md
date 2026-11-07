@@ -40,3 +40,9 @@ The old key-protected `/admin` staff-add/remove controls are disabled. Employee 
 ## Cloudflare preservation
 
 The deployed `rps-server` Worker uses an existing Durable Object namespace and Cloudflare-only secrets. Preserve the existing `RPS_ROOM` binding and all current secret bindings when publishing Worker changes. No passwords, session tokens, or secret values belong in GitHub.
+
+## Legend Developer Studio
+
+The Legend-only Developer Studio is available at `/developer-lab.html`. It uses the same game page in an embedded preview and allows Legend members to adjust supported appearance settings and submit optional CSS proposals. The Owner reviews proposals in the Developer Lab tab in Owner Control Centre.
+
+Approved settings are served from the D1 `developer_site_config` row and loaded by `/developer/published-config`. Declined proposals are retained for review but do not update the published row. Submitted JavaScript is never executed; only Owner-approved, validated CSS and supported settings are published.
