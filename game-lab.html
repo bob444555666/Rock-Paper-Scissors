@@ -38,6 +38,20 @@
 <div class="lab-stat-grid"><div><small>WINS</small><strong id="stat-wins">0</strong></div><div><small>WIN RATE</small><strong id="stat-rate">0%</strong></div><div><small>BEST STREAK</small><strong id="stat-streak">0</strong></div><div><small>ROUNDS</small><strong id="stat-rounds">0</strong></div></div>
 </section>
 </section>
+
+<section class="lab-panel armor-panel" id="armor-mode">
+ <div class="lab-section-head"><div><p class="eyebrow">ARMORED CHAMPIONSHIP · HYBRID MODE</p><h2>⚔️ RPS Dice Duel</h2><p>Win the clash, risk the dice, bank your points, and race to 100.</p></div><span class="lab-status" id="armor-status">READY</span></div>
+ <div class="armor-setup"><label>Ruleset<select id="armor-rules"><option value="classic">Classic · Rock Paper Scissors</option><option value="rpsls" selected>Extended · Lizard-Spock</option></select></label><label>AI personality<select id="armor-ai"><option value="easy">Easy · Reckless Gambler</option><option value="medium" selected>Medium · Calculating Android</option><option value="hard">Hard · Psychological Profiler</option><option value="insane">Insane · Rogue Casino Overlord</option></select></label><button class="go" id="armor-new" type="button">Start championship</button></div>
+ <div class="armor-score"><div><small>👤 PLAYER BANK</small><strong id="armor-player-score">0</strong><span>/ 100</span></div><div class="armor-vs">VS</div><div><small>🤖 AI BANK</small><strong id="armor-ai-score">0</strong><span>/ 100</span></div></div>
+ <div class="armor-inventory"><div><b>👤 Your Power-Ups</b><div id="armor-player-powers" class="armor-power-list"></div></div><div><b>🤖 AI Power-Ups</b><div id="armor-ai-powers" class="armor-power-list"></div></div></div>
+ <p class="armor-instruction" id="armor-instruction" aria-live="polite">Deploy any Power-Ups before choosing your weapon.</p>
+ <div class="armor-power-actions"><button class="back" data-power="shield" type="button">🛡️ Activate Shield</button><button class="back" data-power="steal" type="button">💥 Activate Steal</button><button class="back" data-power="insight" type="button">🔮 Activate Insight</button></div>
+ <div class="armor-moves" id="armor-moves"></div>
+ <div class="armor-roll-actions" id="armor-roll-actions" hidden><button class="go" id="armor-roll" type="button">🎲 Roll again</button><button class="back" id="armor-bank" type="button">🏦 BANK points</button></div>
+ <div class="armor-result" id="armor-result" role="status" aria-live="polite">Championship ready.</div>
+ <div class="armor-log" id="armor-log" aria-live="polite"></div>
+ <div class="armor-foot"><span>First to 100 wins · Bust on 1 · Shield blocks one bust</span><button class="back" id="armor-reset" type="button">Reset match</button></div>
+</section>
 <section class="lab-panel mission-panel">
 <div class="lab-section-head"><div><p class="eyebrow">TRAINING BOARD</p><h2>100 missions. Your next personal best.</h2><p>Mission progress is tracked locally as you play. Search or filter the board.</p></div><div class="lab-mission-total" id="mission-total">0 / 100</div></div>
 <div class="lab-filters"><input id="mission-search" type="search" placeholder="Search missions…" aria-label="Search missions"><select id="mission-filter" aria-label="Filter missions"><option value="all">All missions</option><option value="active">In progress</option><option value="complete">Completed</option><option value="free">Free goals</option><option value="premium">Premium ideas</option></select><select id="mission-sort" aria-label="Sort missions"><option value="default">Recommended order</option><option value="progress">Most progress</option><option value="name">Name A–Z</option></select></div>
@@ -50,5 +64,5 @@
 </section>
 <footer class="lab-footer"><a href="/">Game</a><a href="/quests.html">Quests</a><a href="/achievements.html">Achievements</a><a href="/competitive-lab.html">Competitive Lab</a><a href="/privacy.html">Privacy</a></footer>
 </main>
-<script src="/game-lab.js?v=1"></script>
+<script src="/game-lab.js?v=1"></script><script src="/armored-championship.js?v=1"></script>
 </body></html>
