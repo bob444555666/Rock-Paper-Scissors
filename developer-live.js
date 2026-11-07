@@ -9,12 +9,12 @@ fetch(API+'/developer/published-config',{cache:'no-store'}).then(r=>r.ok?r.json(
  if(page)root.style.setProperty('--bg',page);
  if(panel)root.style.setProperty('--panel',panel);
  if(accent){root.style.setProperty('--blue',accent);root.style.setProperty('--green',accent);root.style.setProperty('--accent',accent);}
- if(text)root.style.setProperty('--text',text);
+ if(text)root.style.setProperty('--text',text);\n const button=hex(c.buttonBg);if(button)root.style.setProperty('--button-bg',button);
  const radius=Number(c.radius);
  if(Number.isFinite(radius)&&radius>=4&&radius<=28){
   root.style.setProperty('--dev-button-radius',radius+'px');
   const style=document.createElement('style');
-  style.textContent='button,.big,.mode-button,.move-button,.level-button{border-radius:var(--dev-button-radius)!important}';
+  style.textContent='button,.big,.mode-button,.move-button,.level-button{border-radius:var(--dev-button-radius)!important;background-color:var(--button-bg)!important}';
   document.head.appendChild(style);
  }
  window.RPS_APPROVED_DEVELOPER_CONFIG=Object.freeze({...c});
