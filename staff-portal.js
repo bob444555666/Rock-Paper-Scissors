@@ -115,11 +115,23 @@ function buildTabs() {
   const tabs=[['overview','Overview'],['challenges','Challenges'],['tournaments','Tournaments']];
   if(['manager','co-owner','owner'].includes(role)) tabs.push(['server','Server'],['plans','Plans'],['employees','Employees']);
   if(['co-owner','owner'].includes(role)) tabs.push(['accounts','Accounts']);
+  if(['co-owner','owner'].includes(role)) tabs.push(['developers','Developer Lab']);
   $('tabs').innerHTML=tabs.map(([id,name])=>'<button type="button" data-tab="'+id+'" class="'+(activeTab===id?'active':'')+'">'+name+'</button>').join('');
   $('tabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.tab;buildTabs();renderTab();}));
 }
+async function renderDevelopers() {
+  const root=$('workspace');
+  root.innerHTML='<article class="card"><h2>Developer accounts</h2><p class="muted">Review developer access and inspect submissions tied to each RPS account. Submitted code is displayed as text only and is never executed.</p><div id="dev-accounts" class="table-list">Loading developer accounts…</div></article><article class="card"><h2>All submitted code</h2><div id="dev-submissions" class="table-list">Loading submissions…</div></article>';
+  try {
+    const data=await post('/developer/admin',{action:'list'});
+    $('dev-accounts').innerHTML=(data.developers||[]).length?(data.developers||[]).map(d=>'<div class="employee-row"><div><strong>'+esc(d.username)+'</strong><small>Account ID: '+esc(d.account_id)+' · Created: '+esc(d.created_at)+'</small><div class="tag">'+esc(d.status)+'</div></div><div class="actions">'+(d.status!=='approved'?'<button class="good" data-dev-status="approved" data-dev-id="'+esc(d.account_id)+'">Approve</button>':'')+(d.status!=='revoked'?'<button class="danger" data-dev-status="revoked" data-dev-id="'+esc(d.account_id)+'">Revoke</button>':'')+'</div></div>').join(''):'No developer accounts yet.';
+    $('dev-submissions').innerHTML=(data.submissions||[]).length?(data.submissions||[]).map(x=>'<article class="card"><h3>'+esc(x.title)+'</h3><p class="muted">Developer: '+esc(x.username)+' · Account ID: '+esc(x.account_id)+' · '+esc(x.created_at)+' · '+esc(x.detected_type)+'</p><p>'+esc(x.defence_result)+'</p><details><summary>View complete submitted code</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#080f1e;border:1px solid #344462;border-radius:10px;padding:14px;max-height:520px;overflow:auto">'+esc(x.submitted_code)+'</pre></details></article>').join(''):'No submissions yet.';
+    $('dev-accounts').querySelectorAll('[data-dev-status]').forEach(b=>b.onclick=async()=>{if(!confirm((b.dataset.devStatus==='approved'?'Approve':'Revoke')+' developer access for this account?'))return;try{await post('/developer/admin',{action:'set-status',accountId:b.dataset.devId,status:b.dataset.devStatus});await renderDevelopers();say(workMsg,'Developer access updated.');}catch(e){say(workMsg,e.message,true);}});
+  } catch(e) { root.innerHTML='<article class="card"><h2>Developer management unavailable</h2><p class="msg error">'+esc(e.message)+'</p></article>'; }
+}
 function renderTab() {
   const root=$('workspace'); workMsg.textContent='';
+  if(activeTab==='developers') { renderDevelopers(); return; }
   if(activeTab==='overview') {
     root.innerHTML='<div class="grid"><article class="card"><h3>Server status</h3><p class="status '+(panel.online?'on':'off')+'">'+(panel.online?'● ONLINE':'● OFFLINE')+'</p><p class="muted">Live status from the RPS server.</p></article><article class="card"><h3>Your permissions</h3><p><span class="tag">'+labelRole(role)+'</span></p><p class="muted">'+(role==='staff'?'You can run challenges and tournaments.':role==='manager'?'You have full staff controls, but cannot add or delete accounts.':role==='co-owner'?'You have owner-level controls, but the owner account is protected.':'You have full owner control.')+'</p></article></div>';
     return;
