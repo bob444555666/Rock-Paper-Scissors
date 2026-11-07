@@ -32,11 +32,11 @@ function setConfig(c){
   style.textContent='button,.big,.mode-button,.move-button,.level-button{border-radius:var(--dev-button-radius)!important;background-color:var(--button-bg)!important}';
  }
  const css=typeof c.customCss==='string'?c.customCss:'';
+ let approvedStyle=document.getElementById('owner-approved-developer-css');
  if(css&&!/@import|url\s*\(|expression\s*\(|javascript:/i.test(css)){
-  let style=document.getElementById('owner-approved-developer-css');
-  if(!style){style=document.createElement('style');style.id='owner-approved-developer-css';document.head.appendChild(style);}
-  style.textContent=css;
- }
+  if(!approvedStyle){approvedStyle=document.createElement('style');approvedStyle.id='owner-approved-developer-css';document.head.appendChild(approvedStyle);}
+  approvedStyle.textContent=css;
+ }else if(approvedStyle){approvedStyle.remove();}
  const difficulty=['easy','medium','hard','insane'].includes(c.difficulty)?c.difficulty:'medium';
  const levelButton=document.querySelector('.level-button[data-level="'+difficulty+'"]');
  if(levelButton&&!levelButton.classList.contains('active'))levelButton.click();
