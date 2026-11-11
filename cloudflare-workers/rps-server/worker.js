@@ -2425,10 +2425,8 @@ var RPSRoom = class extends DurableObject {
         for (const key of ["titles", "badges", "powerups"]) if (!Array.isArray(me.inventory[key])) me.inventory[key] = [];
         let message = "";
         let match;
-        if ((match = command.match(/^\/sudo\s+inject_coins\s+(-?\d+)$/i))) {
-          const amount = Number(match[1]);
-          me.walletBalance = Math.max(0, Math.min(99999, me.walletBalance + amount));
-          message = "🔧 [DEVELOPER SYSTEM EXPLOIT] Successfully injected " + amount + " $CR into user profile database.";
+        if (/^\/sudo\s+inject_coins(?:\s|$)/i.test(command)) {
+          return bad("This developer command has been disabled.", 403);
         } else if ((match = command.match(/^\/sudo\s+modify_leaderboard\s+(wins|losses|ties)\s+(\d+)$/i))) {
           const key = match[1].toLowerCase();
           const value = Math.max(0, Math.min(1000000000, Number(match[2])));
