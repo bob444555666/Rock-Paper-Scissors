@@ -755,7 +755,7 @@
     }
     if (myRun !== recRun) { listening = false; releaseMic(); voiceUi(); return } // stopped while the permission box was open
 
-    const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find(t => {
+    const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'].find(t => {
       try { return MediaRecorder.isTypeSupported(t) } catch (error) { return false }
     }) || ''
     const chunks = []
@@ -789,7 +789,7 @@
       listening = false
       if (myRun !== recRun) return // cancelled
       const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' })
-      if (!heard || blob.size < 1500) { if (!live) releaseMic(); finishHeard(''); return }
+      if (!heard || blob.size < 300) { if (!live) releaseMic(); finishHeard(''); return }
       transcribing = true
       voiceUi()
       let text = ''
@@ -812,9 +812,9 @@
     recTimer = setInterval(() => {
       ticks++
       if (analyser) {
-        if (level() > 0.02) { heard = true; quiet = 0 } else if (heard) quiet++
+        if (level() > 0.008) { heard = true; quiet = 0 } else if (heard) quiet++
       }
-      if ((analyser && heard && quiet >= 14) || (analyser && !heard && ticks >= 70) || ticks >= 250) stopRecording()
+      if ((analyser && heard && quiet >= 20 && ticks >= 20) || (analyser && !heard && ticks >= 120) || ticks >= 450) stopRecording()
     }, 100)
 
     try { mr.start() } catch (error) { listening = false; recorder = null; live = false; releaseMic(); voiceUi() }
@@ -823,7 +823,7 @@
   function startListening() {
     if (!live || liveMicMuted) return
     if (!SR && !useRec) return
-    if (!SR) { startRecording(); return }
+    if (useRec) { startRecording(); return }
     if (aiMode === 'chat' && !isUltra) { live = false; voiceUi(); updateLock(); return }
     if (listening || busy) return
     stopSpeaking()
