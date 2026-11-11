@@ -255,7 +255,36 @@
     @keyframes ai-live-heartbeat{0%,100%{transform:scale(1)}12%{transform:scale(1.16)}24%{transform:scale(1.02)}38%{transform:scale(1.12)}55%{transform:scale(1)} }
     @keyframes ai-live-ring{0%{transform:scale(.88) rotate(0deg);opacity:.3}50%{opacity:.9}100%{transform:scale(1.12) rotate(360deg);opacity:.3}}
     @keyframes ai-live-glow{from{translate:-12% -8%;scale:.8}to{translate:12% 8%;scale:1.15}}
-    @media(prefers-reduced-motion:reduce){.ai-live-orb,.ai-live-ring,.ai-live-screen:before,.ai-live-screen:after{animation:none}}
+    /* Phone and small-screen layout */
+    .ai-live-screen{min-height:100vh;min-height:100dvh}
+    @media(max-width:600px){
+      .ai-live-screen{justify-content:center;padding:calc(76px + env(safe-area-inset-top)) 18px calc(26px + env(safe-area-inset-bottom));}
+      .ai-live-brand{top:calc(25px + env(safe-area-inset-top));left:18px;font-size:10px}
+      .ai-live-close{top:calc(14px + env(safe-area-inset-top));right:14px;width:44px;height:44px}
+      .ai-live-minimize{top:calc(14px + env(safe-area-inset-top));right:68px;width:44px;height:44px}
+      .ai-live-visual{width:min(76vw,300px);height:min(76vw,300px);margin:0 0 clamp(24px,5vh,38px)}
+      .ai-live-orb{width:61%;height:61%}
+      .ai-live-status{font-size:clamp(21px,6vw,27px);padding:0 10px}
+      .ai-live-hint{font-size:13px;line-height:1.5;max-width:290px;padding:0 12px}
+      .ai-live-mic{margin-top:22px;min-height:48px;min-width:132px;padding:12px 20px;font-size:15px}
+      .ai-live-end{margin-top:clamp(28px,6vh,44px);min-height:48px;padding:13px 26px}
+      .ai-live-mini{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:66px;height:66px}
+      .ai-live-mini-orb{width:42px;height:42px}
+    }
+    @media(max-width:380px){
+      .ai-live-visual{width:min(70vw,250px);height:min(70vw,250px)}
+      .ai-live-screen{padding-left:12px;padding-right:12px}
+      .ai-live-end{margin-top:24px}
+    }
+    @media(max-height:520px) and (orientation:landscape){
+      .ai-live-screen{padding-top:calc(62px + env(safe-area-inset-top));padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+      .ai-live-visual{width:min(42vh,210px);height:min(42vh,210px);margin-bottom:10px}
+      .ai-live-brand{top:calc(15px + env(safe-area-inset-top))}
+      .ai-live-mic{margin-top:10px}
+      .ai-live-end{margin-top:12px;padding:9px 20px;min-height:40px}
+      .ai-live-hint{margin-top:6px}
+    }
+    @media(prefers-reduced-motion:reduce){.ai-live-orb,.ai-live-ring,.ai-live-screen:before,.ai-live-screen:after,.ai-live-mini-orb{animation:none}}
   `
   document.head.append(liveStyle)
   document.body.append(btn, panel, liveScreen, liveMini)
