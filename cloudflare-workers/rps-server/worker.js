@@ -514,7 +514,7 @@ function aiChatPersona(s) {
   const swear = !s.swear || s.swearAmount < 1 ? "LANGUAGE: No profanity." : s.swearAmount < 34 ? "LANGUAGE: Occasional mild profanity is allowed." : s.swearAmount < 67 ? "LANGUAGE: Moderate casual profanity is allowed when it fits." : "LANGUAGE: Frequent strong profanity is allowed when it fits, but never use slurs or direct abuse.";
   const human = s.human < 25 ? "STYLE: Polished and calm." : s.human < 60 ? "STYLE: Friendly, natural, conversational." : "STYLE: Very casual, like texting a friend. Use contractions and varied phrasing.";
   const length = { short:"LENGTH: 1-2 sentences.", normal:"LENGTH: 2-4 sentences.", long:"LENGTH: Up to 8 useful sentences." }[s.length];
-  return [tone,sarcasm,swear,human,length].join("\\n");
+  return [tone,sarcasm,swear,human,length].join("\n");
 }
 __name(aiChatPersona, "aiChatPersona");
 function aiAnalyse(rounds) {
