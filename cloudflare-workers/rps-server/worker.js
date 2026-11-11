@@ -2814,9 +2814,14 @@ var RPSRoom = class extends DurableObject {
         if (action === "send") {
           const message = String(d.message || "").trim().slice(0, 2000);
           if (!message) return bad("Write a message first.");
+          const item = { id: crypto.randomUUID(), from: me.id, fromName: me.username, type: "text", message, at: Date.now() };
           const inbox = await S.get("friendchat:" + other.id) || [];
-          inbox.push({ id: crypto.randomUUID(), from: me.id, fromName: me.username, type: "text", message, at: Date.now() });
+          inbox.push(item);
           await S.put("friendchat:" + other.id, inbox.slice(-100));
+          const threadKey = "friendthread:" + await pairRoom(me.id, other.id);
+          const thread = await S.get(threadKey) || [];
+          thread.push(item);
+          await S.put(threadKey, thread.slice(-300));
           return Response.json({ ok: true });
         }
         if (action === "signal") {
@@ -2828,6 +2833,10 @@ var RPSRoom = class extends DurableObject {
           inbox.push({ id: crypto.randomUUID(), from: me.id, fromName: me.username, type, payload: d.payload || {}, at: Date.now() });
           await S.put("friendchat:" + other.id, inbox.slice(-100));
           return Response.json({ ok: true });
+        }
+        if (action === "history") {
+          const threadKey = "friendthread:" + await pairRoom(me.id, other.id);
+          return Response.json({ messages: (await S.get(threadKey) || []).slice(-150) });
         }
         if (action === "poll") {
           const inbox = await S.get(key) || [];
