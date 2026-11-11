@@ -213,7 +213,44 @@
   const panel = make('div', { id: 'ai-panel' }, head, tabs, colorRow, logs.coach, logs.chat, lock, chips, voiceRow, sendRow)
   panel.hidden = true
 
-  document.body.append(btn, panel)
+  // Full-screen, animated voice-chat experience inspired by modern AI voice interfaces.
+  const liveScreen = make('section', { className: 'ai-live-screen', 'aria-label': 'Live voice chat' })
+  const liveClose = make('button', { className: 'ai-live-close', type: 'button', textContent: '×', title: 'End live chat', 'aria-label': 'End live chat' })
+  const liveBrand = make('div', { className: 'ai-live-brand', textContent: 'AI VOICE' })
+  const liveVisual = make('div', { className: 'ai-live-visual' }, make('div', { className: 'ai-live-orb' }), make('div', { className: 'ai-live-ring ring-one' }), make('div', { className: 'ai-live-ring ring-two' }))
+  const liveStatus = make('div', { className: 'ai-live-status', textContent: 'Connecting...' })
+  const liveHint = make('div', { className: 'ai-live-hint', textContent: 'Speak naturally. I am listening.' })
+  const liveEnd = make('button', { className: 'ai-live-end', type: 'button', textContent: 'End conversation' })
+  liveScreen.append(liveClose, liveBrand, liveVisual, liveStatus, liveHint, liveEnd)
+  liveScreen.hidden = true
+  const liveStyle = make('style')
+  liveStyle.textContent = `
+    .ai-live-screen{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:28px 22px calc(34px + env(safe-area-inset-bottom));box-sizing:border-box;overflow:hidden;color:#fff;background:radial-gradient(ellipse at 50% 43%,#1d2946 0%,#101522 38%,#080b12 78%);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .ai-live-screen[hidden]{display:none}
+    .ai-live-screen:before,.ai-live-screen:after{content:"";position:absolute;width:70vw;height:70vw;max-width:700px;max-height:700px;border-radius:50%;filter:blur(90px);opacity:.15;pointer-events:none;background:#6b7dff;animation:ai-live-glow 9s ease-in-out infinite alternate}
+    .ai-live-screen:after{background:#a855f7;animation-delay:-4s;transform:translate(25%,20%)}
+    .ai-live-close{position:absolute;top:calc(22px + env(safe-area-inset-top));right:24px;width:46px;height:46px;border:1px solid #ffffff25;border-radius:50%;background:#ffffff10;color:white;font-size:30px;line-height:1;cursor:pointer;z-index:2}
+    .ai-live-brand{position:absolute;top:calc(35px + env(safe-area-inset-top));left:24px;letter-spacing:.22em;font-size:11px;font-weight:800;color:#b9c4e8;z-index:2}
+    .ai-live-visual{position:relative;width:min(64vw,330px);height:min(64vw,330px);display:grid;place-items:center;margin:0 0 42px;isolation:isolate}
+    .ai-live-orb{width:58%;height:58%;border-radius:50%;background:radial-gradient(circle at 34% 28%,#e7eaff 0%,#a8b7ff 12%,#6979ff 35%,#7b42df 65%,#26174f 100%);box-shadow:0 0 38px #8294ff90,0 0 100px #7254ff55,inset -18px -22px 35px #171238aa;animation:ai-live-breathe 3.2s ease-in-out infinite;z-index:1}
+    .ai-live-screen.is-listening .ai-live-orb{animation-duration:1.55s;box-shadow:0 0 50px #8aa7ffbb,0 0 125px #6d91ff88,inset -18px -22px 35px #171238aa}
+    .ai-live-screen.is-speaking .ai-live-orb{animation-duration:.85s;filter:hue-rotate(24deg)}
+    .ai-live-ring{position:absolute;inset:9%;border:1px solid #a8b5ff55;border-radius:50%;animation:ai-live-ring 5s linear infinite}
+    .ai-live-ring.ring-two{inset:0;border-color:#b69aff35;animation-duration:8s;animation-direction:reverse}
+    .ai-live-status{font-size:clamp(22px,4vw,30px);font-weight:650;letter-spacing:-.025em;text-align:center;z-index:1}
+    .ai-live-hint{margin-top:12px;color:#aab4ce;font-size:14px;text-align:center;z-index:1}
+    .ai-live-end{margin-top:54px;padding:14px 25px;border:1px solid #ffffff28;border-radius:999px;background:#ffffff12;color:#fff;font-size:14px;font-weight:650;cursor:pointer;backdrop-filter:blur(12px);z-index:1;transition:background .2s,transform .2s}
+    .ai-live-end:hover{background:#ffffff24;transform:translateY(-1px)}
+    @keyframes ai-live-breathe{0%,100%{transform:scale(.91);border-radius:48% 52% 53% 47%}50%{transform:scale(1.06);border-radius:53% 47% 46% 54%}}
+    @keyframes ai-live-ring{0%{transform:scale(.88) rotate(0deg);opacity:.3}50%{opacity:.9}100%{transform:scale(1.12) rotate(360deg);opacity:.3}}
+    @keyframes ai-live-glow{from{translate:-12% -8%;scale:.8}to{translate:12% 8%;scale:1.15}}
+    @media(prefers-reduced-motion:reduce){.ai-live-orb,.ai-live-ring,.ai-live-screen:before,.ai-live-screen:after{animation:none}}
+  `
+  document.head.append(liveStyle)
+  document.body.append(btn, panel, liveScreen)
+  const closeLiveScreen = () => { live = false; stopVoice(); liveScreen.hidden = true; panel.hidden = false }
+  liveClose.addEventListener('click', closeLiveScreen)
+  liveEnd.addEventListener('click', closeLiveScreen)
 
   function setColor(hex) {
     color = hex
@@ -487,6 +524,12 @@
     micBtn.textContent = listening ? '⏹' : '🎙️'
     liveBtn.classList.toggle('on', live)
     liveBtn.textContent = live ? '🎧 Live chat: on' : '🎧 Start live chat'
+    liveScreen.hidden = !live
+    liveScreen.classList.toggle('is-listening', live && listening && !speaking)
+    liveScreen.classList.toggle('is-speaking', live && speaking)
+    liveStatus.textContent = speaking ? 'AI is speaking' : transcribing || busy ? 'Thinking...' : listening ? 'Listening...' : live ? 'Ready when you are' : 'Live chat ended'
+    liveHint.textContent = speaking ? 'Just a moment. I am talking.' : transcribing || busy ? 'Putting together a response...' : listening ? 'Speak naturally. I am listening.' : 'Speak naturally to start the conversation.'
+    if (live) panel.hidden = true
     speakBtn.classList.toggle('on', speakOn)
     speakBtn.textContent = speakOn ? '🔊 Voice on' : '🔇 Voice off'
     input.placeholder = listening ? 'Listening...' : transcribing ? 'Working out what you said...' : aiMode === 'chat' ? 'Say anything...' : 'Ask the coach...'
@@ -817,9 +860,10 @@
   })
   liveBtn.addEventListener('click', () => {
     unlockSpeech()
-    if (live) { stopVoice(); return }
+    if (live) { closeLiveScreen(); return }
     live = true
     idleTries = 0
+    panel.hidden = true
     voiceUi()
     startListening()
   })
