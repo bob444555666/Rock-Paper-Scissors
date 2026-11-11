@@ -1569,7 +1569,7 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
     }
     const accountAction = url.pathname.startsWith("/account/") ? url.pathname.slice(9) : null;
     if (accountAction && request.method === "POST") {
-      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade", "wallet", "developer-command", "developer-status"].includes(accountAction)) {
+      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "friend-chat", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade", "wallet", "developer-command", "developer-status"].includes(accountAction)) {
         return json(env, { error: "Unknown request" }, 404);
       }
       let body;
@@ -2805,6 +2805,38 @@ var RPSRoom = class extends DurableObject {
         const other = await byName(d.username);
         if (!other || !(me.friends || []).includes(other.id)) return bad("You are not friends with that player.", 403);
         return Response.json({ room: await pairRoom(me.id, other.id), ids: [me.id, other.id] });
+      }
+      if (path === "/acct/friend-chat") {
+        const other = await byName(d.username);
+        if (!other || !(me.friends || []).includes(other.id)) return bad("You can only chat or call people on your friends list.", 403);
+        const action = String(d.action || "poll");
+        const key = "friendchat:" + me.id;
+        if (action === "send") {
+          const message = String(d.message || "").trim().slice(0, 2000);
+          if (!message) return bad("Write a message first.");
+          const inbox = await S.get("friendchat:" + other.id) || [];
+          inbox.push({ id: crypto.randomUUID(), from: me.id, fromName: me.username, type: "text", message, at: Date.now() });
+          await S.put("friendchat:" + other.id, inbox.slice(-100));
+          return Response.json({ ok: true });
+        }
+        if (action === "signal") {
+          const type = String(d.signalType || "");
+          if (!["offer","answer","ice","reject","hangup","ring"].includes(type)) return bad("Invalid call signal.");
+          const payload = JSON.stringify(d.payload || {});
+          if (payload.length > 18000) return bad("Call signal is too large.");
+          const inbox = await S.get("friendchat:" + other.id) || [];
+          inbox.push({ id: crypto.randomUUID(), from: me.id, fromName: me.username, type, payload: d.payload || {}, at: Date.now() });
+          await S.put("friendchat:" + other.id, inbox.slice(-100));
+          return Response.json({ ok: true });
+        }
+        if (action === "poll") {
+          const inbox = await S.get(key) || [];
+          const mine = inbox.filter(x => x.from === other.id);
+          const keep = inbox.filter(x => x.from !== other.id);
+          await S.put(key, keep.slice(-100));
+          return Response.json({ messages: mine.slice(-50) });
+        }
+        return bad("Unknown chat action.");
       }
       if (path === "/acct/reset-score") {
         const mode = d.mode === "computer" ? "computer" : "online";
