@@ -1319,7 +1319,8 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
           body: JSON.stringify({
             text,
             model_id: "eleven_multilingual_v2",
-            voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.25, use_speaker_boost: true }
+            apply_text_normalization: "on",
+            voice_settings: { stability: 0.7, similarity_boost: 0.85, style: 0.05, speed: 0.92, use_speaker_boost: true }
           })
         });
         if (!speech.ok) {
