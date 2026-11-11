@@ -1362,7 +1362,28 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
           console.log("Groq transcription error:", model, response.status, lastMessage.slice(0, 400));
           if (response.status === 429) return json(env, { error: "Voice recognition is busy. Please wait a moment and try again." }, 429);
         }
-        return json(env, { error: lastMessage || "I could not understand that recording. Please try again." }, lastStatus >= 400 && lastStatus < 500 ? 502 : lastStatus);
+        // If Groq rejects the configured key (or is temporarily unavailable), use
+        // Cloudflare Workers AI Whisper through the existing AI binding instead.
+        // This keeps live voice chat working without exposing or requiring another key.
+        if (env.AI && typeof env.AI.run === "function") {
+          try {
+            const fallback = await env.AI.run("@cf/openai/whisper-large-v3-turbo", {
+              audio: audio64,
+              task: "transcribe",
+              language: "en",
+              vad_filter: true,
+              initial_prompt: "Transcribe the user's spoken English naturally. Preserve complete words and game terms such as Rock Paper Scissors and experience points."
+            });
+            const transcript = String(fallback && (fallback.text || fallback.transcription_info && fallback.transcription_info.text) || "").trim().slice(0, 1200);
+            if (transcript) return json(env, { text: transcript, provider: "cloudflare-ai" });
+          } catch (fallbackError) {
+            console.log("Cloudflare AI transcription fallback failed:", String(fallbackError && fallbackError.message || fallbackError));
+          }
+        }
+        const message = /invalid.?api.?key|unauthorized|authentication/i.test(lastMessage)
+          ? "The Groq voice key was rejected, and the backup speech service could not transcribe this recording. Check the GROQ_API_KEY secret in Cloudflare."
+          : lastMessage || "I could not understand that recording. Please try again.";
+        return json(env, { error: message }, lastStatus >= 400 && lastStatus < 500 ? 502 : lastStatus);
       } catch (error) {
         console.log("Groq transcription failed:", String(error && error.message || error));
         return json(env, { error: "The voice recording could not be processed. Please try again." }, 502);
