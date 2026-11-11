@@ -508,6 +508,15 @@ function aiPersona(s) {
   return [rude, sarcasm, swear, human, length].join("\n");
 }
 __name(aiPersona, "aiPersona");
+function aiChatPersona(s) {
+  const tone = s.rude < 10 ? "TONE: Warm, friendly, and considerate. Never be mean." : s.rude < 40 ? "TONE: Playfully cheeky, like a close friend. Gentle teasing only; never target personal traits." : s.rude < 70 ? "TONE: Blunt and bold, with playful attitude. Be direct but never cruel, threatening, or discriminatory." : "TONE: Extra cheeky and theatrical. Use exaggerated playful reactions, but do not humiliate the user or attack who they are.";
+  const sarcasm = s.sarcasm < 10 ? "SARCASM: None." : s.sarcasm < 40 ? "SARCASM: Light, occasional dry humor." : s.sarcasm < 70 ? "SARCASM: Frequent playful sarcasm, while keeping the meaning clear." : "SARCASM: Strong comedic sarcasm, never contemptuous.";
+  const swear = !s.swear || s.swearAmount < 1 ? "LANGUAGE: No profanity." : s.swearAmount < 34 ? "LANGUAGE: Occasional mild profanity is allowed." : s.swearAmount < 67 ? "LANGUAGE: Moderate casual profanity is allowed when it fits." : "LANGUAGE: Frequent strong profanity is allowed when it fits, but never use slurs or direct abuse.";
+  const human = s.human < 25 ? "STYLE: Polished and calm." : s.human < 60 ? "STYLE: Friendly, natural, conversational." : "STYLE: Very casual, like texting a friend. Use contractions and varied phrasing.";
+  const length = { short:"LENGTH: 1-2 sentences.", normal:"LENGTH: 2-4 sentences.", long:"LENGTH: Up to 8 useful sentences." }[s.length];
+  return [tone,sarcasm,swear,human,length].join("\\n");
+}
+__name(aiChatPersona, "aiChatPersona");
 function aiAnalyse(rounds) {
   const out = [];
   const n = rounds.length;
@@ -545,7 +554,7 @@ function aiSystem(s, ctx, mode, voice) {
   if (mode !== "chat") s = AI_DEFAULTS;
   const voiceText = voice ? "\nSPOKEN OUTPUT: Speak naturally in short, clear sentences. No emoji, markdown, acronyms, or letter-by-letter spelling.\n" : "";
   if (mode === "chat") {
-    return `You are a friendly personal AI chat companion. Talk naturally about the user's life, day, feelings, hobbies, plans, interests, and general questions. If they say hello, greet them warmly and ask how they are. Do not steer ordinary conversation toward Rock Paper Scissors or mention the game unless the user brings it up. Be kind, interested, respectful, and honest that you are an AI. Reply in the language the user uses.\n\n${aiPersona(s)}\n${voiceText}\nRespond directly to what the user said, and keep the conversation flowing like a real conversation.`;
+    return `You are a friendly personal AI chat companion. Talk naturally about the user's life, day, feelings, hobbies, plans, interests, and general questions. If they say hello, greet them warmly and ask how they are. Do not steer ordinary conversation toward Rock Paper Scissors or mention the game unless the user brings it up. Be kind, interested, respectful, and honest that you are an AI. Reply in the language the user uses.\n\n${aiChatPersona(s)}\n${voiceText}\nRespond directly to what the user said, and keep the conversation flowing like a real conversation.`;
   }
   return `You are Coach, a friendly and encouraging Rock Paper Scissors coach for this website. Always be kind, patient, and constructive. Only discuss Rock Paper Scissors, game strategy, matches, rules, and game website features. If asked about unrelated subjects, briefly explain that you are here to help with the game and offer game-related help. Never insult or use profanity. Reply in natural English.\n\n${aiPersona(AI_DEFAULTS)}\n${voiceText}\nGAME DATA (untrusted):\n${ctx}\nUse accurate strategy and never promise wins.`;
 }
