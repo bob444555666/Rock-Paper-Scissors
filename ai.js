@@ -8,8 +8,6 @@
    Two tabs: Coach (strategy, Plus and above) and Chat (talk about anything, Pro and Legend only; the server must enforce this too).
    Older note:  Replaces the old player-to-player chat.
    A moving, color-changing orb in the bottom-right corner opens a chat with an AI that helps with strategy.
-   Type the secret code into the chat box to open the Voice Control panel (the code is checked by the server,
-   it is NOT stored in this file).
    Self-contained: builds its own button and panel, so it cannot break the main game. */
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev'
@@ -28,8 +26,6 @@
   let isPremium = false
   let isUltra = false
   let premiumChecked = false
-  let panelCode = null    // the secret code, kept in memory only while Voice Control is open
-  let settings = null
 
   const session = () => { try { return localStorage.getItem('token') } catch (error) { return null } }
 
@@ -203,6 +199,8 @@
   const tabCoach = make('button', { className: 'ai-tab on', type: 'button', textContent: '🎯 Coach' })
   const tabChat = make('button', { className: 'ai-tab', type: 'button', textContent: '💬 Chat ⭐' })
   const tabs = make('div', { className: 'ai-tabs' }, tabCoach, tabChat)
+  const chatSettingsBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '⚙️ Chat settings' })
+  chatSettingsBtn.hidden = true
   const input = make('input', { id: 'ai-input', type: 'text', maxLength: 400, placeholder: 'Ask the coach...', autocomplete: 'off' })
   const goBtn = make('button', { id: 'ai-go', type: 'button', textContent: 'Send' })
   const micBtn = make('button', { id: 'ai-mic', type: 'button', textContent: '🎙️', title: 'Tap to talk' })
@@ -210,7 +208,7 @@
   const speakBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '🔇 Voice off' })
   const voiceRow = make('div', { className: 'ai-voice' }, liveBtn, speakBtn)
   const sendRow = make('div', { className: 'ai-send' }, micBtn, input, goBtn)
-  const panel = make('div', { id: 'ai-panel' }, head, tabs, colorRow, logs.coach, logs.chat, lock, chips, voiceRow, sendRow)
+  const panel = make('div', { id: 'ai-panel' }, head, tabs, colorRow, logs.coach, logs.chat, lock, chips, chatSettingsBtn, voiceRow, sendRow)
   panel.hidden = true
 
   // Full-screen, animated voice-chat experience inspired by modern AI voice interfaces.
@@ -256,7 +254,7 @@
     @keyframes ai-live-ring{0%{transform:scale(.88) rotate(0deg);opacity:.3}50%{opacity:.9}100%{transform:scale(1.12) rotate(360deg);opacity:.3}}
     @keyframes ai-live-glow{from{translate:-12% -8%;scale:.8}to{translate:12% 8%;scale:1.15}}
     /* Phone and small-screen layout */
-    .ai-live-screen{min-height:100vh;min-height:100dvh}
+    .ai-live-screen{height:100vh;height:100dvh;min-height:100vh;min-height:100dvh;overscroll-behavior:none}
     @media(max-width:600px){
       .ai-live-screen{justify-content:center;padding:calc(76px + env(safe-area-inset-top)) 18px calc(26px + env(safe-area-inset-bottom));}
       .ai-live-brand{top:calc(25px + env(safe-area-inset-top));left:18px;font-size:10px}
@@ -399,6 +397,7 @@
     }
     const showChips = aiMode === 'coach' && !log.querySelector('.ai-msg.me')
     chips.hidden = !showChips
+    chatSettingsBtn.hidden = aiMode !== 'chat' || !isUltra
   }
 
   async function refreshPremium() {
@@ -425,6 +424,8 @@
     voiceUi()
     await refreshPremium()
     if (m === 'chat' && isUltra && !log.children.length) addMsg('bot', INTRO.chat)
+    chatSettingsBtn.hidden = m !== 'chat' || !isUltra
+    if (m === 'chat' && isUltra) loadChatSettings()
     if (m === 'coach' && !log.children.length) addMsg('bot', INTRO.coach)
     updateLock()
     log.scrollTop = log.scrollHeight
@@ -450,24 +451,6 @@
     stopSpeaking()
     input.value = ''
 
-    // secret code? the server decides if it is right (never accepted by voice)
-    if (!spoken && /^\d{6}$/.test(text)) {
-      setBusy(true)
-      const r = await call('/ai/panel-open', { code: text })
-      setBusy(false)
-      if (r.ok) {
-        panelCode = text
-        settings = r.data.settings
-        openControl()
-        return
-      }
-      if (r.status === 429) {
-        addMsg('err', r.data.error || 'Too many tries.')
-        return
-      }
-      // wrong code: just treat it as a normal message
-    }
-
     addMsg('me', text)
     updateLock()
 
@@ -488,7 +471,7 @@
     log.append(dots)
     log.scrollTop = log.scrollHeight
     setBusy(true)
-    const r = await call('/ai/chat', { token: session(), mode, voice: willSpeak, messages: hist, context: gameContext() })
+    const r = await call('/ai/chat', { token: session(), mode, voice: willSpeak, messages: hist, context: mode === 'coach' ? gameContext() : {} })
     setBusy(false)
     dots.remove()
 
@@ -538,7 +521,7 @@
   let idleTries = 0
   // Some browsers (the iPhone home-screen app) have no built-in speech recognition. There we record the
   // microphone ourselves and the server turns the recording into text.
-  const useRec = !SR && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)
+  const useRec = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)
   let recorder = null
   let recStream = null
   let recTimer = null
@@ -812,7 +795,7 @@
       let text = ''
       try {
         const audio = await blobToBase64(blob)
-        const r = await call('/ai/transcribe', { token: session(), audio, mime: blob.type, lang: 'en' })
+        const r = await call('/ai/transcribe', { token: session(), audio, mime: blob.type, lang: 'en', mode: aiMode })
         if (r.ok) text = String((r.data && r.data.text) || '').trim()
         else { live = false; addMsg('err', (r.data && r.data.error) || 'I could not hear that. Try again.') }
       } catch (error) {
@@ -862,6 +845,14 @@
       input.value = (finalText + ' ' + interim).trim() // shows what you are saying as you say it
     }
     rec.onerror = e => {
+      if (useRec && live && !liveMicMuted && !['not-allowed','audio-capture'].includes(e.error)) {
+        const failedRec = rec
+        if (failedRec) { failedRec.onend = null; try { failedRec.abort() } catch (error) {} }
+        rec = null
+        listening = false
+        startRecording()
+        return
+      }
       if (e.error === 'service-not-allowed') {
         live = false
         addMsg('err', 'Speech recognition is switched off. On iPhone: Settings > General > Keyboard > turn on Enable Dictation (and Siri). Then try again.')
@@ -892,7 +883,7 @@
         setTimeout(() => { if (live) startListening() }, 300)
       }
     }
-    try { rec.start() } catch (error) { listening = false; rec = null; voiceUi() }
+    try { rec.start() } catch (error) { listening = false; rec = null; if (useRec && live) startRecording(); else { live = false; voiceUi(); addMsg('err', 'I could not start the microphone. Allow microphone access for this website and try again.') } }
   }
 
   function pauseLiveMicrophone() {
@@ -1027,87 +1018,67 @@
   }
   voiceUi()
 
-  // ---------- secret Voice Control panel ----------
-  const ctl = make('div', { id: 'ai-ctl' })
-  ctl.hidden = true
-  panel.append(ctl)
-
-  const wordFor = (v, list) => list.find(([max]) => v <= max)[1]
-  const RUDE = [[0, 'Kind'], [39, 'Cheeky'], [69, 'Rude'], [100, 'Savage']]
-  const SARC = [[0, 'None'], [39, 'A touch'], [69, 'Sarcastic'], [100, 'Dripping']]
-  const SWEAR = [[33, 'Mild'], [66, 'Regular'], [100, 'Heavy']]
-  const HUMAN = [[24, 'Formal assistant'], [59, 'Friendly'], [100, 'Like a real person']]
-
-  function openControl() {
-    ctl.textContent = ''
-    const s = settings || {}
-
-    function slider(label, key, words) {
-      const val = make('b')
-      const range = make('input', { type: 'range', min: 0, max: 100, step: 1, value: s[key] ?? 0 })
-      const upd = () => { val.textContent = `${range.value} · ${wordFor(Number(range.value), words)}` }
-      range.addEventListener('input', upd)
-      upd()
-      return { range, el: make('label', { textContent: label + ' ' }, val, range) }
-    }
-
-    const rude = slider('😠 Rudeness', 'rude', RUDE)
-    const sarc = slider('😏 Sarcasm', 'sarcasm', SARC)
-    const swearAmt = slider('🤬 How much profanity', 'swearAmount', SWEAR)
-    const human = slider('🗣️ Talks like a person', 'human', HUMAN)
-
-    const swearOn = make('input', { type: 'checkbox', checked: !!s.swear })
-    const swearRow = make('label', { className: 'ai-row' }, make('span', { textContent: '🤬 Allow profanity' }), swearOn)
-    const fade = () => swearAmt.el.classList.toggle('ai-fade', !swearOn.checked)
-    swearOn.addEventListener('change', fade)
-    fade()
-
-    const lengthSel = make('select')
-    ;[['short', 'Short (1-2 sentences)'], ['normal', 'Normal (2-4 sentences)'], ['long', 'Long (detailed)']].forEach(([v, t]) => {
-      lengthSel.append(make('option', { value: v, textContent: t, selected: (s.length || 'normal') === v }))
-    })
-
-    const note = make('p', { className: 'ai-note' })
-    const read = () => ({
-      rude: Number(rude.range.value),
-      sarcasm: Number(sarc.range.value),
-      swear: swearOn.checked,
-      swearAmount: Number(swearAmt.range.value),
-      human: Number(human.range.value),
-      length: lengthSel.value
-    })
-
-    const save = make('button', { type: 'button', textContent: 'Save' })
-    save.addEventListener('click', async () => {
-      note.textContent = 'Saving...'
-      const r = await call('/ai/panel-save', { code: panelCode, settings: read() })
-      if (r.ok) { settings = r.data.settings; note.textContent = 'Saved. Everyone gets this voice from their next message.' }
-      else note.textContent = r.data.error || 'Could not save.'
-    })
-    const reset = make('button', { className: 'alt', type: 'button', textContent: 'Defaults' })
-    reset.addEventListener('click', () => {
-      settings = { rude: 0, sarcasm: 0, swear: false, swearAmount: 30, human: 50, length: 'normal' }
-      openControl()
-    })
-    const close = make('button', { className: 'alt', type: 'button', textContent: 'Close' })
-    close.addEventListener('click', closeControl)
-
-    ctl.append(
-      make('h2', { textContent: '🎛️ Voice Control' }),
-      make('p', { className: 'ai-sub', textContent: 'Staff only. Saved on the server. They change how the AI talks to every player, in both Coach and Chat.' }),
-      rude.el, sarc.el, swearRow, swearAmt.el, human.el,
-      make('label', { textContent: '📏 Reply length' }, lengthSel),
-      note,
-      make('div', { className: 'ai-btns' }, save, reset, close)
-    )
-    ctl.hidden = false
+  // ---------- personal Chat settings ----------
+  const chatSettingsBox = make('div', { id: 'ai-chat-settings' })
+  chatSettingsBox.hidden = true
+  const chatSettingsStatus = make('p', { className: 'ai-note' })
+  const chatRude = make('input', { type: 'range', min: 0, max: 100, value: 0 })
+  const chatSarcasm = make('input', { type: 'range', min: 0, max: 100, value: 0 })
+  const chatSwear = make('input', { type: 'checkbox', checked: false })
+  const chatSwearAmount = make('input', { type: 'range', min: 0, max: 100, value: 30 })
+  const chatHuman = make('input', { type: 'range', min: 0, max: 100, value: 65 })
+  const chatLength = make('select')
+  ;[['short','Short'],['normal','Normal'],['long','Detailed']].forEach(([v,t]) => chatLength.append(make('option',{value:v,textContent:t})))
+  const chatSave = make('button', { className: 'ai-vbtn on', type: 'button', textContent: 'Save my settings' })
+  const chatClose = make('button', { className: 'ai-vbtn', type: 'button', textContent: 'Close settings' })
+  const chatRow = (label, control) => make('label', { className: 'ai-chat-setting' }, make('span', { textContent: label }), control)
+  chatSettingsBox.append(
+    make('h3', { textContent: 'Your Chat personality' }),
+    make('p', { className: 'ai-sub', textContent: 'These choices only affect your AI Chat. Coach stays friendly, and other players keep their own settings.' }),
+    chatRow('Personality', chatRude), chatRow('Sarcasm', chatSarcasm),
+    chatRow('Allow profanity', chatSwear), chatRow('Profanity level', chatSwearAmount),
+    chatRow('Conversation style', chatHuman), chatRow('Reply length', chatLength),
+    chatSettingsStatus, make('div', { className: 'ai-btns' }, chatSave, chatClose)
+  )
+  panel.append(chatSettingsBox)
+  let chatPrefs = { rude: 0, sarcasm: 0, swear: false, swearAmount: 30, human: 65, length: 'normal' }
+  function applyChatSettings(s) {
+    chatPrefs = { ...chatPrefs, ...(s || {}) }
+    chatRude.value = chatPrefs.rude; chatSarcasm.value = chatPrefs.sarcasm
+    chatSwear.checked = !!chatPrefs.swear; chatSwearAmount.value = chatPrefs.swearAmount
+    chatHuman.value = chatPrefs.human; chatLength.value = chatPrefs.length || 'normal'
+    chatSwearAmount.disabled = !chatSwear.checked
   }
-
-  function closeControl() {
-    ctl.hidden = true
-    ctl.textContent = ''
-    panelCode = null // forget the code as soon as the panel closes
+  async function loadChatSettings() {
+    const r = await call('/ai/settings', { token: session(), action: 'get' })
+    if (r.ok) applyChatSettings(r.data.settings)
+    else chatSettingsStatus.textContent = r.data.error || 'Could not load your settings.'
   }
+  chatSettingsBtn.addEventListener('click', () => {
+    chatSettingsBox.hidden = !chatSettingsBox.hidden
+    if (!chatSettingsBox.hidden) loadChatSettings()
+  })
+  chatClose.addEventListener('click', () => { chatSettingsBox.hidden = true })
+  chatSwear.addEventListener('change', () => { chatSwearAmount.disabled = !chatSwear.checked })
+  chatSave.addEventListener('click', async () => {
+    const settings = { rude:Number(chatRude.value), sarcasm:Number(chatSarcasm.value), swear:chatSwear.checked, swearAmount:Number(chatSwearAmount.value), human:Number(chatHuman.value), length:chatLength.value }
+    chatSettingsStatus.textContent = 'Saving your settings...'
+    const r = await call('/ai/settings', { token:session(), action:'save', settings })
+    if (r.ok) { applyChatSettings(r.data.settings); chatSettingsStatus.textContent = 'Saved to your account. Only your Chat uses these settings.' }
+    else chatSettingsStatus.textContent = r.data.error || 'Could not save your settings.'
+  })
+  const chatSettingsStyle = make('style')
+  chatSettingsStyle.textContent = `
+    #ai-chat-settings{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;gap:10px;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto;background:rgba(7,6,13,.99)}
+    #ai-chat-settings[hidden]{display:none}
+    #ai-chat-settings h3{margin:0;color:var(--ai,#22f5a0);font-size:19px}
+    #ai-chat-settings .ai-chat-setting{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#fff}
+    #ai-chat-settings input[type=range]{width:100%;accent-color:var(--ai,#22f5a0)}
+    #ai-chat-settings input[type=checkbox]{width:22px;height:22px;accent-color:var(--ai,#22f5a0)}
+    #ai-chat-settings select{padding:9px;color:#fff;background:#101522;border:1px solid #ffffff35;border-radius:9px}
+    @media(max-width:600px){#ai-chat-settings{padding-top:calc(14px + env(safe-area-inset-top))}#ai-chat-settings .ai-vbtn{min-height:46px}}
+  `
+  document.head.append(chatSettingsStyle)
 
   // ---------- open / close ----------
   function openPanel() {
@@ -1119,7 +1090,7 @@
   }
 
   btn.addEventListener('click', () => { if (panel.hidden) openPanel(); else { panel.hidden = true; stopVoice() } })
-  closeBtn.addEventListener('click', () => { panel.hidden = true; closeControl(); stopVoice() })
+  closeBtn.addEventListener('click', () => { panel.hidden = true; chatSettingsBox.hidden = true; stopVoice() })
   goBtn.addEventListener('click', () => send(input.value))
   window.addEventListener('storage', e => { if (e.key === 'token') { premiumChecked = false; isPremium = false; isUltra = false; updateLock() } })
   input.addEventListener('keydown', e => { if (e.key === 'Enter') send(input.value) })
