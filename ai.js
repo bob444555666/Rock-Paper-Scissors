@@ -427,7 +427,7 @@
   const canSpeak = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'
   const SPEAK_KEY = 'aiSpeak'
   const VOICE_KEY = 'aiVoicePrefs'
-  const vp = { name: '', rate: 1.05, pitch: 1, human: true, gender: 'girl', speaker: 'asteria' } // the player's own voice choices (saved on their device)
+  const vp = { name: '', rate: 1, pitch: 1, human: true, gender: 'girl', speaker: 'asteria' } // the player's own voice choices (saved on their device)
   // Human-sounding voices made on the server (Cloudflare Workers AI, Deepgram Aura). The device voice is the backup.
   const HUMAN_VOICES = {
     girl: [['asteria', 'Asteria · clear, confident'], ['luna', 'Luna · friendly, natural'], ['athena', 'Athena · British, calm'], ['hera', 'Hera · warm, smooth']],
@@ -438,6 +438,7 @@
   try { player = new Audio() } catch (error) {}
   let speakAbort = null
   try { Object.assign(vp, JSON.parse(localStorage.getItem(VOICE_KEY) || '{}')) } catch (error) {}
+  vp.rate = Math.min(1.2, Math.max(0.8, Number(vp.rate) || 1))
   if (!HUMAN_VOICES[vp.gender]) vp.gender = 'girl'
   if (!HUMAN_VOICES[vp.gender].some(v => v[0] === vp.speaker)) vp.speaker = HUMAN_VOICES[vp.gender][0][0]
   let speakOn = true
@@ -573,7 +574,7 @@
         player.onended = () => { clear(); finish() }
         player.onerror = () => { clear(); backup() }
         player.src = url
-        player.playbackRate = Math.min(1.5, Math.max(0.7, vp.rate / 1.05))
+        player.playbackRate = Math.min(1.12, Math.max(0.9, vp.rate))
         return player.play()
       })
       .catch(err => { if (err && err.name === 'AbortError') return; backup() })
@@ -848,7 +849,7 @@
     const voiceSel = make('select')
     const rateVal = make('b')
     const pitchVal = make('b')
-    const rateIn = make('input', { type: 'range', min: 0.7, max: 1.5, step: 0.05 })
+    const rateIn = make('input', { type: 'range', min: 0.8, max: 1.2, step: 0.05 })
     const pitchIn = make('input', { type: 'range', min: 0.6, max: 1.6, step: 0.05 })
     const testBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '▶ Test voice' })
     const resetBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: 'Reset' })
@@ -902,7 +903,7 @@
     rateIn.addEventListener('input', () => { vp.rate = Number(rateIn.value); syncSliders(); savePrefs() })
     pitchIn.addEventListener('input', () => { vp.pitch = Number(pitchIn.value); syncSliders(); savePrefs() })
     testBtn.addEventListener('click', () => { unlockSpeech(); speak('Hey, this is how I sound. Rock beats scissors, every time.') })
-    resetBtn.addEventListener('click', () => { vp.name = ''; vp.rate = 1.05; vp.pitch = 1; vp.human = true; vp.gender = 'girl'; vp.speaker = 'asteria'; savePrefs(); fillVoices(); syncSliders() })
+    resetBtn.addEventListener('click', () => { vp.name = ''; vp.rate = 1; vp.pitch = 1; vp.human = true; vp.gender = 'girl'; vp.speaker = 'asteria'; savePrefs(); fillVoices(); syncSliders() })
     vsBtn.addEventListener('click', () => {
       box.hidden = !box.hidden
       if (!box.hidden) { fillVoices(); syncSliders() }
