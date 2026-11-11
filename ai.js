@@ -198,7 +198,9 @@
   })
   const tabCoach = make('button', { className: 'ai-tab on', type: 'button', textContent: '🎯 Coach' })
   const tabChat = make('button', { className: 'ai-tab', type: 'button', textContent: '💬 Chat ⭐' })
-  const tabs = make('div', { className: 'ai-tabs' }, tabCoach, tabChat)
+  const tabFriends = make('button', { className: 'ai-tab', type: 'button', textContent: '👥 Friends' })
+  tabFriends.addEventListener('click', () => { if (typeof window.openFriendsChat === 'function') window.openFriendsChat(); else addMsg('err', 'Chat with Friends is loading. Please try again in a moment.') })
+  const tabs = make('div', { className: 'ai-tabs' }, tabCoach, tabChat, tabFriends)
   const chatSettingsBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '⚙️ Chat settings' })
   chatSettingsBtn.hidden = true
   const input = make('input', { id: 'ai-input', type: 'text', maxLength: 400, placeholder: 'Ask the coach...', autocomplete: 'off' })
