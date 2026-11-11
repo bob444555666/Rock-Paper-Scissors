@@ -530,6 +530,7 @@
     liveStatus.textContent = speaking ? 'AI is speaking' : transcribing || busy ? 'Thinking...' : listening ? 'Listening...' : live ? 'Ready when you are' : 'Live chat ended'
     liveHint.textContent = speaking ? 'Just a moment. I am talking.' : transcribing || busy ? 'Putting together a response...' : listening ? 'Speak naturally. I am listening.' : 'Speak naturally to start the conversation.'
     if (live) panel.hidden = true
+    else if (!liveScreen.hidden) panel.hidden = false
     speakBtn.classList.toggle('on', speakOn)
     speakBtn.textContent = speakOn ? '🔊 Voice on' : '🔇 Voice off'
     input.placeholder = listening ? 'Listening...' : transcribing ? 'Working out what you said...' : aiMode === 'chat' ? 'Say anything...' : 'Ask the coach...'
