@@ -1283,7 +1283,7 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
     if (url.pathname === "/ai/speak" && request.method === "POST") {
       let body;
       try { body = await request.json(); } catch { return json(env, { error: "Bad request." }, 400); }
-      const text = String(body && body.text || "").replace(/[\\p{Extended_Pictographic}\\uFE0F]/gu, "").replace(/\\s+/g, " ").trim().slice(0, 600);
+      const text = String(body && body.text || "").replace(/[\p{Extended_Pictographic}\uFE0F]/gu, "").replace(/\s+/g, " ").trim().slice(0, 600);
       if (!text) return json(env, { error: "Text is required." }, 400);
       const session = await readSession(env, body && body.token);
       if (!session || session.setup) return json(env, { error: "Please log in to use AI voice." }, 401);
