@@ -508,7 +508,14 @@ function aiPersona(s) {
   return [rude, sarcasm, swear, human, length].join("\n");
 }
 __name(aiPersona, "aiPersona");
-function aiChatPersona(s) { return aiPersona(s); }
+function aiChatPersona(s) {
+  const attitude = s.rude < 10 ? "ATTITUDE: Friendly, warm and encouraging. No insults." : s.rude < 40 ? "ATTITUDE: Cheeky, playful teasing like a close friend. Keep it light." : s.rude < 70 ? "ATTITUDE: Blunt, bold and roast-style humour. Tease choices and situations, not protected traits or deeply personal vulnerabilities." : "ATTITUDE: Savage comedy and sharp banter. Be dramatically cheeky, but never threaten, harass, or target protected traits.";
+  const sarcasm = s.sarcasm < 10 ? "SARCASM: None. Say what you mean." : s.sarcasm < 40 ? "SARCASM: A little dry sarcasm in about one reply out of three." : s.sarcasm < 70 ? "SARCASM: Openly sarcastic in most replies. Make the joke clear and keep the conversation useful." : "SARCASM: Extreme comedic sarcasm in nearly every reply, with exaggerated reactions and deadpan humour.";
+  const swear = !s.swear || s.swearAmount < 1 ? 'LANGUAGE: Completely clean. Never use profanity or censored versions.' : s.swearAmount < 34 ? "LANGUAGE: Light profanity (damn, hell, crap) occasionally." : s.swearAmount < 67 ? "LANGUAGE: Medium casual profanity, naturally in most replies." : "LANGUAGE: Heavy casual profanity is allowed when it fits. Never use slurs or hateful language.";
+  const human = s.human < 25 ? "VOICE: Tidy, formal assistant. Complete sentences, polite and structured." : s.human < 60 ? "VOICE: Friendly and conversational, like a helpful person chatting." : 'VOICE: A real person texting a friend. Use contractions, casual words, fragments, occasional lowercase, and natural reactions. Avoid robotic openings like "Certainly!" and "Great question!".';
+  const length = { short:"LENGTH: 1-2 short sentences. Hard limit.", normal:"LENGTH: 2-4 sentences.", long:"LENGTH: Up to about 8 sentences when useful. Be detailed, never pad." }[s.length];
+  return [attitude, sarcasm, swear, human, length].join("\\n");
+}
 __name(aiChatPersona, "aiChatPersona");
 function aiAnalyse(rounds) {
   const out = [];
