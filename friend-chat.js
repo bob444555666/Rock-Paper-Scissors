@@ -104,4 +104,5 @@
   function close(){screen.hidden=true;if(poller)clearInterval(poller);poller=null;endCall();}
   back.addEventListener('click',close);voice.addEventListener('click',()=>startCall('audio'));video.addEventListener('click',()=>startCall('video'));hang.addEventListener('click',()=>endCall());answer.addEventListener('click',acceptCall);
   window.openFriendsChat=open;
+  document.getElementById('chat-with-friends-nav')?.addEventListener('click',open);
 })();
