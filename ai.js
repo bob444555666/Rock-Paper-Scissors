@@ -495,10 +495,10 @@
   function pickVoice() {
     let voices = []
     try { voices = speechSynthesis.getVoices() || [] } catch (error) {}
-    if (vp.name) { const chosen = voices.find(v => v.name === vp.name); if (chosen) return chosen }
-    voices = voices.filter(v => !NOVELTY.test(v.name))
+    if (vp.name) { const chosen = voices.find(v => v.name === vp.name); if (chosen && /^en([_-]|$)/i.test(chosen.lang || '')) return chosen }
+    voices = voices.filter(v => !NOVELTY.test(v.name) && /^en([_-]|$)/i.test(v.lang || ''))
     if (!voices.length) return null
-    const lang = (navigator.language || 'en-US').toLowerCase()
+    const lang = 'en-us'
     const same = voices.filter(v => v.lang && v.lang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2)))
     const pool = same.length ? same : voices
     const nice = pool.find(v => /enhanced|premium|natural|siri|google|samantha|ava|allison|daniel|karen|moira|aria|jenny/i.test(v.name))
@@ -582,7 +582,7 @@
     setTimeout(() => { if (myId === speakId && speaking) finish() }, 2500 + clean.length * 95) // iOS sometimes never reports the end
     parts.forEach(p => {
       const u = new SpeechSynthesisUtterance(p)
-      if (voice) { u.voice = voice; u.lang = voice.lang } else u.lang = navigator.language || 'en-US'
+      if (voice) { u.voice = voice; u.lang = 'en-US' } else u.lang = 'en-US'
       u.rate = vp.rate
       u.pitch = vp.pitch
       u.onend = u.onerror = () => { if (--left <= 0) finish() }
@@ -695,7 +695,7 @@
       let text = ''
       try {
         const audio = await blobToBase64(blob)
-        const r = await call('/ai/transcribe', { token: session(), audio, mime: blob.type, lang: (navigator.language || 'en').slice(0, 2).toLowerCase() })
+        const r = await call('/ai/transcribe', { token: session(), audio, mime: blob.type, lang: 'en' })
         if (r.ok) text = String((r.data && r.data.text) || '').trim()
         else { live = false; addMsg('err', (r.data && r.data.error) || 'I could not hear that. Try again.') }
       } catch (error) {
@@ -729,7 +729,7 @@
     let finalText = ''
     let interim = ''
     try { rec = new SR() } catch (error) { rec = null; live = false; voiceUi(); return }
-    rec.lang = navigator.language || 'en-US'
+    rec.lang = 'en-US'
     rec.interimResults = true
     rec.continuous = false
     rec.maxAlternatives = 1
