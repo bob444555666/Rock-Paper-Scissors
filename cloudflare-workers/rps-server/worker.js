@@ -508,14 +508,7 @@ function aiPersona(s) {
   return [rude, sarcasm, swear, human, length].join("\n");
 }
 __name(aiPersona, "aiPersona");
-function aiChatPersona(s) {
-  const tone = s.rude < 10 ? "TONE: Warm, friendly, and considerate. Never be mean." : s.rude < 40 ? "TONE: Playfully cheeky, like a close friend. Gentle teasing only; never target personal traits." : s.rude < 70 ? "TONE: Blunt and bold, with playful attitude. Be direct but never cruel, threatening, or discriminatory." : "TONE: Extra cheeky and theatrical. Use exaggerated playful reactions, but do not humiliate the user or attack who they are.";
-  const sarcasm = s.sarcasm < 10 ? "SARCASM: None." : s.sarcasm < 40 ? "SARCASM: Light, occasional dry humor." : s.sarcasm < 70 ? "SARCASM: Frequent playful sarcasm, while keeping the meaning clear." : "SARCASM: Strong comedic sarcasm, never contemptuous.";
-  const swear = !s.swear || s.swearAmount < 1 ? "LANGUAGE: No profanity." : s.swearAmount < 34 ? "LANGUAGE: Occasional mild profanity is allowed." : s.swearAmount < 67 ? "LANGUAGE: Moderate casual profanity is allowed when it fits." : "LANGUAGE: Frequent strong profanity is allowed when it fits, but never use slurs or direct abuse.";
-  const human = s.human < 25 ? "STYLE: Polished and calm." : s.human < 60 ? "STYLE: Friendly, natural, conversational." : "STYLE: Very casual, like texting a friend. Use contractions and varied phrasing.";
-  const length = { short:"LENGTH: 1-2 sentences.", normal:"LENGTH: 2-4 sentences.", long:"LENGTH: Up to 8 useful sentences." }[s.length];
-  return [tone,sarcasm,swear,human,length].join("\n");
-}
+function aiChatPersona(s) { return aiPersona(s); }
 __name(aiChatPersona, "aiChatPersona");
 function aiAnalyse(rounds) {
   const out = [];
@@ -1277,19 +1270,24 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
       const apiKey = String(env.ELEVENLABS_API_KEY || "").trim();
       if (!apiKey) return json(env, { error: "ElevenLabs voice is not configured. Add the ELEVENLABS_API_KEY Worker secret." }, 503);
       try {
-        let voiceId = String(env.ELEVENLABS_VOICE_ID || "").trim();
-        if (!voiceId) {
-          const voicesRes = await fetch("https://api.elevenlabs.io/v1/voices", {
-            headers: { "xi-api-key": apiKey, "Accept": "application/json" }
-          });
-          if (!voicesRes.ok) {
-            console.log("ElevenLabs voices error:", voicesRes.status, (await voicesRes.text().catch(() => "")).slice(0, 300));
-            return json(env, { error: "ElevenLabs could not load a voice. Check the API key and account access." }, 502);
-          }
+        const requestedGender = String(body.gender || "").toLowerCase() === "boy" ? "male" : "female";
+        let voiceId = "";
+        const voicesRes = await fetch("https://api.elevenlabs.io/v1/voices", {
+          headers: { "xi-api-key": apiKey, "Accept": "application/json" }
+        });
+        if (voicesRes.ok) {
           const voicesData = await voicesRes.json();
-          voiceId = String(voicesData.voices && voicesData.voices[0] && voicesData.voices[0].voice_id || "");
+          const voices = Array.isArray(voicesData.voices) ? voicesData.voices : [];
+          const genderMatch = voices.find(v => String(v.labels && v.labels.gender || "").toLowerCase() === requestedGender);
+          const nameHints = requestedGender === "female" ? /female|woman|girl|sarah|sophie|alice|aria|bella|charlotte|lily|matilda|rachel/i : /male|man|boy|james|daniel|adam|charlie|liam|george|josh/i;
+          const nameMatch = voices.find(v => nameHints.test(String(v.name || "")));
+          const chosen = genderMatch || nameMatch;
+          voiceId = String(chosen && chosen.voice_id || "");
+        } else {
+          console.log("ElevenLabs voices error:", voicesRes.status, (await voicesRes.text().catch(() => "")).slice(0, 300));
         }
-        if (!voiceId) return json(env, { error: "No ElevenLabs voice is available in this account." }, 503);
+        if (!voiceId) voiceId = String(env.ELEVENLABS_VOICE_ID || "").trim();
+        if (!voiceId) return json(env, { error: "No " + requestedGender + " voice is available in this ElevenLabs account. Add a voice of that type to your ElevenLabs Voice Library." }, 503);
         const speech = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(voiceId), {
           method: "POST",
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json", "Accept": "audio/mpeg" },
