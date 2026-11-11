@@ -1317,37 +1317,50 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
 
     if (url.pathname === "/ai/transcribe" && request.method === "POST") {
       let body;
-      try { body = await request.json(); } catch { return json(env, { error: "Bad request." }, 400); }
+      try { body = await request.json(); } catch { return json(env, { error: "The microphone recording could not be read. Please try again." }, 400); }
       const session = await readSession(env, body && body.token);
       if (!session || session.setup) return json(env, { error: "Please log in again to use voice chat." }, 401);
       const audio64 = String(body.audio || "");
-      if (!audio64 || audio64.length > 8 * 1024 * 1024) return json(env, { error: "The recording is empty or too large. Try a shorter message." }, 400);
+      if (!audio64 || audio64.length > 10 * 1024 * 1024) return json(env, { error: "The recording was empty or too long. Please try a shorter message." }, 400);
       const mode = body.mode === "chat" ? "chat" : "coach";
       const users = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(USERS_NAME));
       const prepRes = await users.fetch("https://users/ai/prepare", { method: "POST", body: JSON.stringify({ mode, userId: session.sub, key: (mode === "chat" ? "c:" : "") + "u:" + session.sub + ":stt", limit: AI_LIMIT_USER }) });
       const prep = await prepRes.json().catch(() => ({}));
       if (!prepRes.ok) return json(env, prep, prepRes.status);
       const apiKey = String(env.GROQ_API_KEY || "").trim();
-      if (!apiKey) return json(env, { error: "Voice transcription is not configured on the server." }, 503);
+      if (!apiKey) return json(env, { error: "Voice recognition is not configured on the server. Please contact support." }, 503);
       try {
         const bytes = Uint8Array.from(atob(audio64), c => c.charCodeAt(0));
-        const mime = String(body.mime || "audio/webm").split(";")[0].slice(0, 80);
-        const ext = mime.includes("mp4") ? "m4a" : mime.includes("ogg") ? "ogg" : mime.includes("wav") ? "wav" : "webm";
-        const form = new FormData();
-        form.append("file", new Blob([bytes], { type: mime }), "voice." + ext);
-        form.append("model", "whisper-large-v3-turbo");
-        form.append("language", String(body.lang || "en").slice(0, 8));
-        form.append("response_format", "json");
-        const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", { method: "POST", headers: { "Authorization": "Bearer " + apiKey }, body: form });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          console.log("Groq transcription error:", response.status, JSON.stringify(result).slice(0, 300));
-          return json(env, { error: response.status === 429 ? "Voice recognition is busy. Try again in a moment." : "I could not understand that recording. Please try again." }, response.status === 429 ? 429 : 502);
+        const mimeRaw = String(body.mime || "audio/webm").split(";")[0].toLowerCase();
+        const mime = ["audio/webm","audio/mp4","audio/ogg","audio/wav","audio/mpeg"].includes(mimeRaw) ? mimeRaw : "audio/webm";
+        const ext = mime === "audio/mp4" ? "m4a" : mime === "audio/ogg" ? "ogg" : mime === "audio/wav" ? "wav" : mime === "audio/mpeg" ? "mp3" : "webm";
+        const audioBlob = new Blob([bytes], { type: mime });
+        if (audioBlob.size < 300) return json(env, { error: "I did not receive enough microphone audio. Check your microphone and try again." }, 400);
+        let lastStatus = 502;
+        let lastMessage = "The voice recognition service could not process the recording.";
+        for (const model of ["whisper-large-v3-turbo", "whisper-large-v3"]) {
+          const form = new FormData();
+          form.append("file", audioBlob, "voice." + ext);
+          form.append("model", model);
+          form.append("response_format", "json");
+          form.append("temperature", "0");
+          const response = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", { method: "POST", headers: { "Authorization": "Bearer " + apiKey }, body: form });
+          const result = await response.json().catch(() => ({}));
+          if (response.ok) {
+            const transcript = String(result.text || "").trim().slice(0, 1200);
+            if (transcript) return json(env, { text: transcript });
+            lastMessage = "The recording arrived, but no speech was detected. Please speak a little louder and try again.";
+            continue;
+          }
+          lastStatus = response.status;
+          lastMessage = String(result.error && result.error.message || result.message || "");
+          console.log("Groq transcription error:", model, response.status, lastMessage.slice(0, 400));
+          if (response.status === 429) return json(env, { error: "Voice recognition is busy. Please wait a moment and try again." }, 429);
         }
-        return json(env, { text: String(result.text || "").trim().slice(0, 1200) });
+        return json(env, { error: lastMessage || "I could not understand that recording. Please try again." }, lastStatus >= 400 && lastStatus < 500 ? 502 : lastStatus);
       } catch (error) {
         console.log("Groq transcription failed:", String(error && error.message || error));
-        return json(env, { error: "I could not process the microphone recording. Please try again." }, 502);
+        return json(env, { error: "The voice recording could not be processed. Please try again." }, 502);
       }
     }
     if (url.pathname.startsWith("/ai/") && request.method === "POST") {
