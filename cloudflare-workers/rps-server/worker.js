@@ -1569,7 +1569,7 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
     }
     const accountAction = url.pathname.startsWith("/account/") ? url.pathname.slice(9) : null;
     if (accountAction && request.method === "POST") {
-      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "friend-chat", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade", "wallet", "developer-command", "developer-status"].includes(accountAction)) {
+      if (!["profile", "avatar", "reset-score", "username", "password", "delete", "friends", "user-directory", "friend-add", "friend-accept", "friend-decline", "friend-remove", "friend-room", "friend-chat", "premium", "premium-badge", "premium-prefs", "premium-invite", "premium-members", "ashton-plan", "arcade", "wallet", "developer-command", "developer-status"].includes(accountAction)) {
         return json(env, { error: "Unknown request" }, 404);
       }
       let body;
@@ -2757,6 +2757,20 @@ var RPSRoom = class extends DurableObject {
           if (f && f.username) result.requests.push({ name: f.username, avatarAt: f.avatarAt || 0 });
         }
         return Response.json(result);
+      }
+      if (path === "/acct/user-directory") {
+        const users = [];
+        let cursor;
+        do {
+          const page = await S.list({ prefix: "user:", limit: 1000, ...(cursor ? { cursor } : {}) });
+          for (const [key, user] of page) {
+            if (!user || !user.username || user.id === me.id) continue;
+            users.push({ name: user.username });
+          }
+          cursor = page.list_complete ? undefined : page.cursor;
+        } while (cursor && users.length < 10000);
+        users.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+        return Response.json({ users });
       }
       if (path === "/acct/friend-add") {
         const target = await byName(d.username);
