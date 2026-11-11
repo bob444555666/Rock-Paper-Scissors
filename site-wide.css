@@ -192,3 +192,23 @@ img { max-width:100%; }
 .arena-daily-reward small { display:block; color:#94a8bf; font-size:9px; letter-spacing:.12em; }
 @media(max-width:420px) { .arena-daily-challenge { gap:8px; padding:10px; } .arena-daily-icon { width:32px; height:32px; font-size:17px; } .arena-daily-copy strong { font-size:12px; } .arena-daily-reward { font-size:16px; } }
 
+
+/* Responsive layout consistency across phone and desktop */
+@media(max-width:760px){
+ html,body{width:100%;min-width:0;overflow-x:hidden}
+ body{background-attachment:scroll}
+ img,video,canvas,svg{max-width:100%}
+ input,select,textarea,button{max-width:100%}
+ .card,.auth-card,.online-box,.computer-box,.panel,.hero,.seo-text,.lb-page,.wrap,main,section{min-width:0}
+ .ui-layer{padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));overflow-y:auto}
+ .ui-layer .card{max-height:calc(100dvh - 20px);overflow-y:auto}
+ table{display:block;max-width:100%;overflow-x:auto}
+ pre,code{max-width:100%;overflow-x:auto}
+}
+@media(max-width:480px){
+ body{padding-left:10px;padding-right:10px}
+ .title{font-size:clamp(25px,8vw,38px);line-height:1.12}
+ .move-row,.level-row,.mode-switch{max-width:100%;flex-wrap:wrap}
+ .move-button{flex:1 1 0;min-width:0}
+ .big,.btn,.primary,.secondary,.go{min-height:44px}
+}
