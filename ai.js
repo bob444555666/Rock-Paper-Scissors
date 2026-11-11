@@ -644,7 +644,7 @@
     fetch(API + '/ai/speak', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: session(), text: t, speaker: vp.speaker, mode: aiMode }),
+      body: JSON.stringify({ token: session(), text: t, speaker: vp.speaker, gender: vp.gender, mode: aiMode }),
       signal: ctl.signal
     })
       .then(res => { if (!res.ok) throw new Error('tts ' + res.status); return res.blob() })
@@ -1035,9 +1035,11 @@
   chatSettingsBox.append(
     make('h3', { textContent: 'Your Chat personality' }),
     make('p', { className: 'ai-sub', textContent: 'These choices only affect your AI Chat. Coach stays friendly, and other players keep their own settings.' }),
-    chatRow('Personality', chatRude), chatRow('Sarcasm', chatSarcasm),
-    chatRow('Allow profanity', chatSwear), chatRow('Profanity level', chatSwearAmount),
-    chatRow('Conversation style', chatHuman), chatRow('Reply length', chatLength),
+    chatRow('Personality (friendly → cheeky → rude → savage)', chatRude),
+    chatRow('Sarcasm (none → light → frequent → extreme)', chatSarcasm),
+    chatRow('Allow profanity', chatSwear), chatRow('Profanity level (light → medium → heavy)', chatSwearAmount),
+    chatRow('Conversation style (formal → friendly → casual)', chatHuman),
+    chatRow('Reply length', chatLength),
     chatSettingsStatus, make('div', { className: 'ai-btns' }, chatSave, chatClose)
   )
   panel.append(chatSettingsBox)
@@ -1050,9 +1052,12 @@
     chatSwearAmount.disabled = !chatSwear.checked
   }
   async function loadChatSettings() {
+    chatSettingsStatus.textContent = 'Loading your saved settings...'
     const r = await call('/ai/settings', { token: session(), action: 'get' })
-    if (r.ok) applyChatSettings(r.data.settings)
-    else chatSettingsStatus.textContent = r.data.error || 'Could not load your settings.'
+    if (r.ok && r.data && r.data.settings) {
+      applyChatSettings(r.data.settings)
+      chatSettingsStatus.textContent = 'Your saved Chat settings are loaded.'
+    } else chatSettingsStatus.textContent = (r.data && r.data.error) || 'Could not load your settings. Please sign in again.'
   }
   chatSettingsBtn.addEventListener('click', () => {
     chatSettingsBox.hidden = !chatSettingsBox.hidden
