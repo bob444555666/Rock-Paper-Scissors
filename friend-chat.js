@@ -39,6 +39,7 @@
   document.head.append(style);
   const screen=el('section',{id:'friend-chat-screen',hidden:true});
   const back=el('button',{className:'fc-back',textContent:'← Back'});
+  const notifyBtn=el('button',{className:'fc-notify',textContent:'🔔 Enable notifications',type:'button'});
   const top=el('header',{className:'fc-top'},back,el('div',{className:'fc-brand',textContent:'CHAT WITH FRIENDS'},el('small',{textContent:'Your people. Your conversations. Any device.'})),notifyBtn);
   const addInput=el('input',{placeholder:"Add by username",maxLength:16,autocomplete:'off'});
   const addBtn=el('button',{textContent:'Add'});
@@ -48,7 +49,6 @@
   const discoverWrap=el('div',{className:'fc-discover-search'},discoverSearch);
   const directoryList=el('div',{className:'fc-directory'});
   const discover=el('section',{className:'fc-discover'},discoverTitle,discoverWrap,directoryList);
-  const notifyBtn=el('button',{className:'fc-notify',textContent:'🔔 Enable notifications',type:'button'});
   const friendList=el('div',{className:'fc-list'});
   const side=el('aside',{className:'fc-side'},el('h3',{textContent:'Your friends'}),addRow,friendList,discover);
   const empty=el('div',{className:'fc-empty'},el('strong',{textContent:'Your conversations start here'}),el('span',{textContent:'Choose a friend to message, or start an audio or video call.'}));
