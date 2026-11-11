@@ -1281,7 +1281,7 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
     if (url.pathname === "/ai/speak" && request.method === "POST") {
       let body;
       try { body = await request.json(); } catch { return json(env, { error: "Bad request." }, 400); }
-      const text = String(body && body.text || "").replace(/[\p{Extended_Pictographic}\uFE0F]/gu, "").replace(/\s+/g, " ").trim().slice(0, 600);
+      const text = String(body && body.text || "").replace(/[\\p{Extended_Pictographic}\\uFE0F]/gu, "").replace(/\\s+/g, " ").trim().slice(0, 600);
       if (!text) return json(env, { error: "Text is required." }, 400);
       const session = await readSession(env, body && body.token);
       if (!session || session.setup) return json(env, { error: "Please log in to use AI voice." }, 401);
@@ -1293,31 +1293,45 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
       });
       const prep = await prepRes.json().catch(() => ({}));
       if (!prepRes.ok) return json(env, prep, prepRes.status);
-      const apiKey = String(env.OPENAI_API_KEY || "").trim();
-      if (!apiKey) return json(env, { error: "AI voice is not configured." }, 503);
+
+      // ElevenLabs voice generation. The API key stays in a Cloudflare Worker secret.
+      const apiKey = String(env.ELEVENLABS_API_KEY || "").trim();
+      if (!apiKey) return json(env, { error: "ElevenLabs voice is not configured. Add the ELEVENLABS_API_KEY Worker secret." }, 503);
       try {
-        const speech = await fetch("https://api.openai.com/v1/audio/speech", {
+        let voiceId = String(env.ELEVENLABS_VOICE_ID || "").trim();
+        if (!voiceId) {
+          const voicesRes = await fetch("https://api.elevenlabs.io/v1/voices", {
+            headers: { "xi-api-key": apiKey, "Accept": "application/json" }
+          });
+          if (!voicesRes.ok) {
+            console.log("ElevenLabs voices error:", voicesRes.status, (await voicesRes.text().catch(() => "")).slice(0, 300));
+            return json(env, { error: "ElevenLabs could not load a voice. Check the API key and account access." }, 502);
+          }
+          const voicesData = await voicesRes.json();
+          voiceId = String(voicesData.voices && voicesData.voices[0] && voicesData.voices[0].voice_id || "");
+        }
+        if (!voiceId) return json(env, { error: "No ElevenLabs voice is available in this account." }, 503);
+        const speech = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(voiceId), {
           method: "POST",
-          headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+          headers: { "xi-api-key": apiKey, "Content-Type": "application/json", "Accept": "audio/mpeg" },
           body: JSON.stringify({
-            model: "gpt-4o-mini-tts",
-            voice: "alloy",
-            input: text,
-            instructions: "Speak in a laid-back, mellow, effortlessly cool surfer style. Relaxed pace, warm friendly tone, casual conversational delivery, natural pauses, lightly playful but clear and easy to understand. Never exaggerate or sound like a caricature."
+            text,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.25, use_speaker_boost: true }
           })
         });
         if (!speech.ok) {
           const detail = await speech.text().catch(() => "");
-          console.log("OpenAI TTS error:", speech.status, detail.slice(0, 400));
-          return json(env, { error: speech.status === 429 ? "AI voice is busy. Try again in a moment." : "AI voice could not generate audio right now." }, speech.status === 429 ? 429 : 502);
+          console.log("ElevenLabs TTS error:", speech.status, detail.slice(0, 400));
+          return json(env, { error: speech.status === 401 || speech.status === 403 ? "ElevenLabs rejected the API key or voice access." : speech.status === 429 ? "ElevenLabs voice limit reached. Try again later." : "ElevenLabs could not generate audio right now." }, speech.status === 429 ? 429 : 502);
         }
         return new Response(await speech.arrayBuffer(), {
           status: 200,
           headers: cors(env, { "Content-Type": "audio/mpeg", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" })
         });
       } catch (error) {
-        console.log("OpenAI TTS request failed:", String(error && error.message || error));
-        return json(env, { error: "Could not reach the AI voice service." }, 502);
+        console.log("ElevenLabs TTS request failed:", String(error && error.message || error));
+        return json(env, { error: "Could not reach ElevenLabs voice service." }, 502);
       }
     }
 
