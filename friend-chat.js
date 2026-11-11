@@ -33,7 +33,7 @@
     .fc-compose{display:flex;gap:8px;padding:12px;border-top:1px solid #ffffff18}.fc-compose button{border:0;border-radius:12px;padding:0 18px;background:#55d9df;color:#06121c;font-weight:900;cursor:pointer}
     .fc-status{padding:6px 14px;color:#8da6c0;font-size:11px;min-height:24px}
     .fc-call{position:fixed;inset:0;z-index:2147483200;background:radial-gradient(ellipse at center,#25375d,#080d17 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;gap:14px}
-    .fc-call[hidden]{display:none}.fc-call video{max-width:min(90vw,850px);max-height:55vh;border-radius:18px;background:#000;box-shadow:0 20px 60px #0009}.fc-call .fc-self{position:absolute;right:22px;bottom:110px;width:min(25vw,190px);max-height:24vh;border:1px solid #ffffff55}.fc-call-title{font-size:22px;font-weight:850}.fc-call-buttons{display:flex;gap:12px}.fc-call-buttons button{padding:13px 20px;border:0;border-radius:999px;font-weight:850;cursor:pointer}.fc-answer{background:#55db9b;color:#06150e}.fc-hang{background:#ff5268;color:white}
+    .fc-call[hidden]{display:none}.fc-call video{max-width:min(90vw,850px);max-height:55vh;border-radius:18px;background:#000;box-shadow:0 20px 60px #0009}.fc-call .fc-self{position:absolute;right:22px;bottom:110px;width:min(25vw,190px);max-height:24vh;border:1px solid #ffffff55}.fc-call-title{font-size:22px;font-weight:850}.fc-call-tools{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:9px;max-width:min(94vw,760px)}.fc-call-tools button,.fc-filter-wrap{border:1px solid #ffffff35;border-radius:12px;padding:10px 13px;background:#14243b;color:#f4f8ff;font-weight:750}.fc-filter-wrap{display:flex;align-items:center;gap:9px;font-size:12px}.fc-filter-wrap input{width:min(34vw,190px);accent-color:#55d9df}.fc-filter-wrap output{min-width:46px;text-align:right;font-variant-numeric:tabular-nums}.fc-camera-source{display:none!important}.fc-call-buttons{display:flex;gap:12px}.fc-call-buttons button{padding:13px 20px;border:0;border-radius:999px;font-weight:850;cursor:pointer}.fc-answer{background:#55db9b;color:#06150e}.fc-hang{background:#ff5268;color:white}
     @media(max-width:720px){.fc-layout{grid-template-columns:1fr;grid-template-rows:minmax(130px,30%) 1fr;padding:9px;gap:9px}.fc-side{min-height:0}.fc-side h3{padding:10px 12px 6px}.fc-add{padding:0 9px 6px}.fc-list{display:flex;overflow-x:auto;gap:5px;padding:2px 8px 8px}.fc-person{min-width:125px;width:auto;padding:8px}.fc-main{min-height:0}.fc-convo-head{padding:10px}.fc-call-actions button{padding:9px}.fc-bubble{max-width:88%}}
   `;
   document.head.append(style);
@@ -72,10 +72,17 @@
   const local=el('video',{autoplay:true,playsInline:true,muted:true,className:'fc-self'});
   const answer=el('button',{className:'fc-answer',textContent:'Answer'});
   const hang=el('button',{className:'fc-hang',textContent:'End call'});
+  const muteBtn=el('button',{type:'button',textContent:'🎙 Mute mic'});
+  const cameraBtn=el('button',{type:'button',textContent:'📷 Turn camera off'});
+  const filterRange=el('input',{type:'range',min:'0',max:'9999',step:'1',value:'0',ariaLabel:'Camera filter'});
+  const filterValue=el('output',{textContent:'1 / 10,000'});
+  const filterWrap=el('label',{className:'fc-filter-wrap'},el('span',{textContent:'Camera filter'}),filterRange,filterValue);
+  const callTools=el('div',{className:'fc-call-tools'},muteBtn,cameraBtn,filterWrap);
+  const cameraSource=el('video',{className:'fc-camera-source',autoplay:true,playsInline:true,muted:true});
   const callBtns=el('div',{className:'fc-call-buttons'},answer,hang);
-  call.append(callTitle,remote,local,callBtns);
+  call.append(callTitle,remote,local,cameraSource,callTools,callBtns);
   document.body.append(screen,call);
-  let friends=[], directory=[], selected='', poller=null, peer=null, localStream=null, incoming=null, seen=new Set(), callKind='video', notificationReady=false;
+  let friends=[], directory=[], selected='', poller=null, peer=null, localStream=null, processedStream=null, cameraCanvas=null, cameraFrame=0, incoming=null, seen=new Set(), callKind='video', notificationReady=false, micMuted=false, cameraOff=false, filterIndex=0;
   const api=async(body)=>{const r=await fetch(API+'/account/friend-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
   const account=async(path,body={})=>{const r=await fetch(API+'/account/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
   const signal=(type,payload={})=>api({username:selected,action:'signal',signalType:type,payload}).catch(e=>setStatus(e.message));
@@ -94,9 +101,107 @@
   addInput.addEventListener('keydown',e=>{if(e.key==='Enter')addBtn.click();});
   notifyBtn.addEventListener('click',async()=>{if(!('Notification'in window)){setStatus('This browser does not support notifications.');return;}const permission=await Notification.requestPermission();notificationReady=permission==='granted';notifyBtn.textContent=notificationReady?'🔔 Notifications on':'🔕 Notifications off';setStatus(notificationReady?'You will be notified about new messages while this page is running in the background.':'Notifications were not enabled.');});
   send.addEventListener('click',sendText);composeInput.addEventListener('keydown',e=>{if(e.key==='Enter')sendText();});
-  async function startCall(kind){if(!selected)return;callKind=kind;try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('Calls need a secure HTTPS browser with microphone/camera support.');call.hidden=false;callTitle.textContent='Requesting '+(kind==='video'?'camera and microphone':'microphone')+' permission…';localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:kind==='video'});local.srcObject=localStream;peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});localStream.getTracks().forEach(t=>peer.addTrack(t,localStream));peer.ontrack=e=>{remote.srcObject=e.streams[0];};peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON());};peer.onconnectionstatechange=()=>{callTitle.textContent=peer.connectionState==='connected'?'Connected':peer.connectionState;};const offer=await peer.createOffer();await peer.setLocalDescription(offer);await signal('ring',{kind});await signal('offer',offer);callTitle.textContent='Calling '+selected+'…';answer.hidden=true;hang.hidden=false;}catch(e){setStatus(e.message);await endCall(false);}}
-  async function acceptCall(){if(!incoming)return;try{const kind=incoming.kind||'video';callKind=kind;call.hidden=false;callTitle.textContent='Requesting '+(kind==='video'?'camera and microphone':'microphone')+' permission…';localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:kind==='video'});local.srcObject=localStream;peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});localStream.getTracks().forEach(t=>peer.addTrack(t,localStream));peer.ontrack=e=>remote.srcObject=e.streams[0];peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON());};await peer.setRemoteDescription(incoming.offer);const ans=await peer.createAnswer();await peer.setLocalDescription(ans);await signal('answer',ans);callTitle.textContent='Connecting to '+selected;answer.hidden=true;incoming=null;}catch(e){setStatus(e.message);await endCall(false);}}
-  async function endCall(sendSignal=true){if(sendSignal&&selected)await signal('hangup');if(peer){peer.close();peer=null;}if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}remote.srcObject=null;local.srcObject=null;call.hidden=true;incoming=null;}
+  function filterCss(index){
+    const n=Math.max(0,Math.min(9999,Number(index)||0));
+    const hue=(n*137)%360, sat=50+((n*17)%201), contrast=70+((n*29)%81);
+    const bright=75+((n*13)%61), sepia=(n*7)%51, gray=(n*11)%36;
+    return `hue-rotate(${hue}deg) saturate(${sat}%) contrast(${contrast}%) brightness(${bright}%) sepia(${sepia}%) grayscale(${gray}%)`;
+  }
+  function applyCameraFilter(){
+    if(!cameraCanvas)return;
+    const ctx=cameraCanvas.getContext('2d');
+    if(!ctx)return;
+    const draw=()=>{
+      if(!cameraCanvas)return;
+      const w=cameraCanvas.width,h=cameraCanvas.height;
+      ctx.save();ctx.filter=filterCss(filterIndex);
+      if(cameraOff){ctx.fillStyle='#080e19';ctx.fillRect(0,0,w,h);}
+      else if(cameraSource.readyState>=2){ctx.drawImage(cameraSource,0,0,w,h);}
+      else {ctx.fillStyle='#080e19';ctx.fillRect(0,0,w,h);}
+      ctx.restore();
+      cameraFrame=requestAnimationFrame(draw);
+    };
+    cancelAnimationFrame(cameraFrame);draw();
+  }
+  function resetCallControls(){
+    micMuted=false;cameraOff=false;filterIndex=0;filterRange.value='0';filterValue.textContent='1 / 10,000';
+    muteBtn.textContent='🎙 Mute mic';cameraBtn.textContent='📷 Turn camera off';
+    muteBtn.hidden=true;cameraBtn.hidden=true;filterWrap.hidden=true;
+  }
+  function setupCameraPipeline(){
+    cameraSource.srcObject=localStream;
+    cameraCanvas=document.createElement('canvas');cameraCanvas.width=640;cameraCanvas.height=480;
+    processedStream=cameraCanvas.captureStream(24);
+    local.srcObject=processedStream;
+    cameraSource.play().catch(()=>{});
+    applyCameraFilter();
+  }
+  async function startCall(kind){
+    if(!selected)return;
+    callKind=kind;
+    try{
+      if(!navigator.mediaDevices?.getUserMedia)throw new Error('Calls need a secure HTTPS browser with microphone/camera support.');
+      call.hidden=false;resetCallControls();
+      callTitle.textContent='Requesting '+(kind==='video'?'camera and microphone':'microphone')+' permission…';
+      localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:kind==='video'?{width:{ideal:1280},height:{ideal:720},facingMode:'user'}:false});
+      peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
+      localStream.getAudioTracks().forEach(t=>peer.addTrack(t,localStream));
+      if(kind==='video'){
+        setupCameraPipeline();
+        const videoTrack=processedStream.getVideoTracks()[0];if(videoTrack)peer.addTrack(videoTrack,processedStream);
+        muteBtn.hidden=false;cameraBtn.hidden=false;filterWrap.hidden=false;
+      }else{local.srcObject=null;muteBtn.hidden=false;}
+      peer.ontrack=e=>{remote.srcObject=e.streams[0];};
+      peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON());};
+      peer.onconnectionstatechange=()=>{if(peer)callTitle.textContent=peer.connectionState==='connected'?'Connected':peer.connectionState;};
+      const offer=await peer.createOffer();await peer.setLocalDescription(offer);
+      await signal('ring',{kind});await signal('offer',offer);
+      callTitle.textContent='Calling '+selected+'…';answer.hidden=true;hang.hidden=false;
+    }catch(e){setStatus(e.name==='NotAllowedError'?'Microphone or camera permission was blocked. Allow access in your browser’s site settings, then try again.':e.name==='NotFoundError'?'No working microphone or camera was found on this device.':e.message);await endCall(false);}
+  }
+  async function acceptCall(){
+    if(!incoming)return;
+    try{
+      const kind=incoming.kind||'video';callKind=kind;call.hidden=false;resetCallControls();
+      callTitle.textContent='Requesting '+(kind==='video'?'camera and microphone':'microphone')+' permission…';
+      localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:kind==='video'?{width:{ideal:1280},height:{ideal:720},facingMode:'user'}:false});
+      peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
+      localStream.getAudioTracks().forEach(t=>peer.addTrack(t,localStream));
+      if(kind==='video'){
+        setupCameraPipeline();const videoTrack=processedStream.getVideoTracks()[0];if(videoTrack)peer.addTrack(videoTrack,processedStream);
+        muteBtn.hidden=false;cameraBtn.hidden=false;filterWrap.hidden=false;
+      }else{local.srcObject=null;muteBtn.hidden=false;}
+      peer.ontrack=e=>remote.srcObject=e.streams[0];
+      peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON());};
+      peer.onconnectionstatechange=()=>{if(peer)callTitle.textContent=peer.connectionState==='connected'?'Connected':peer.connectionState;};
+      await peer.setRemoteDescription(incoming.offer);const ans=await peer.createAnswer();await peer.setLocalDescription(ans);
+      await signal('answer',ans);callTitle.textContent='Connecting to '+selected;answer.hidden=true;incoming=null;
+    }catch(e){setStatus(e.name==='NotAllowedError'?'Microphone or camera permission was blocked. Allow access in your browser’s site settings, then try again.':e.name==='NotFoundError'?'No working microphone or camera was found on this device.':e.message);await endCall(false);}
+  }
+  async function endCall(sendSignal=true){
+    if(sendSignal&&selected)await signal('hangup');
+    if(peer){peer.close();peer=null;}
+    if(cameraFrame)cancelAnimationFrame(cameraFrame);cameraFrame=0;
+    if(processedStream){processedStream.getTracks().forEach(t=>t.stop());processedStream=null;}
+    cameraCanvas=null;cameraSource.srcObject=null;
+    if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
+    remote.srcObject=null;local.srcObject=null;call.hidden=true;incoming=null;resetCallControls();
+  }
+  muteBtn.addEventListener('click',()=>{
+    if(!localStream)return;
+    micMuted=!micMuted;localStream.getAudioTracks().forEach(t=>t.enabled=!micMuted);
+    muteBtn.textContent=micMuted?'🔇 Unmute mic':'🎙 Mute mic';
+    setStatus(micMuted?'Your microphone is muted.':'Your microphone is on.');
+  });
+  cameraBtn.addEventListener('click',()=>{
+    if(!localStream||callKind!=='video')return;
+    cameraOff=!cameraOff;localStream.getVideoTracks().forEach(t=>t.enabled=!cameraOff);
+    cameraBtn.textContent=cameraOff?'📷 Turn camera on':'📷 Turn camera off';
+    setStatus(cameraOff?'Your camera is off.':'Your camera is on.');
+  });
+  filterRange.addEventListener('input',()=>{
+    filterIndex=Number(filterRange.value);filterValue.textContent=(filterIndex+1).toLocaleString()+' / 10,000';
+  });
   async function handle(m){if(seen.has(m.id))return;seen.add(m.id);if(seen.size>500)seen=new Set([...seen].slice(-250));if(m.type==='text'){addMessage(m.message,false,m.at);if(document.hidden&&notificationReady){const title='Message from '+m.fromName;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body:m.message,icon:'/favicon-192.png',tag:'rps-chat-'+m.fromName,data:{url:'/'}});}else new Notification(title,{body:m.message});}catch{}}return;}if(m.type==='ring'){selected=m.fromName;callKind=m.payload?.kind||'video';await loadFriends();choose(selected);setStatus('Incoming '+(callKind==='video'?'video':'audio')+' call…');return;}if(m.type==='offer'){selected=m.fromName;await loadFriends();choose(selected);incoming={offer:m.payload,kind:callKind};call.hidden=false;callTitle.textContent=m.fromName+' is calling';answer.hidden=false;hang.hidden=false;answer.onclick=acceptCall;return;}if(m.type==='answer'&&peer){await peer.setRemoteDescription(m.payload);callTitle.textContent='Connecting…';return;}if(m.type==='ice'&&peer){try{await peer.addIceCandidate(m.payload);}catch{}return;}if(m.type==='reject'||m.type==='hangup'){setStatus(m.fromName+' ended the call.');await endCall(false);}}
   async function poll(){if(!token()||!friends.length)return;for(const f of friends){try{const d=await api({username:f.name,action:'poll'});for(const m of d.messages||[])await handle(m);}catch(e){if(screen.hidden===false)setStatus(e.message);}}}
   async function open(){if(!token()){alert('Please sign in to chat with friends.');return;}screen.hidden=false;await loadFriends();await loadDirectory();if(poller)clearInterval(poller);poller=setInterval(poll,1400);poll();}
