@@ -2,6 +2,7 @@
 (() => {
   const API = 'https://rps-server.heyboernathan.workers.dev';
   const token = () => { try { return localStorage.getItem('token') || ''; } catch { return ''; } };
+  const myUserId = (() => { try { const p=token().split('.')[0].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(atob(p)).sub || ''; } catch { return ''; } })();
   const el = (tag, props={}, ...children) => { const n=document.createElement(tag); Object.assign(n,props); children.forEach(c=>n.append(c)); return n; };
   const style=el('style');
   style.textContent=`
@@ -67,7 +68,7 @@
   const signal=(type,payload={})=>api({username:selected,action:'signal',signalType:type,payload}).catch(e=>setStatus(e.message));
   const setStatus=t=>status.textContent=t;
   const addMessage=(text,mine,at=Date.now())=>{const b=el('div',{className:'fc-bubble'+(mine?' mine':'')},document.createTextNode(text),el('small',{textContent:new Date(at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}));messages.append(b);messages.scrollTop=messages.scrollHeight;};
-  const choose=name=>{selected=name;const f=friends.find(x=>x.name===name);convoTitle.textContent=name;convoSub.textContent='Friend · cross-platform chat';head.children[0].textContent=(name[0]||'?').toUpperCase();empty.hidden=true;head.hidden=false;messages.hidden=false;compose.hidden=false;voice.disabled=video.disabled=false;[...friendList.children].forEach(n=>n.classList.toggle('active',n.dataset.name===name));setStatus('Connected to your friend inbox.');};
+  const choose=name=>{selected=name;const f=friends.find(x=>x.name===name);convoTitle.textContent=name;convoSub.textContent='Friend · cross-platform chat';head.children[0].textContent=(name[0]||'?').toUpperCase();empty.hidden=true;head.hidden=false;messages.hidden=false;compose.hidden=false;voice.disabled=video.disabled=false;[...friendList.children].forEach(n=>n.classList.toggle('active',n.dataset.name===name));messages.textContent='';setStatus('Loading conversation…');api({username:name,action:'history'}).then(d=>{if(selected!==name)return;messages.textContent='';(d.messages||[]).forEach(m=>addMessage(m.message,m.from!==undefined&&m.from===myUserId,m.at));setStatus('Your conversation is saved to your account.');}).catch(e=>setStatus(e.message));};
   head.hidden=true;messages.hidden=true;compose.hidden=true;
   async function loadFriends(){try{const d=await account('friends');friends=d.friends||[];friendList.textContent='';if(!friends.length)friendList.append(el('div',{className:'fc-empty',textContent:'No friends yet. Add someone above.'}));friends.forEach(f=>{const b=el('button',{className:'fc-person'+(selected===f.name?' active':'')},el('span',{className:'fc-avatar',textContent:f.name[0].toUpperCase()}),el('span',{},el('strong',{textContent:f.name}),el('small',{textContent:'Friend'})));b.dataset.name=f.name;b.addEventListener('click',()=>choose(f.name));friendList.append(b);});if(selected&&!friends.some(f=>f.name===selected))selected='';}catch(e){setStatus(e.message);}}
   async function sendText(){const text=composeInput.value.trim();if(!selected||!text)return;try{await account('friend-chat',{username:selected,action:'send',message:text});addMessage(text,true);composeInput.value='';}catch(e){setStatus(e.message);}}
