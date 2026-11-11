@@ -407,7 +407,7 @@
     const data = r.ok && r.data ? r.data : {}
     const plan = String(data.plan || data.premiumPlan || '').toLowerCase().replace(/[_\s]+/g, '-')
     isPremium = !!data.premium
-    isUltra = isPremium && (plan === 'ultra' || plan === 'ultra-plus' || plan === 'ultraplus' || plan === 'duo' || plan === 'family' || plan.includes('ultra'))
+    isUltra = isPremium && (plan === 'pro' || plan === 'legend' || plan === 'ultra' || plan === 'ultra-plus' || plan === 'ultraplus' || plan === 'duo' || plan === 'family' || plan.includes('ultra'))
     premiumChecked = true
   }
 
