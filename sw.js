@@ -1,23 +1,11 @@
-// Notix service-worker integration (publisher zone).
-self.options = {
-  domain: "5gvci.com",
-  zoneId: 12241366
-};
-self.lary = "";
-
-// A third-party advertising script must not prevent the game's own
-// service worker from installing if the remote script is unavailable.
-try {
-  importScripts("https://5gvci.com/act/files/service-worker.min.js?r=sw");
-} catch (error) {
-  console.warn("Notix service worker could not be loaded:", error);
-}
+// Advertising service-worker integration removed.
+// The site's own service worker only manages the game's offline cache.
 
 // RPS offline-cache service worker.
 // Network first, then fall back to cached files while offline.
 // Only same-origin GET requests are cached; game APIs and external ads
 // are not intercepted by this cache handler.
-const CACHE = "rps-v37";
+const CACHE = "rps-v38";
 const SHELL = [
   "/", "/index.html", "/game-lab.html", "/game-lab.css", "/game-lab.js",
   "/developer-lab.html", "/developer-lab.js", "/developer-live.js",
