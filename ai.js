@@ -206,7 +206,7 @@
   const input = make('input', { id: 'ai-input', type: 'text', maxLength: 400, placeholder: 'Ask the coach...', autocomplete: 'off' })
   const goBtn = make('button', { id: 'ai-go', type: 'button', textContent: 'Send' })
   const micBtn = make('button', { id: 'ai-mic', type: 'button', textContent: '🎙️', title: 'Tap to talk' })
-  const liveBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '🎧 Live talk' })
+  const liveBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '🎧 Start live chat', title: 'Have a hands-free spoken conversation with Coach' })
   const speakBtn = make('button', { className: 'ai-vbtn', type: 'button', textContent: '🔇 Voice off' })
   const voiceRow = make('div', { className: 'ai-voice' }, liveBtn, speakBtn)
   const sendRow = make('div', { className: 'ai-send' }, micBtn, input, goBtn)
@@ -485,7 +485,7 @@
     micBtn.classList.toggle('on', listening)
     micBtn.textContent = listening ? '⏹' : '🎙️'
     liveBtn.classList.toggle('on', live)
-    liveBtn.textContent = live ? '🎧 Live: on' : '🎧 Live talk'
+    liveBtn.textContent = live ? '🎧 Live chat: on' : '🎧 Start live chat'
     speakBtn.classList.toggle('on', speakOn)
     speakBtn.textContent = speakOn ? '🔊 Voice on' : '🔇 Voice off'
     input.placeholder = listening ? 'Listening...' : transcribing ? 'Working out what you said...' : aiMode === 'chat' ? 'Say anything...' : 'Ask the coach...'
@@ -513,10 +513,27 @@
     try { if (canSpeak) speechSynthesis.cancel() } catch (error) {}
   }
 
+  function spokenWords(text) {
+    return String(text || '')
+      .replace(/\bR\.?P\.?S\.?\b/gi, 'Rock Paper Scissors')
+      .replace(/\bA\.?I\.?\b/gi, 'artificial intelligence')
+      .replace(/\bX\.?P\.?\b/gi, 'experience points')
+      .replace(/\bA\.?P\.?I\.?\b/gi, 'application programming interface')
+      .replace(/\bU\.?R\.?L\.?s?\b/gi, 'web address')
+      .replace(/\bFAQ\b/gi, 'frequently asked questions')
+      .replace(/\bDM\b/gi, 'direct message')
+      .replace(/\bGG\b/gi, 'good game')
+      .replace(/\bBTW\b/gi, 'by the way')
+      .replace(/\bLOL\b/gi, 'haha')
+      .replace(/\bIDK\b/gi, 'I do not know')
+      .replace(/\bASAP\b/gi, 'as soon as possible')
+      .replace(/\s+/g, ' ').trim()
+  }
+
   function speak(text, done) {
     if (!vp.human || !player || typeof fetch !== 'function') { speakBrowser(text, done); return }
     stopSpeaking()
-    let t = String(text || '').replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/\s+/g, ' ').trim()
+    let t = spokenWords(text).replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/\s+/g, ' ').trim()
     if (!t) { if (done) done(); return }
     if (t.length > 600) {
       const cut = t.slice(0, 600)
@@ -565,7 +582,7 @@
   function speakBrowser(text, done) {
     if (!canSpeak) { if (done) done(); return }
     stopSpeaking()
-    const clean = String(text || '').replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/\s+/g, ' ').trim()
+    const clean = spokenWords(text).replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/\s+/g, ' ').trim()
     if (!clean) { if (done) done(); return }
     const parts = clean.match(/[^.!?]+[.!?]*\s*/g) || [clean] // short pieces keep Chrome from cutting long speech off
     const myId = speakId
