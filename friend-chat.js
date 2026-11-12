@@ -36,6 +36,33 @@
     .fc-call[hidden]{display:none}.fc-call video{max-width:min(90vw,850px);max-height:55vh;border-radius:18px;background:#000;box-shadow:0 20px 60px #0009}.fc-call .fc-self{position:absolute;right:22px;bottom:110px;width:min(25vw,190px);max-height:24vh;border:1px solid #ffffff55}.fc-call-title{font-size:22px;font-weight:850}.fc-call-tools{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:9px;max-width:min(94vw,760px)}.fc-call-tools button,.fc-filter-wrap{border:1px solid #ffffff35;border-radius:12px;padding:10px 13px;background:#14243b;color:#f4f8ff;font-weight:750}.fc-filter-wrap{display:flex;align-items:center;gap:9px;font-size:12px}.fc-filter-wrap input{width:min(34vw,190px);accent-color:#55d9df}.fc-filter-wrap output{min-width:46px;text-align:right;font-variant-numeric:tabular-nums}.fc-camera-source{display:none!important}.fc-call-buttons{display:flex;gap:12px}.fc-call-buttons button{padding:13px 20px;border:0;border-radius:999px;font-weight:850;cursor:pointer}.fc-answer{background:#55db9b;color:#06150e}.fc-hang{background:#ff5268;color:white}
     @media(max-width:720px){.fc-layout{grid-template-columns:1fr;grid-template-rows:minmax(130px,30%) 1fr;padding:9px;gap:9px}.fc-side{min-height:0}.fc-side h3{padding:10px 12px 6px}.fc-add{padding:0 9px 6px}.fc-list{display:flex;overflow-x:auto;gap:5px;padding:2px 8px 8px}.fc-person{min-width:125px;width:auto;padding:8px}.fc-main{min-height:0}.fc-convo-head{padding:10px}.fc-call-actions button{padding:9px}.fc-bubble{max-width:88%}}
   `;
+  style.textContent += `
+    .fc-layout{max-width:1440px;gap:18px;padding:20px}
+    .fc-side,.fc-main{border-color:#263d58;background:linear-gradient(160deg,#14243aee,#0d1728f2);border-radius:24px}
+    .fc-side h3{font-size:10px;letter-spacing:.18em}
+    .fc-person{transition:background .18s,border-color .18s}.fc-person:hover{background:#ffffff0c;border-color:#ffffff20}
+    .fc-avatar{box-shadow:0 5px 18px #27d7df22}
+    .fc-main{position:relative}
+    .fc-convo-head{min-height:76px;background:#0c1728a8}
+    .fc-messages{background:radial-gradient(ellipse at 50% 100%,#23395a30,transparent 55%)}
+    .fc-bubble{border:1px solid #ffffff12;box-shadow:0 5px 18px #0002}
+    .fc-bubble.mine{border-color:#8ab8ff35;background:linear-gradient(135deg,#236c9d,#4d54a5)}
+    .fc-compose{background:#0b1525;border-top-color:#ffffff20}
+    .fc-compose input:focus,.fc-add input:focus,.fc-discover-search input:focus{outline:2px solid #54dbe8;outline-offset:1px}
+    .fc-compose button{min-width:76px;box-shadow:0 5px 18px #55d9df35}
+    .fc-call{background:radial-gradient(ellipse at 50% 8%,#304d78,#0b1221 68%);overflow:auto}
+    .fc-call video{object-fit:cover}
+    .fc-call video:not(.fc-self){width:min(92vw,1100px);height:min(66vh,680px);object-fit:contain}
+    .fc-call .fc-self{right:clamp(12px,3vw,36px);bottom:clamp(120px,17vh,170px);width:min(24vw,220px);max-height:25vh;object-fit:cover;border-radius:18px}
+    .fc-call-tools{padding:12px;border:1px solid #ffffff20;border-radius:18px;background:#0b1529cc;backdrop-filter:blur(14px)}
+    .fc-call-tools button{cursor:pointer;min-height:42px}
+    .fc-filter-wrap{display:grid;grid-template-columns:auto minmax(100px,190px) auto;gap:10px}
+    .fc-filter-wrap input{width:100%}
+    .fc-filter-wrap output{min-width:92px}
+    .fc-call-title{padding:8px 14px;border-radius:14px;background:#081426b8;border:1px solid #ffffff18}
+    .fc-call-buttons button{min-width:116px;box-shadow:0 8px 26px #0005}
+    @media(max-width:720px){.fc-layout{padding:8px}.fc-side,.fc-main{border-radius:17px}.fc-call{padding:12px}.fc-call video:not(.fc-self){width:96vw;height:52vh}.fc-call .fc-self{width:30vw;bottom:170px}.fc-call-tools{width:100%;gap:7px}.fc-filter-wrap{width:100%;grid-template-columns:auto 1fr auto}.fc-call-buttons{position:sticky;bottom:8px}.fc-call-buttons button{min-width:108px}}
+`;
   document.head.append(style);
   const screen=el('section',{id:'friend-chat-screen',hidden:true});
   const back=el('button',{className:'fc-back',textContent:'← Back'});
@@ -74,15 +101,15 @@
   const hang=el('button',{className:'fc-hang',textContent:'End call'});
   const muteBtn=el('button',{type:'button',textContent:'🎙 Mute mic'});
   const cameraBtn=el('button',{type:'button',textContent:'📷 Turn camera off'});
-  const filterRange=el('input',{type:'range',min:'0',max:'9999',step:'1',value:'0',ariaLabel:'Camera filter'});
-  const filterValue=el('output',{textContent:'1 / 10,000'});
-  const filterWrap=el('label',{className:'fc-filter-wrap'},el('span',{textContent:'Camera filter'}),filterRange,filterValue);
+  const filterRange=el('input',{type:'range',min:'0',max:'9999',step:'1',value:'0',ariaLabel:'10,000 generated AR face effect combinations'});
+  const filterValue=el('output',{textContent:'🐶 Puppy · 1 / 1,000'});
+  const filterWrap=el('label',{className:'fc-filter-wrap'},el('span',{textContent:'AR face effects'}),filterRange,filterValue);
   const callTools=el('div',{className:'fc-call-tools'},muteBtn,cameraBtn,filterWrap);
   const cameraSource=el('video',{className:'fc-camera-source',autoplay:true,playsInline:true,muted:true});
   const callBtns=el('div',{className:'fc-call-buttons'},answer,hang);
   call.append(callTitle,remote,local,cameraSource,callTools,callBtns);
   document.body.append(screen,call);
-  let friends=[], directory=[], selected='', poller=null, peer=null, localStream=null, processedStream=null, cameraCanvas=null, cameraFrame=0, incoming=null, seen=new Set(), callKind='video', notificationReady=false, micMuted=false, cameraOff=false, filterIndex=0;
+  let friends=[], directory=[], selected='', poller=null, peer=null, localStream=null, processedStream=null, cameraCanvas=null, cameraFrame=0, incoming=null, seen=new Set(), callKind='video', notificationReady=false, micMuted=false, cameraOff=false, filterIndex=0, pendingIce=[];
   const api=async(body)=>{const r=await fetch(API+'/account/friend-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
   const account=async(path,body={})=>{const r=await fetch(API+'/account/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
   const signal=(type,payload={})=>api({username:selected,action:'signal',signalType:type,payload}).catch(e=>setStatus(e.message));
@@ -101,30 +128,74 @@
   addInput.addEventListener('keydown',e=>{if(e.key==='Enter')addBtn.click();});
   notifyBtn.addEventListener('click',async()=>{if(!('Notification'in window)){setStatus('This browser does not support notifications.');return;}const permission=await Notification.requestPermission();notificationReady=permission==='granted';notifyBtn.textContent=notificationReady?'🔔 Notifications on':'🔕 Notifications off';setStatus(notificationReady?'You will be notified about new messages while this page is running in the background.':'Notifications were not enabled.');});
   send.addEventListener('click',sendText);composeInput.addEventListener('keydown',e=>{if(e.key==='Enter')sendText();});
-  function filterCss(index){
-    const n=Math.max(0,Math.min(9999,Number(index)||0));
-    const hue=(n*137)%360, sat=50+((n*17)%201), contrast=70+((n*29)%81);
-    const bright=75+((n*13)%61), sepia=(n*7)%51, gray=(n*11)%36;
-    return `hue-rotate(${hue}deg) saturate(${sat}%) contrast(${contrast}%) brightness(${bright}%) sepia(${sepia}%) grayscale(${gray}%)`;
+  let faceLandmarker=null, faceModelLoading=null, lastFaceVideoTime=-1;
+  const filterNames=['🐶 Puppy','🐱 Kitty','🐰 Bunny','🦊 Fox','🐻 Bear','🐭 Mouse','🐯 Tiger','👽 Alien','🤖 Robot','👑 Royal pet'];
+  function drawAnimalEffect(ctx,landmarks,w,h,index){
+    const point=i=>({x:landmarks[i].x*w,y:landmarks[i].y*h});
+    const forehead=point(10),left=point(234),right=point(454),nose=point(1),chin=point(152);
+    const faceW=Math.max(70,Math.hypot(right.x-left.x,right.y-left.y));
+    const unit=faceW/180,variation=Math.floor(index/10),kind=index%10;
+    const palettes=[['#9b603b','#f1c49c'],['#e9a0bd','#ffe0ee'],['#f4f1ed','#f2a9b9'],['#d97832','#ffe0a8'],['#80583e','#d5b18d'],['#aaaeb8','#f4c4d4'],['#d77a27','#ffe4a1'],['#67e5d5','#c5fff4'],['#8794a8','#d8e5f5'],['#e7c56c','#fff0b5']];
+    const [fur,inner]=palettes[kind],tilt=((variation%21)-10)*.009,earScale=.82+(variation%19)*.018;
+    const oval=(x,y,rx,ry,fill)=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();};
+    const ear=(x,side)=>{ctx.save();ctx.translate(x,forehead.y-faceW*.28);ctx.rotate(side*(.18+tilt));ctx.scale(earScale,earScale);ctx.beginPath();
+      if(kind===2){ctx.ellipse(0,-faceW*.22,faceW*.105,faceW*.29,0,0,Math.PI*2);}
+      else if(kind===7||kind===8){ctx.moveTo(-faceW*.14,0);ctx.lineTo(0,-faceW*.36);ctx.lineTo(faceW*.14,0);ctx.closePath();}
+      else {ctx.moveTo(-faceW*.15,0);ctx.quadraticCurveTo(-faceW*.24,-faceW*.28,0,-faceW*.38);ctx.quadraticCurveTo(faceW*.24,-faceW*.28,faceW*.15,0);ctx.closePath();}
+      ctx.fillStyle=fur;ctx.fill();ctx.lineWidth=Math.max(2,unit*4);ctx.strokeStyle='#171b2a88';ctx.stroke();
+      if(kind!==7&&kind!==8){ctx.beginPath();ctx.moveTo(-faceW*.085,-faceW*.04);ctx.quadraticCurveTo(-faceW*.12,-faceW*.25,0,-faceW*.29);ctx.quadraticCurveTo(faceW*.12,-faceW*.25,faceW*.085,-faceW*.04);ctx.closePath();ctx.fillStyle=inner;ctx.fill();}
+      ctx.restore();};
+    ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+    ear(left.x+faceW*.12,-1);ear(right.x-faceW*.12,1);
+    if(kind===9){ctx.strokeStyle='#ffe18a';ctx.lineWidth=unit*7;ctx.beginPath();ctx.arc(forehead.x,forehead.y-faceW*.18,faceW*.22,Math.PI,Math.PI*2);ctx.stroke();}
+    if(kind===6){ctx.strokeStyle='#321b12';ctx.lineWidth=unit*5;for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(nose.x+k*faceW*.12,forehead.y+faceW*.06);ctx.lineTo(nose.x+k*faceW*.12+faceW*.06,chin.y-faceW*.12);ctx.stroke();}}
+    const muzzleY=nose.y+faceW*.13;
+    if(kind!==7&&kind!==8&&kind!==9){oval(nose.x-faceW*.13,muzzleY,faceW*.14,faceW*.105,inner);oval(nose.x+faceW*.13,muzzleY,faceW*.14,faceW*.105,inner);}
+    oval(nose.x,nose.y+faceW*.045,faceW*(kind===7?.075:.065),faceW*.052,kind===7?'#36f4e0':kind===8?'#303b4d':kind===9?'#d8a936':'#30202a');
+    ctx.strokeStyle='#30202a';ctx.lineWidth=unit*2.5;ctx.beginPath();ctx.moveTo(nose.x,nose.y+faceW*.09);ctx.lineTo(nose.x,nose.y+faceW*.17);ctx.stroke();
+    if(kind===7||kind===8){ctx.strokeStyle=kind===7?'#55f5e5':'#8fa9ca';ctx.lineWidth=unit*4;ctx.beginPath();ctx.ellipse(nose.x,nose.y+faceW*.1,faceW*.24,faceW*.17,0,0,Math.PI*2);ctx.stroke();}
+    if(variation%3===0){ctx.fillStyle=inner;oval(forehead.x,forehead.y-faceW*.08,faceW*.075,faceW*.055,inner);}
+    if(kind===0||kind===4||kind===5){ctx.fillStyle='#fff';for(const side of [-1,1]){ctx.beginPath();ctx.arc(nose.x+side*faceW*.25,nose.y+faceW*.19,unit*2.2,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=unit*1.5;ctx.beginPath();ctx.moveTo(nose.x+side*faceW*.28,nose.y+faceW*.2);ctx.lineTo(nose.x+side*faceW*.43,nose.y+faceW*.16);ctx.stroke();}}
+    ctx.restore();
+  }
+  async function loadFaceTracker(){
+    if(faceLandmarker)return faceLandmarker;
+    if(faceModelLoading)return faceModelLoading;
+    faceModelLoading=(async()=>{
+      const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm');
+      const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      faceLandmarker=await vision.FaceLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numFaces:1});
+      return faceLandmarker;
+    })().catch(async()=>{
+      faceModelLoading=null;
+      const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm');
+      const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      faceLandmarker=await vision.FaceLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',delegate:'CPU'},runningMode:'VIDEO',numFaces:1});
+      return faceLandmarker;
+    });
+    return faceModelLoading;
   }
   function applyCameraFilter(){
     if(!cameraCanvas)return;
-    const ctx=cameraCanvas.getContext('2d');
-    if(!ctx)return;
+    const ctx=cameraCanvas.getContext('2d');if(!ctx)return;
     const draw=()=>{
       if(!cameraCanvas)return;
       const w=cameraCanvas.width,h=cameraCanvas.height;
-      ctx.save();ctx.filter=filterCss(filterIndex);
+      ctx.clearRect(0,0,w,h);
       if(cameraOff){ctx.fillStyle='#080e19';ctx.fillRect(0,0,w,h);}
-      else if(cameraSource.readyState>=2){ctx.drawImage(cameraSource,0,0,w,h);}
-      else {ctx.fillStyle='#080e19';ctx.fillRect(0,0,w,h);}
-      ctx.restore();
+      else if(cameraSource.readyState>=2){
+        ctx.drawImage(cameraSource,0,0,w,h);
+        if(faceLandmarker&&lastFaceVideoTime!==cameraSource.currentTime){
+          lastFaceVideoTime=cameraSource.currentTime;
+          try{const result=faceLandmarker.detectForVideo(cameraSource,performance.now());const face=result.faceLandmarks?.[0];if(face)drawAnimalEffect(ctx,face,w,h,filterIndex);}catch{}
+        }
+      }else{ctx.fillStyle='#080e19';ctx.fillRect(0,0,w,h);}
       cameraFrame=requestAnimationFrame(draw);
     };
     cancelAnimationFrame(cameraFrame);draw();
   }
   function resetCallControls(){
-    micMuted=false;cameraOff=false;filterIndex=0;filterRange.value='0';filterValue.textContent='1 / 10,000';
+    micMuted=false;cameraOff=false;filterIndex=0;filterRange.value='0';filterValue.textContent=filterNames[0]+' · 1 / 1,000';
     muteBtn.textContent='🎙 Mute mic';cameraBtn.textContent='📷 Turn camera off';
     muteBtn.hidden=true;cameraBtn.hidden=true;filterWrap.hidden=true;
   }
@@ -135,6 +206,7 @@
     local.srcObject=processedStream;
     cameraSource.play().catch(()=>{});
     applyCameraFilter();
+    loadFaceTracker().then(()=>setStatus('AR face tracking is ready. Choose a creature effect.')).catch(()=>setStatus('AR face tracking could not load. Check your connection and browser permissions.'));
   }
   async function startCall(kind){
     if(!selected)return;
@@ -144,7 +216,7 @@
       call.hidden=false;resetCallControls();
       callTitle.textContent='Requesting '+(kind==='video'?'camera and microphone':'microphone')+' permission…';
       localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:kind==='video'?{width:{ideal:1280},height:{ideal:720},facingMode:'user'}:false});
-      peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
+      pendingIce=[];peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]});
       localStream.getAudioTracks().forEach(t=>peer.addTrack(t,localStream));
       if(kind==='video'){
         setupCameraPipeline();
@@ -174,14 +246,15 @@
       peer.ontrack=e=>remote.srcObject=e.streams[0];
       peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON());};
       peer.onconnectionstatechange=()=>{if(peer)callTitle.textContent=peer.connectionState==='connected'?'Connected':peer.connectionState;};
-      await peer.setRemoteDescription(incoming.offer);const ans=await peer.createAnswer();await peer.setLocalDescription(ans);
+      await peer.setRemoteDescription(incoming.offer);for(const candidate of pendingIce.splice(0)){try{await peer.addIceCandidate(candidate);}catch{}}const ans=await peer.createAnswer();await peer.setLocalDescription(ans);
       await signal('answer',ans);callTitle.textContent='Connecting to '+selected;answer.hidden=true;incoming=null;
     }catch(e){setStatus(e.name==='NotAllowedError'?'Microphone or camera permission was blocked. Allow access in your browser’s site settings, then try again.':e.name==='NotFoundError'?'No working microphone or camera was found on this device.':e.message);await endCall(false);}
   }
   async function endCall(sendSignal=true){
     if(sendSignal&&selected)await signal('hangup');
-    if(peer){peer.close();peer=null;}
+    if(peer){peer.close();peer=null;}pendingIce=[];
     if(cameraFrame)cancelAnimationFrame(cameraFrame);cameraFrame=0;
+    if(faceLandmarker){try{faceLandmarker.close();}catch{}faceLandmarker=null;faceModelLoading=null;}
     if(processedStream){processedStream.getTracks().forEach(t=>t.stop());processedStream=null;}
     cameraCanvas=null;cameraSource.srcObject=null;
     if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
@@ -200,9 +273,9 @@
     setStatus(cameraOff?'Your camera is off.':'Your camera is on.');
   });
   filterRange.addEventListener('input',()=>{
-    filterIndex=Number(filterRange.value);filterValue.textContent=(filterIndex+1).toLocaleString()+' / 10,000';
+    filterIndex=Number(filterRange.value);const kind=filterIndex%10,variant=Math.floor(filterIndex/10)+1;filterValue.textContent=filterNames[kind]+' · '+variant.toLocaleString()+' / 1,000';
   });
-  async function handle(m){if(seen.has(m.id))return;seen.add(m.id);if(seen.size>500)seen=new Set([...seen].slice(-250));if(m.type==='text'){addMessage(m.message,false,m.at);if(document.hidden&&notificationReady){const title='Message from '+m.fromName;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body:m.message,icon:'/favicon-192.png',tag:'rps-chat-'+m.fromName,data:{url:'/'}});}else new Notification(title,{body:m.message});}catch{}}return;}if(m.type==='ring'){selected=m.fromName;callKind=m.payload?.kind||'video';await loadFriends();choose(selected);setStatus('Incoming '+(callKind==='video'?'video':'audio')+' call…');return;}if(m.type==='offer'){selected=m.fromName;await loadFriends();choose(selected);incoming={offer:m.payload,kind:callKind};call.hidden=false;callTitle.textContent=m.fromName+' is calling';answer.hidden=false;hang.hidden=false;answer.onclick=acceptCall;return;}if(m.type==='answer'&&peer){await peer.setRemoteDescription(m.payload);callTitle.textContent='Connecting…';return;}if(m.type==='ice'&&peer){try{await peer.addIceCandidate(m.payload);}catch{}return;}if(m.type==='reject'||m.type==='hangup'){setStatus(m.fromName+' ended the call.');await endCall(false);}}
+  async function handle(m){if(seen.has(m.id))return;seen.add(m.id);if(seen.size>500)seen=new Set([...seen].slice(-250));if(m.type==='text'){addMessage(m.message,false,m.at);if(document.hidden&&notificationReady){const title='Message from '+m.fromName;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body:m.message,icon:'/favicon-192.png',tag:'rps-chat-'+m.fromName,data:{url:'/'}});}else new Notification(title,{body:m.message});}catch{}}return;}if(m.type==='ring'){selected=m.fromName;callKind=m.payload?.kind||'video';await loadFriends();choose(selected);setStatus('Incoming '+(callKind==='video'?'video':'audio')+' call…');return;}if(m.type==='offer'){selected=m.fromName;await loadFriends();choose(selected);incoming={offer:m.payload,kind:callKind};call.hidden=false;callTitle.textContent=m.fromName+' is calling';answer.hidden=false;hang.hidden=false;answer.onclick=acceptCall;return;}if(m.type==='answer'&&peer){await peer.setRemoteDescription(m.payload);for(const candidate of pendingIce.splice(0)){try{await peer.addIceCandidate(candidate);}catch{}}callTitle.textContent='Connecting…';return;}if(m.type==='ice'&&peer){if(peer.remoteDescription){try{await peer.addIceCandidate(m.payload);}catch{}}else pendingIce.push(m.payload);return;}if(m.type==='reject'||m.type==='hangup'){setStatus(m.fromName+' ended the call.');await endCall(false);}}
   async function poll(){if(!token()||!friends.length)return;for(const f of friends){try{const d=await api({username:f.name,action:'poll'});for(const m of d.messages||[])await handle(m);}catch(e){if(screen.hidden===false)setStatus(e.message);}}}
   async function open(){if(!token()){alert('Please sign in to chat with friends.');return;}screen.hidden=false;await loadFriends();await loadDirectory();if(poller)clearInterval(poller);poller=setInterval(poll,1400);poll();}
   document.addEventListener('visibilitychange',()=>{if(!screen.hidden&&!document.hidden)poll();});
