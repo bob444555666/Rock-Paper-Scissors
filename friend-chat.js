@@ -218,7 +218,6 @@
       localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:kind==='video'?{width:{ideal:1280},height:{ideal:720},facingMode:'user'}:false});
       pendingIce=[];peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
       tunePolling();
-      tunePolling();
       localStream.getAudioTracks().forEach(t=>peer.addTrack(t,localStream));
       if(kind==='video'){
         setupCameraPipeline();
@@ -226,7 +225,7 @@
         muteBtn.hidden=false;cameraBtn.hidden=false;filterWrap.hidden=false;
       }else{local.srcObject=null;muteBtn.hidden=false;}
       peer.ontrack=e=>{remote.srcObject=e.streams[0];};
-      peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON());};
+      peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON()).catch(err=>setStatus(err.message));};
       peer.onconnectionstatechange=()=>{if(!peer)return;const state=peer.connectionState;callTitle.textContent=state==='connected'?'Connected':state==='failed'?'Connection failed — this network may need a TURN relay':state==='disconnected'?'Reconnecting…':state;};
       const offer=await peer.createOffer();await peer.setLocalDescription(offer);
       await signal('ring',{kind});await signal('offer',offer);
@@ -240,6 +239,7 @@
       callTitle.textContent='Requesting '+(kind==='video'?'camera and microphone':'microphone')+' permission…';
       localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:kind==='video'?{width:{ideal:1280},height:{ideal:720},facingMode:'user'}:false});
       peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
+      tunePolling();
       localStream.getAudioTracks().forEach(t=>peer.addTrack(t,localStream));
       if(kind==='video'){
         setupCameraPipeline();const videoTrack=processedStream.getVideoTracks()[0];if(videoTrack)peer.addTrack(videoTrack,processedStream);
@@ -279,7 +279,7 @@
   });
   async function handle(m){if(seen.has(m.id))return;seen.add(m.id);if(seen.size>500)seen=new Set([...seen].slice(-250));if(m.type==='text'){addMessage(m.message,false,m.at);if(document.hidden&&notificationReady){const title='Message from '+m.fromName;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body:m.message,icon:'/favicon-192.png',tag:'rps-chat-'+m.fromName,data:{url:'/'}});}else new Notification(title,{body:m.message});}catch{}}return;}if(m.type==='ring'){pendingIce=[];selected=m.fromName;callKind=m.payload?.kind||'video';await loadFriends();choose(selected);setStatus('Incoming '+(callKind==='video'?'video':'audio')+' call…');return;}if(m.type==='offer'){selected=m.fromName;await loadFriends();choose(selected);incoming={offer:m.payload,kind:callKind};call.hidden=false;callTitle.textContent=m.fromName+' is calling';answer.hidden=false;hang.hidden=false;answer.onclick=acceptCall;tunePolling();return;}if(m.type==='answer'&&peer){await peer.setRemoteDescription(m.payload);for(const candidate of pendingIce.splice(0)){try{await peer.addIceCandidate(candidate);}catch{}}callTitle.textContent='Connecting…';return;}if(m.type==='ice'){if(peer&&peer.remoteDescription){try{await peer.addIceCandidate(m.payload);}catch{}}else pendingIce.push(m.payload);return;}if(m.type==='reject'||m.type==='hangup'){setStatus(m.fromName+' ended the call.');await endCall(false);}}
   async function poll(){if(!token()||!friends.length)return;for(const f of friends){try{const d=await api({username:f.name,action:'poll'});for(const m of d.messages||[])await handle(m);}catch(e){if(screen.hidden===false)setStatus(e.message);}}}
-  function tunePolling(){if(poller)clearInterval(poller);poller=setInterval(poll,(peer||incoming)?300:1200);}
+  function tunePolling(){if(poller)clearInterval(poller);poller=null;if(!screen.hidden)poller=setInterval(poll,(peer||incoming)?300:1200);}
   async function open(){if(!token()){alert('Please sign in to chat with friends.');return;}screen.hidden=false;await loadFriends();await loadDirectory();tunePolling();poll();}
   document.addEventListener('visibilitychange',()=>{if(!screen.hidden&&!document.hidden)poll();});
   function close(){screen.hidden=true;if(poller)clearInterval(poller);poller=null;endCall();}
