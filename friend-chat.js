@@ -112,7 +112,7 @@
   let friends=[], directory=[], selected='', poller=null, peer=null, localStream=null, processedStream=null, cameraCanvas=null, cameraFrame=0, incoming=null, seen=new Set(), callKind='video', notificationReady=false, micMuted=false, cameraOff=false, filterIndex=0, pendingIce=[];
   const api=async(body)=>{const r=await fetch(API+'/account/friend-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
   const account=async(path,body={})=>{const r=await fetch(API+'/account/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
-  const signal=(type,payload={})=>api({username:selected,action:'signal',signalType:type,payload}).catch(e=>setStatus(e.message));
+  const signal=(type,payload={})=>api({username:selected,action:'signal',signalType:type,payload});
   const setStatus=t=>status.textContent=t;
   const addMessage=(text,mine,at=Date.now())=>{const b=el('div',{className:'fc-bubble'+(mine?' mine':'')},document.createTextNode(text),el('small',{textContent:new Date(at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}));messages.append(b);messages.scrollTop=messages.scrollHeight;};
   const choose=name=>{selected=name;const f=friends.find(x=>x.name===name);convoTitle.textContent=name;convoSub.textContent='Friend · cross-platform chat';head.children[0].textContent=(name[0]||'?').toUpperCase();empty.hidden=true;head.hidden=false;messages.hidden=false;compose.hidden=false;voice.disabled=video.disabled=false;[...friendList.children].forEach(n=>n.classList.toggle('active',n.dataset.name===name));messages.textContent='';setStatus('Loading conversation…');api({username:name,action:'history'}).then(d=>{if(selected!==name)return;messages.textContent='';(d.messages||[]).forEach(m=>addMessage(m.message,m.from===myUserId(),m.at));setStatus('Your conversation is saved to your account.');}).catch(e=>setStatus(e.message));};
@@ -217,6 +217,8 @@
       callTitle.textContent='Requesting '+(kind==='video'?'camera and microphone':'microphone')+' permission…';
       localStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:kind==='video'?{width:{ideal:1280},height:{ideal:720},facingMode:'user'}:false});
       pendingIce=[];peer=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]});
+      tunePolling();
+      tunePolling();
       localStream.getAudioTracks().forEach(t=>peer.addTrack(t,localStream));
       if(kind==='video'){
         setupCameraPipeline();
@@ -245,20 +247,20 @@
       }else{local.srcObject=null;muteBtn.hidden=false;}
       peer.ontrack=e=>remote.srcObject=e.streams[0];
       peer.onicecandidate=e=>{if(e.candidate)signal('ice',e.candidate.toJSON());};
-      peer.onconnectionstatechange=()=>{if(peer)callTitle.textContent=peer.connectionState==='connected'?'Connected':peer.connectionState;};
+      peer.onconnectionstatechange=()=>{if(!peer)return;const state=peer.connectionState;callTitle.textContent=state==='connected'?'Connected':state==='failed'?'Connection failed — this network may need a TURN relay':state==='disconnected'?'Reconnecting…':state;};
       await peer.setRemoteDescription(incoming.offer);for(const candidate of pendingIce.splice(0)){try{await peer.addIceCandidate(candidate);}catch{}}const ans=await peer.createAnswer();await peer.setLocalDescription(ans);
       await signal('answer',ans);callTitle.textContent='Connecting to '+selected;answer.hidden=true;incoming=null;
     }catch(e){setStatus(e.name==='NotAllowedError'?'Microphone or camera permission was blocked. Allow access in your browser’s site settings, then try again.':e.name==='NotFoundError'?'No working microphone or camera was found on this device.':e.message);await endCall(false);}
   }
   async function endCall(sendSignal=true){
-    if(sendSignal&&selected)await signal('hangup');
+    if(sendSignal&&selected){try{await signal('hangup');}catch(e){setStatus(e.message);}}
     if(peer){peer.close();peer=null;}pendingIce=[];
     if(cameraFrame)cancelAnimationFrame(cameraFrame);cameraFrame=0;
     if(faceLandmarker){try{faceLandmarker.close();}catch{}faceLandmarker=null;faceModelLoading=null;}
     if(processedStream){processedStream.getTracks().forEach(t=>t.stop());processedStream=null;}
     cameraCanvas=null;cameraSource.srcObject=null;
     if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
-    remote.srcObject=null;local.srcObject=null;call.hidden=true;incoming=null;resetCallControls();
+    remote.srcObject=null;local.srcObject=null;call.hidden=true;incoming=null;resetCallControls();tunePolling();
   }
   muteBtn.addEventListener('click',()=>{
     if(!localStream)return;
@@ -275,9 +277,10 @@
   filterRange.addEventListener('input',()=>{
     filterIndex=Number(filterRange.value);const kind=filterIndex%10,variant=Math.floor(filterIndex/10)+1;filterValue.textContent=filterNames[kind]+' · '+variant.toLocaleString()+' / 1,000';
   });
-  async function handle(m){if(seen.has(m.id))return;seen.add(m.id);if(seen.size>500)seen=new Set([...seen].slice(-250));if(m.type==='text'){addMessage(m.message,false,m.at);if(document.hidden&&notificationReady){const title='Message from '+m.fromName;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body:m.message,icon:'/favicon-192.png',tag:'rps-chat-'+m.fromName,data:{url:'/'}});}else new Notification(title,{body:m.message});}catch{}}return;}if(m.type==='ring'){pendingIce=[];selected=m.fromName;callKind=m.payload?.kind||'video';await loadFriends();choose(selected);setStatus('Incoming '+(callKind==='video'?'video':'audio')+' call…');return;}if(m.type==='offer'){selected=m.fromName;await loadFriends();choose(selected);incoming={offer:m.payload,kind:callKind};call.hidden=false;callTitle.textContent=m.fromName+' is calling';answer.hidden=false;hang.hidden=false;answer.onclick=acceptCall;return;}if(m.type==='answer'&&peer){await peer.setRemoteDescription(m.payload);for(const candidate of pendingIce.splice(0)){try{await peer.addIceCandidate(candidate);}catch{}}callTitle.textContent='Connecting…';return;}if(m.type==='ice'){if(peer&&peer.remoteDescription){try{await peer.addIceCandidate(m.payload);}catch{}}else pendingIce.push(m.payload);return;}if(m.type==='reject'||m.type==='hangup'){setStatus(m.fromName+' ended the call.');await endCall(false);}}
+  async function handle(m){if(seen.has(m.id))return;seen.add(m.id);if(seen.size>500)seen=new Set([...seen].slice(-250));if(m.type==='text'){addMessage(m.message,false,m.at);if(document.hidden&&notificationReady){const title='Message from '+m.fromName;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body:m.message,icon:'/favicon-192.png',tag:'rps-chat-'+m.fromName,data:{url:'/'}});}else new Notification(title,{body:m.message});}catch{}}return;}if(m.type==='ring'){pendingIce=[];selected=m.fromName;callKind=m.payload?.kind||'video';await loadFriends();choose(selected);setStatus('Incoming '+(callKind==='video'?'video':'audio')+' call…');return;}if(m.type==='offer'){selected=m.fromName;await loadFriends();choose(selected);incoming={offer:m.payload,kind:callKind};call.hidden=false;callTitle.textContent=m.fromName+' is calling';answer.hidden=false;hang.hidden=false;answer.onclick=acceptCall;tunePolling();return;}if(m.type==='answer'&&peer){await peer.setRemoteDescription(m.payload);for(const candidate of pendingIce.splice(0)){try{await peer.addIceCandidate(candidate);}catch{}}callTitle.textContent='Connecting…';return;}if(m.type==='ice'){if(peer&&peer.remoteDescription){try{await peer.addIceCandidate(m.payload);}catch{}}else pendingIce.push(m.payload);return;}if(m.type==='reject'||m.type==='hangup'){setStatus(m.fromName+' ended the call.');await endCall(false);}}
   async function poll(){if(!token()||!friends.length)return;for(const f of friends){try{const d=await api({username:f.name,action:'poll'});for(const m of d.messages||[])await handle(m);}catch(e){if(screen.hidden===false)setStatus(e.message);}}}
-  async function open(){if(!token()){alert('Please sign in to chat with friends.');return;}screen.hidden=false;await loadFriends();await loadDirectory();if(poller)clearInterval(poller);poller=setInterval(poll,1400);poll();}
+  function tunePolling(){if(poller)clearInterval(poller);poller=setInterval(poll,(peer||incoming)?300:1200);}
+  async function open(){if(!token()){alert('Please sign in to chat with friends.');return;}screen.hidden=false;await loadFriends();await loadDirectory();tunePolling();poll();}
   document.addEventListener('visibilitychange',()=>{if(!screen.hidden&&!document.hidden)poll();});
   function close(){screen.hidden=true;if(poller)clearInterval(poller);poller=null;endCall();}
   back.addEventListener('click',close);voice.addEventListener('click',()=>startCall('audio'));video.addEventListener('click',()=>startCall('video'));hang.addEventListener('click',()=>endCall());answer.addEventListener('click',acceptCall);
