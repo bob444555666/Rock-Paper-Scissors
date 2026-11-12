@@ -63,6 +63,82 @@
     .fc-call-buttons button{min-width:116px;box-shadow:0 8px 26px #0005}
     @media(max-width:720px){.fc-layout{padding:8px}.fc-side,.fc-main{border-radius:17px}.fc-call{padding:12px}.fc-call video:not(.fc-self){width:96vw;height:52vh}.fc-call .fc-self{width:30vw;bottom:170px}.fc-call-tools{width:100%;gap:7px}.fc-filter-wrap{width:100%;grid-template-columns:auto 1fr auto}.fc-call-buttons{position:sticky;bottom:8px}.fc-call-buttons button{min-width:108px}}
 `;
+  style.textContent += `
+    /* Phone and tablet layout */
+    #friend-chat-screen{height:100vh;height:100dvh;min-height:0;overflow:hidden}
+    .fc-layout{min-height:0;min-width:0}
+    .fc-side,.fc-main{min-width:0}
+    .fc-messages{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    .fc-list,.fc-directory{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    button,input{font:inherit}
+    button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    input,button{min-height:42px}
+    .fc-compose input,.fc-add input,.fc-discover-search input{font-size:16px}
+    @media(max-width:720px){
+      #friend-chat-screen{height:var(--fc-vh,100dvh);min-height:0}
+      .fc-top{flex:none;gap:9px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px}
+      .fc-brand{font-size:14px;line-height:1.2}.fc-brand small{font-size:10px}
+      .fc-notify{padding:8px;font-size:11px}
+      .fc-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(145px,34dvh) minmax(0,1fr);gap:8px;padding:8px;max-width:none}
+      .fc-side{min-height:0;max-height:34dvh;border-radius:16px}
+      .fc-side h3{padding:7px 10px 5px}
+      .fc-add{padding:0 8px 7px;gap:6px}
+      .fc-add input{min-width:0;padding:8px 10px}
+      .fc-add button{padding:8px 12px}
+      .fc-list{display:flex;flex:0 0 auto;overflow-x:auto;overflow-y:hidden;gap:6px;padding:2px 7px 7px;max-height:72px}
+      .fc-person{min-width:120px;max-width:180px;padding:7px;gap:7px}
+      .fc-avatar{width:34px;height:34px;border-radius:11px}
+      .fc-discover{flex:1;min-height:0;overflow:hidden}
+      .fc-discover h3{padding:7px 10px 5px}
+      .fc-discover-search{padding:0 8px 6px}
+      .fc-discover-search input{padding:7px 9px}
+      .fc-directory{flex:1;min-height:0;max-height:none;overflow:auto;padding:0 6px 6px}
+      .fc-directory-person{padding:5px 7px;min-height:36px}
+      .fc-directory-person button{min-height:34px;padding:4px 9px}
+      .fc-main{min-height:0;border-radius:16px}
+      .fc-convo-head{flex:none;min-height:58px;padding:8px;gap:8px}
+      .fc-convo-head .fc-avatar{width:34px;height:34px}
+      .fc-convo-head>div:nth-child(2){min-width:0;overflow:hidden}
+      .fc-convo-head strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .fc-convo-head small{font-size:10px}
+      .fc-call-actions{gap:5px}
+      .fc-call-actions button{min-height:40px;padding:7px 9px;font-size:12px}
+      .fc-messages{min-height:0;padding:10px;gap:8px}
+      .fc-bubble{max-width:90%;padding:9px 11px;font-size:14px}
+      .fc-status{flex:none;padding:4px 10px;min-height:22px;font-size:10px}
+      .fc-compose{flex:none;padding:8px;gap:7px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+      .fc-compose input{min-height:44px;padding:10px 12px}
+      .fc-compose button{min-height:44px;min-width:64px;padding:0 12px}
+      .fc-call{height:100vh;height:100dvh;min-height:0;overflow-y:auto;justify-content:flex-start;padding:calc(12px + env(safe-area-inset-top)) 10px calc(12px + env(safe-area-inset-bottom));gap:10px}
+      .fc-call-title{flex:none;max-width:100%;font-size:16px;text-align:center}
+      .fc-call video:not(.fc-self){flex:none;width:100%;height:min(48dvh,440px);max-height:none;object-fit:contain}
+      .fc-call .fc-self{right:14px;bottom:calc(172px + env(safe-area-inset-bottom));width:min(30vw,132px);max-height:18dvh;border-radius:14px}
+      .fc-call-tools{flex:none;width:100%;max-width:560px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:9px}
+      .fc-call-tools button{min-width:0;width:100%;min-height:44px;padding:8px;font-size:12px}
+      .fc-filter-wrap{grid-column:1/-1;display:grid;grid-template-columns:1fr;gap:6px;padding:8px}
+      .fc-filter-wrap input{width:100%;min-height:34px}
+      .fc-filter-wrap output{min-width:0;text-align:left;font-size:11px}
+      .fc-call-buttons{position:sticky;z-index:2;bottom:0;flex:none;width:100%;justify-content:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#080e19e8 30%)}
+      .fc-call-buttons button{min-width:0;min-height:50px;flex:1;max-width:220px;padding:12px}
+    }
+    @media(max-width:380px){
+      .fc-brand small{display:none}
+      .fc-notify{font-size:10px;padding:7px}
+      .fc-call-actions button{font-size:11px;padding:6px}
+      .fc-side{max-height:37dvh}
+      .fc-layout{grid-template-rows:minmax(140px,37dvh) minmax(0,1fr)}
+    }
+    @media(orientation:landscape) and (max-height:520px){
+      .fc-layout{grid-template-columns:minmax(150px,34%) minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+      .fc-side{max-height:none}
+      .fc-call{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,32%);grid-template-rows:auto minmax(0,1fr) auto;align-items:center;justify-items:center;padding:8px 12px;gap:6px}
+      .fc-call-title{grid-column:1/-1;font-size:14px}
+      .fc-call video:not(.fc-self){width:100%;height:calc(100dvh - 100px);max-height:calc(100dvh - 100px)}
+      .fc-call .fc-self{width:110px;right:12px;bottom:86px}
+      .fc-call-tools{grid-column:2;grid-row:2/4;align-self:center}
+      .fc-call-buttons{grid-column:1;grid-row:3;position:static;padding:4px}
+    }
+`;
   document.head.append(style);
   const screen=el('section',{id:'friend-chat-screen',hidden:true});
   const back=el('button',{className:'fc-back',textContent:'← Back'});
@@ -109,6 +185,16 @@
   const callBtns=el('div',{className:'fc-call-buttons'},answer,hang);
   call.append(callTitle,remote,local,cameraSource,callTools,callBtns);
   document.body.append(screen,call);
+
+  const updateViewportHeight=()=>{
+    const h=window.visualViewport?.height||window.innerHeight;
+    screen.style.setProperty('--fc-vh',h+'px');
+    call.style.setProperty('--fc-vh',h+'px');
+  };
+  window.addEventListener('resize',updateViewportHeight,{passive:true});
+  window.visualViewport?.addEventListener('resize',updateViewportHeight,{passive:true});
+  window.visualViewport?.addEventListener('scroll',updateViewportHeight,{passive:true});
+  updateViewportHeight();
   let friends=[], directory=[], selected='', poller=null, peer=null, localStream=null, processedStream=null, cameraCanvas=null, cameraFrame=0, incoming=null, seen=new Set(), callKind='video', notificationReady=false, micMuted=false, cameraOff=false, filterIndex=0, pendingIce=[];
   const api=async(body)=>{const r=await fetch(API+'/account/friend-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
   const account=async(path,body={})=>{const r=await fetch(API+'/account/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token(),...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;};
