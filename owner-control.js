@@ -49,10 +49,26 @@ async function boot(){
 let tab='overview';
 function buildTabs(){
  const items=[['overview','Overview'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans'],['developers','Developer Lab']];
+ if(role==='owner')items.push(['firewall','Firewall']);
  $('tabs').innerHTML=items.map(([id,name])=>'<button data-tab="'+id+'" class="'+(tab===id?'active':'')+'">'+name+'</button>').join('');
  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;buildTabs();render();});
 }
 async function reload(){panel=await post('/staff/panel');buildTabs();render();}
+async function firewall(){
+ const root=$('workspace');
+ root.innerHTML='<article class="card"><div class="section-title"><div><div class="eyebrow">Server-side protection</div><h2>Firewall Control Centre</h2></div><span class="tag">OWNER ONLY</span></div><p class="muted">These controls are enforced by the RPS Cloudflare Worker. Rate-limit events store categories and timestamps, not raw IP addresses.</p><div id="fw-status" class="notice">Loading firewall status…</div><div id="fw-controls" class="grid"></div></article><article class="card"><div class="section-title"><h2>Blocked activity</h2><button id="fw-clear" class="secondary">Clear log</button></div><div id="fw-events" class="table-list muted">Loading…</div></article>';
+ try{
+  const data=await post('/staff/firewall',{action:'get'});
+  const config=data.config||{enabled:true,login:true,api:true,ai:true,bot:true};
+  const keys=[['enabled','Firewall master switch','Enables or disables all application firewall checks.'],['login','Login protection','Limits repeated sign-in and owner reauthentication attempts to 8 per 10 minutes per IP.'],['api','API rate limiting','Limits POST API traffic to 240 requests per minute per IP.'],['ai','AI abuse protection','Limits AI endpoints to 30 requests per minute per IP.'],['bot','Large-payload screening','Rejects POST payloads larger than 12 MB.']];
+  $('fw-status').innerHTML='<strong class="'+(config.enabled?'success':'error')+'">'+(config.enabled?'● FIREWALL ACTIVE':'● FIREWALL DISABLED')+'</strong><br><span class="muted">The protection is enforced at the game Worker, not just in this panel.</span>';
+  $('fw-controls').innerHTML=keys.map(([key,name,desc])=>'<article class="card"><div class="section-title"><h3>'+name+'</h3><button data-fw="'+key+'" class="'+(config[key]?'good':'secondary')+'">'+(config[key]?'ON':'OFF')+'</button></div><p class="muted">'+desc+'</p></article>').join('');
+  $('fw-controls').querySelectorAll('[data-fw]').forEach(button=>button.onclick=async()=>{const key=button.dataset.fw;const next={...config,[key]:!config[key]};button.disabled=true;try{await post('/staff/firewall',{action:'set',config:next});await firewall();say($('work-msg'),'Firewall settings saved on the server.');}catch(e){say($('work-msg'),e.message,true);button.disabled=false;}});
+  const events=data.events||[];
+  $('fw-events').innerHTML=events.length?events.map(e=>'<div class="employee-row"><div><strong>'+esc(e.category||'request')+' · '+esc(e.reason||'Blocked')+'</strong><small>'+esc(new Date(e.at).toLocaleString())+'</small></div><span class="tag">BLOCKED</span></div>').join(''):'No blocked requests have been recorded yet.';
+  $('fw-clear').onclick=async()=>{if(!confirm('Clear the firewall event log?'))return;try{await post('/staff/firewall',{action:'clear-events'});await firewall();say($('work-msg'),'Firewall log cleared.');}catch(e){say($('work-msg'),e.message,true);}};
+ }catch(e){$('fw-status').textContent='Could not load firewall: '+e.message;$('fw-status').className='notice error';}
+}
 async function developers(){
  const root=$('workspace');root.innerHTML='<article class="card"><h2>Website change proposals</h2><p class="muted">Review Legend developer submissions. Approval publishes validated theme settings. Submitted JavaScript is never executed.</p><div id="dev-proposals" class="table-list">Loading proposals…</div></article><article class="card"><h2>Legacy developer accounts</h2><div id="dev-accounts" class="table-list">Loading…</div></article><article class="card"><h2>Security test submissions</h2><div id="dev-submissions" class="table-list">Loading…</div></article>';
  try{
@@ -69,6 +85,7 @@ async function developers(){
 }
 function render(){
  const root=$('workspace');$('work-msg').textContent='';
+ if(tab==='firewall'){firewall();return;}
  if(tab==='developers'){developers();return;}
  if(tab==='overview'){
   root.innerHTML='<div class="grid"><article class="card"><h3>RPS server</h3><p class="status '+(panel.online?'on':'off')+'">'+(panel.online?'● ONLINE':'● OFFLINE')+'</p><p class="muted">Server status and operational controls.</p></article><article class="card"><h3>Administration</h3><p><span class="pill">'+labelRole(role)+'</span></p><p class="muted">You have access to employee management, account administration, server operations, tournaments and memberships.</p></article></div>';return;
