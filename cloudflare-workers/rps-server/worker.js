@@ -1705,10 +1705,12 @@ index_default.fetch = async function(request, env) {
         const path = url.pathname;
         const isLogin = path === "/auth/login" || path === "/staff/reauth";
         const isAi = path.startsWith("/ai/");
+        const isRoom = request.method === "GET" && (path === "/room" || path === "/multi-room");
         const isApi = request.method === "POST" && !path.startsWith("/room");
         let rule = null;
         if (cfg.login && isLogin) rule = { limit: 8, windowMs: 10 * 60 * 1000, category: "login" };
         else if (cfg.ai && isAi) rule = { limit: 30, windowMs: 60 * 1000, category: "ai" };
+        else if (cfg.api && isRoom) rule = { limit: 20, windowMs: 60 * 1000, category: "room-connect" };
         else if (cfg.api && isApi) rule = { limit: 240, windowMs: 60 * 1000, category: "api" };
         if (rule) {
           const ip = request.headers.get("CF-Connecting-IP") || "unknown";
