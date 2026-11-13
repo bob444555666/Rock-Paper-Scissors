@@ -1146,6 +1146,27 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
       const isCoOwner = ["co-owner", "owner"].includes(role);
       const isOwner = role === "owner";
       const deny = () => json(env, { error: "Your employee role does not allow that action." }, 403);
+      if (act === "firewall") {
+        if (!isOwner) return deny();
+        const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+        const action = String(body.action || "get");
+        if (action === "get") {
+          const [cfg, logs] = await Promise.all([
+            control.fetch("https://control/firewall/config"),
+            control.fetch("https://control/firewall/events")
+          ]);
+          return json(env, { ...(await cfg.json()), ...(await logs.json()) });
+        }
+        if (action === "set") {
+          const saved = await control.fetch("https://control/firewall/config-set", { method: "POST", body: JSON.stringify({ config: body.config || {} }) });
+          return json(env, await saved.json(), saved.status);
+        }
+        if (action === "clear-events") {
+          const cleared = await control.fetch("https://control/firewall/clear-events", { method: "POST" });
+          return json(env, await cleared.json(), cleared.status);
+        }
+        return json(env, { error: "Unknown firewall action." }, 400);
+      }
       if (act === "panel") {
         const list = (await ask("/chal/admin-list", {})).data.challenges || [];
         const tournaments = (await ask("/tour/admin-list", {})).data.tournaments || [];
@@ -1666,22 +1687,74 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
 };
 
 var __rpsOriginalFetch = index_default.fetch.bind(index_default);
+var __rpsFirewallCache = null;
+var __rpsFirewallCacheAt = 0;
 index_default.fetch = async function(request, env) {
   const startedAt = Date.now();
   const url = new URL(request.url);
+  try {
+    if (request.method !== "OPTIONS" && !url.pathname.startsWith("/internal/") && url.pathname !== "/admin") {
+      if (!__rpsFirewallCache || Date.now() - __rpsFirewallCacheAt > 3000) {
+        const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+        const cfgResponse = await control.fetch("https://control/firewall/config");
+        __rpsFirewallCache = (await cfgResponse.json()).config || { enabled: true, login: true, api: true, ai: true, bot: true };
+        __rpsFirewallCacheAt = Date.now();
+      }
+      const cfg = __rpsFirewallCache;
+      if (cfg && cfg.enabled) {
+        const path = url.pathname;
+        const isLogin = path === "/auth/login" || path === "/staff/reauth";
+        const isAi = path.startsWith("/ai/");
+        const isApi = request.method === "POST" && !path.startsWith("/room");
+        let rule = null;
+        if (cfg.login && isLogin) rule = { limit: 8, windowMs: 10 * 60 * 1000, category: "login" };
+        else if (cfg.ai && isAi) rule = { limit: 30, windowMs: 60 * 1000, category: "ai" };
+        else if (cfg.api && isApi) rule = { limit: 240, windowMs: 60 * 1000, category: "api" };
+        if (rule) {
+          const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+          const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(ip)));
+          const ipHash = Array.from(digest.slice(0, 12), b => b.toString(16).padStart(2, "0")).join("");
+          const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+          const limited = await control.fetch("https://control/firewall/rate", {
+            method: "POST",
+            body: JSON.stringify({ key: rule.category + ":" + ipHash, limit: rule.limit, windowMs: rule.windowMs, category: rule.category })
+          });
+          const result = await limited.json();
+          if (!result.allowed) {
+            return json(env, { error: "Firewall rate limit reached. Please wait before trying again.", retryAfterMs: result.retryAfterMs }, 429);
+          }
+        }
+        if (cfg.bot && request.method === "POST") {
+          const length = Number(request.headers.get("Content-Length") || 0);
+          if (length > 12 * 1024 * 1024) return json(env, { error: "Request rejected by firewall: payload is too large." }, 413);
+        }
+      }
+    }
+  } catch (error) {
+    // Fail open if the protection store is temporarily unavailable so the game stays playable.
+    console.log("Firewall check unavailable:", String(error && error.message || error));
+  }
   const response = await __rpsOriginalFetch(request, env);
   try {
-    if (env.RPS_DATABASE && !url.pathname.startsWith("/internal/") && url.pathname !== "/admin") {
-      const auth = request.headers.get("Authorization") || "";
-      const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-      let accountId = null;
-      if (token) {
-        try { const session = await readSession(env, token); accountId = session && !session.setup ? session.sub : null; } catch {}
+    if (response.status !== 101) {
+      const headers = new Headers(response.headers);
+      headers.set("X-Content-Type-Options", "nosniff");
+      headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+      headers.set("X-Frame-Options", "SAMEORIGIN");
+      const secured = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+      if (env.RPS_DATABASE && !url.pathname.startsWith("/internal/") && url.pathname !== "/admin") {
+        const auth = request.headers.get("Authorization") || "";
+        const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+        let accountId = null;
+        if (token) {
+          try { const session = await readSession(env, token); accountId = session && !session.setup ? session.sub : null; } catch {}
+        }
+        await env.RPS_DATABASE.prepare("INSERT INTO activity_events (id, account_id, event_type, route, method, status_code, details_json) VALUES (?, ?, ?, ?, ?, ?, ?)")
+          .bind(crypto.randomUUID(), accountId, "server_request", url.pathname.slice(0, 180), request.method, secured.status, JSON.stringify({ durationMs: Date.now() - startedAt })).run();
       }
-      await env.RPS_DATABASE.prepare("INSERT INTO activity_events (id, account_id, event_type, route, method, status_code, details_json) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(crypto.randomUUID(), accountId, "server_request", url.pathname.slice(0, 180), request.method, response.status, JSON.stringify({ durationMs: Date.now() - startedAt })).run();
+      return secured;
     }
-  } catch {}
+  } catch (error) { console.log("Firewall response logging skipped:", String(error && error.message || error)); }
   return response;
 };
 var RPSRoom = class extends DurableObject {
@@ -1696,6 +1769,44 @@ var RPSRoom = class extends DurableObject {
   }
   async fetch(request) {
     const url = new URL(request.url);
+    if (url.pathname === "/firewall/config") {
+      const config = await this.ctx.storage.get("fw:config") || { enabled: true, login: true, api: true, ai: true, bot: true };
+      return Response.json({ config });
+    }
+    if (url.pathname === "/firewall/config-set") {
+      const d = await request.json().catch(() => ({}));
+      const c = d.config || {};
+      const config = { enabled: c.enabled === true, login: c.login === true, api: c.api === true, ai: c.ai === true, bot: c.bot === true };
+      await this.ctx.storage.put("fw:config", config);
+      return Response.json({ config });
+    }
+    if (url.pathname === "/firewall/rate") {
+      const d = await request.json().catch(() => ({}));
+      const key = String(d.key || "").replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 100);
+      if (!key) return Response.json({ error: "Missing rate-limit key." }, { status: 400 });
+      const limit = Math.max(1, Math.min(2000, Number(d.limit) || 120));
+      const windowMs = Math.max(1000, Math.min(3600000, Number(d.windowMs) || 60000));
+      const now = Date.now();
+      const storageKey = "fw:rl:" + key;
+      let state = await this.ctx.storage.get(storageKey) || { count: 0, resetAt: now + windowMs };
+      if (state.resetAt <= now) state = { count: 0, resetAt: now + windowMs };
+      if (state.count >= limit) {
+        const events = await this.ctx.storage.get("fw:events") || [];
+        events.unshift({ at: now, category: String(d.category || "api").slice(0, 24), reason: "Rate limit exceeded" });
+        await this.ctx.storage.put("fw:events", events.slice(0, 50));
+        return Response.json({ allowed: false, retryAfterMs: Math.max(1000, state.resetAt - now) });
+      }
+      state.count++;
+      await this.ctx.storage.put(storageKey, state);
+      return Response.json({ allowed: true, remaining: Math.max(0, limit - state.count), resetAt: state.resetAt });
+    }
+    if (url.pathname === "/firewall/events") {
+      return Response.json({ events: await this.ctx.storage.get("fw:events") || [] });
+    }
+    if (url.pathname === "/firewall/clear-events") {
+      await this.ctx.storage.put("fw:events", []);
+      return Response.json({ ok: true });
+    }
     if (url.pathname === "/on") {
       await this.ctx.storage.put("serverOnline", true);
       return Response.json({ online: true });
