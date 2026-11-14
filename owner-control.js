@@ -49,11 +49,27 @@ async function boot(){
 let tab='overview';
 function buildTabs(){
  const items=[['overview','Overview'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans'],['developers','Developer Lab']];
- if(role==='owner')items.push(['firewall','Firewall']);
+ if(role==='owner')items.push(['verification','Verification Override'],['firewall','Firewall']);
  $('tabs').innerHTML=items.map(([id,name])=>'<button data-tab="'+id+'" class="'+(tab===id?'active':'')+'">'+name+'</button>').join('');
  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;buildTabs();render();});
 }
 async function reload(){panel=await post('/staff/panel');buildTabs();render();}
+async function verificationOverride(){
+ const root=$('workspace');
+ root.innerHTML='<article class="card"><div class="section-title"><div><div class="eyebrow">Owner-only security action</div><h2>Email verification override</h2></div><span class="tag">OWNER ONLY</span></div><div class="notice">This does not disable verification for the public. It verifies one active pending signup after the Owner signs in, reauthenticates, and enters the private BY_PASS_KEY.</div><label for="verify-email">Pending signup email</label><input id="verify-email" type="email" autocomplete="off" placeholder="player@example.com"><label for="verify-key">BY_PASS_KEY</label><input id="verify-key" type="password" autocomplete="off" placeholder="Enter the Cloudflare secret"><button id="verify-submit" class="good">Verify this pending signup</button><p class="muted">The pending signup must still be active and not expired. Every successful override is recorded in the server security audit log. Never share this key or put it in website code.</p><p id="verify-result" class="msg" role="status"></p></article>';
+ $('verify-submit').onclick=async()=>{
+  const email=$('verify-email').value.trim(),key=$('verify-key').value;
+  if(!email||!key){say($('verify-result'),'Enter both the pending signup email and BY_PASS_KEY.',true);return;}
+  if(!confirm('Verify the pending signup for '+email+'? This completes account registration without the email code.'))return;
+  $('verify-submit').disabled=true;say($('verify-result'),'Checking owner authorization and pending signup…');
+  try{
+   const out=await post('/staff/verification-override',{email,key});
+   $('verify-key').value='';
+   say($('verify-result'),'Verified '+out.username+' ('+out.email+'). The account can now sign in.');
+  }catch(e){say($('verify-result'),e.message,true);}
+  finally{$('verify-submit').disabled=false;}
+ };
+}
 async function firewall(){
  const root=$('workspace');
  root.innerHTML='<article class="card"><div class="section-title"><div><div class="eyebrow">Server-side protection</div><h2>Firewall Control Centre</h2></div><span class="tag">OWNER ONLY</span></div><p class="muted">These controls are enforced by the RPS Cloudflare Worker. Rate-limit events store categories and timestamps, not raw IP addresses.</p><div id="fw-status" class="notice">Loading firewall status…</div><div id="fw-controls" class="grid"></div></article><article class="card"><div class="section-title"><h2>Blocked activity</h2><button id="fw-clear" class="secondary">Clear log</button></div><div id="fw-events" class="table-list muted">Loading…</div></article>';
@@ -85,6 +101,7 @@ async function developers(){
 }
 function render(){
  const root=$('workspace');$('work-msg').textContent='';
+ if(tab==='verification'){verificationOverride();return;}
  if(tab==='firewall'){firewall();return;}
  if(tab==='developers'){developers();return;}
  if(tab==='overview'){
