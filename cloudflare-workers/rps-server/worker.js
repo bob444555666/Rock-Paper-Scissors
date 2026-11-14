@@ -85,6 +85,18 @@ async function hmacKey(secret) {
   );
 }
 __name(hmacKey, "hmacKey");
+async function secretMatches(expected, provided) {
+  if (typeof expected !== "string" || expected.length < 32 || typeof provided !== "string" || provided.length > 256) return false;
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(expected)),
+    crypto.subtle.digest("SHA-256", enc.encode(provided))
+  ]);
+  const x = new Uint8Array(a), y = new Uint8Array(b);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+__name(secretMatches, "secretMatches");
 async function makeSession(env, user, extra = {}, ttl = 7 * 24 * 36e5) {
   const payload = b64urlEncode(enc.encode(JSON.stringify({
     sub: user.sub,
@@ -1146,6 +1158,23 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
       const isCoOwner = ["co-owner", "owner"].includes(role);
       const isOwner = role === "owner";
       const deny = () => json(env, { error: "Your employee role does not allow that action." }, 403);
+      if (act === "verification-override") {
+        if (!isOwner) return deny();
+        if (!env.BY_PASS_KEY) return json(env, { error: "Verification override is not configured on the server." }, 503);
+        const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+        const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(ip)));
+        const ipHash = Array.from(digest.slice(0, 12), b => b.toString(16).padStart(2, "0")).join("");
+        const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+        const limit = await control.fetch("https://control/firewall/rate", { method: "POST", body: JSON.stringify({ key: "verification-override:" + ipHash, limit: 5, windowMs: 15 * 60 * 1000, category: "verification-override" }) });
+        const limitData = await limit.json();
+        if (!limitData.allowed) return json(env, { error: "Too many verification override attempts. Try again later." }, 429);
+        if (!await secretMatches(env.BY_PASS_KEY, String(body.key || ""))) return json(env, { error: "The verification override key is incorrect." }, 403);
+        const email = String(body.email || "").trim().toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(env, { error: "Enter the email address of a pending signup." }, 400);
+        const out = await ask("/acct/admin-verify-pending", { email, actor: session.sub });
+        if (out.ok) console.log("Owner verification override completed", { actor: session.sub, email });
+        return json(env, out.data, out.status);
+      }
       if (act === "firewall") {
         if (!isOwner) return deny();
         const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
@@ -2424,6 +2453,18 @@ var RPSRoom = class extends DurableObject {
         const code = String(1e5 + crypto.getRandomValues(new Uint32Array(1))[0] % 9e5);
         await S.put("pending:" + email, { user, code, exp: Date.now() + 10 * 6e4, tries: 0, sentAt: Date.now() });
         return Response.json({ code });
+      }
+      if (path === "/acct/admin-verify-pending") {
+        const email = lower(d.email);
+        const actor = String(d.actor || "").slice(0, 80);
+        if (!actor) return bad("Missing owner audit identity.", 400);
+        const p = await S.get("pending:" + email);
+        if (!p || p.exp < Date.now()) return bad("No active pending signup exists for that email.", 404);
+        if (await S.get("uname:" + p.user.username.toLowerCase()) || await S.get("email:" + email)) return bad("That username or email is already in use.", 409);
+        await save(p.user);
+        await S.delete("pending:" + email);
+        await S.put("security-audit:" + Date.now() + ":" + crypto.randomUUID(), { action: "owner_verification_override", actor, email, username: p.user.username, at: Date.now() });
+        return Response.json({ ok: true, username: p.user.username, email, verified: true });
       }
       if (path === "/acct/verify") {
         const email = lower(d.email);
