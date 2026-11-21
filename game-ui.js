@@ -17,7 +17,7 @@
     header.append(brand,nav,account);
     const hero=make('section','rps-hero');hero.id='home';
     const copy=make('div','');
-    copy.append(make('p','rps-kicker','SEASON / LIVE MATCHMAKING'),make('h1','', 'MAKE YOUR\\nNEXT MOVE.'),make('p','rps-hero-copy','Challenge the arena. Outsmart your rivals. Climb the ranks.'));
+    copy.append(make('p','rps-kicker','SEASON / LIVE MATCHMAKING'),make('h1','', 'MAKE YOUR\nNEXT MOVE.'),make('p','rps-hero-copy','Challenge the arena. Outsmart your rivals. Climb the ranks.'));
     const actions=make('div','rps-hero-actions');
     const play=make('a','rps-action','PLAY NOW');play.href='#gameplay';
     const room=make('a','rps-action secondary','CREATE A ROOM');room.href='#arena-room';room.addEventListener('click',()=>setTimeout(()=>$('#room-code')?.focus(),0));
