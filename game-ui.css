@@ -88,3 +88,25 @@ body.rps-ui-page .player{background:#0c1423;border-color:var(--rps-ui-line)}
 body.rps-ui-page .move{background:#111c30;border-color:#405071}
 @media(max-width:900px){.rps-hero{grid-template-columns:1fr;gap:22px;padding:36px 0 28px}.rps-live-card{max-width:none}.rps-game-layout{grid-template-columns:1fr}.rps-nav{gap:5px}.rps-brand{min-width:0}}
 @media(max-width:620px){.rps-shell{width:min(100% - 28px,1320px);padding-top:16px}.rps-topbar{align-items:flex-start;flex-wrap:wrap;gap:12px}.rps-brand{width:100%}.rps-nav{justify-content:flex-start}.rps-nav a,.rps-nav button{min-height:36px;padding:0 10px;font-size:10px}.rps-account{display:none}.rps-hero{padding:30px 0 24px}.rps-hero h1{font-size:48px}.rps-panel{padding:16px}body.rps-game-ui #online-box{padding:14px}body.rps-game-ui .move-row{justify-content:center}body.rps-game-ui .move-button{--size:clamp(76px,24vw,104px)}body.rps-ui-page .plans{grid-template-columns:1fr}}
+
+
+/* Refinement pass: clearer hierarchy, interaction feedback and small-screen comfort. */
+.rps-account{appearance:none;padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.rps-account:focus-visible,.rps-nav a:focus-visible,.rps-action:focus-visible,body.rps-game-ui button:focus-visible,body.rps-ui-page a:focus-visible,body.rps-ui-page button:focus-visible{outline:2px solid var(--rps-ui-cyan);outline-offset:4px}
+.rps-hero{position:relative}
+.rps-hero:after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,var(--rps-ui-line),transparent);pointer-events:none}
+.rps-hero h1{white-space:pre-line;text-wrap:balance;text-shadow:0 8px 34px #62d8ff16}
+.rps-live-card{position:relative;overflow:hidden}
+.rps-live-card:after{content:"";position:absolute;width:170px;height:170px;right:-90px;top:-100px;border:1px solid #62d8ff30;border-radius:50%;box-shadow:0 0 0 18px #62d8ff08,0 0 0 38px #62d8ff05;pointer-events:none}
+.rps-live-number{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.rps-panel{transition:border-color .2s ease,transform .2s ease}
+.rps-panel:hover{border-color:#405477}
+.rps-action{transition:transform .18s ease,filter .18s ease,box-shadow .18s ease}
+.rps-action:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 10px 28px #62d8ff20}
+.rps-nav a{transition:color .18s ease,border-color .18s ease,background .18s ease}
+body.rps-game-ui .move-button{transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+body.rps-game-ui .move-button:hover{transform:translateY(-3px)}
+body.rps-ui-page .card,body.rps-ui-page .plan{transition:border-color .18s ease,transform .18s ease}
+body.rps-ui-page .plan:hover{transform:translateY(-3px);border-color:#52678d!important}
+@media(prefers-reduced-motion:reduce){.rps-panel,.rps-action,.rps-nav a,body.rps-game-ui .move-button,body.rps-ui-page .card,body.rps-ui-page .plan{transition:none!important}.rps-action:hover,body.rps-game-ui .move-button:hover,body.rps-ui-page .plan:hover{transform:none!important}}
+@media(max-width:620px){.rps-hero h1{font-size:clamp(42px,13vw,54px)}.rps-hero-copy{font-size:14px}.rps-live-card{padding:18px}.rps-section-title{font-size:29px}.rps-action{flex:1 1 145px}}
