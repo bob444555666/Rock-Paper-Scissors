@@ -40,7 +40,7 @@
     document.body.insertBefore(shell,document.body.firstChild);
     const liveStatus=$('#connection-status'), playerCount=$('#player-count');
     const liveNumber=live.querySelector('.rps-live-number');
-    const sync=()=>{status.textContent=liveStatus?.textContent?.trim()||'Status unavailable';const count=playerCount?.textContent?.match(/\d+\s*\/\s*\d+/);if(liveNumber)liveNumber.textContent=count?count[0].replace(/\\s/g,''):'—';};
+    const sync=()=>{status.textContent=liveStatus?.textContent?.trim()||'Status unavailable';const count=playerCount?.textContent?.match(/\d+\s*\/\s*\d+/);if(liveNumber)liveNumber.textContent=count?count[0].replace(/\s/g,''):'—';};
     sync(); if(liveStatus)new MutationObserver(sync).observe(liveStatus,{childList:true,subtree:true,characterData:true});
     if(playerCount)new MutationObserver(sync).observe(playerCount,{childList:true,subtree:true,characterData:true});
     const scoreText=$('.js-score'); if(scoreText){const syncScore=()=>{};new MutationObserver(syncScore).observe(scoreText,{childList:true,subtree:true,characterData:true});}
