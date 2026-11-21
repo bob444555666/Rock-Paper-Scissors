@@ -13,7 +13,7 @@
       if(label==='PROFILE') a.addEventListener('click',e=>{e.preventDefault();const chip=$('#user-chip');if(chip&&!chip.hidden)chip.click();else{const auth=$('#auth-layer');if(auth)auth.hidden=false;}});
       nav.append(a);
     });
-    const account=make('div','rps-account');account.append(make('span','rps-avatar-dot'));account.append(make('span','rps-account-name','PLAYER'));
+    const account=make('button','rps-account');account.type='button';account.setAttribute('aria-label','Open player profile');account.append(make('span','rps-avatar-dot'));account.append(make('span','rps-account-name','PLAYER'));account.addEventListener('click',()=>{const chip=$('#user-chip');if(chip&&!chip.hidden)chip.click();else{const auth=$('#auth-layer');if(auth)auth.hidden=false;}});
     header.append(brand,nav,account);
     const hero=make('section','rps-hero');hero.id='home';
     const copy=make('div','');
@@ -22,7 +22,7 @@
     const play=make('a','rps-action','PLAY NOW');play.href='#gameplay';
     const room=make('a','rps-action secondary','CREATE A ROOM');room.href='#arena-room';room.addEventListener('click',()=>setTimeout(()=>$('#room-code')?.focus(),0));
     actions.append(play,room);copy.append(actions);
-    const live=make('aside','rps-live-card');live.append(make('p','rps-live-label','LIVE ARENA'),make('p','rps-live-number','—'),make('p','rps-live-caption','REAL-TIME ROOM STATUS'));
+    const live=make('aside','rps-live-card');live.append(make('p','rps-live-label','YOUR ROOM'),make('p','rps-live-number','0/2'),make('p','rps-live-caption','PLAYERS IN ROOM'));
     const status=make('div','rps-connection-slot');status.id='rps-live-status';live.append(status);
     hero.append(copy,live);
     const gameSection=make('section','rps-game-layout');gameSection.id='gameplay';
@@ -39,7 +39,8 @@
     if(seo)shell.append(seo);
     document.body.insertBefore(shell,document.body.firstChild);
     const liveStatus=$('#connection-status'), playerCount=$('#player-count');
-    const sync=()=>{status.textContent=[liveStatus?.textContent,playerCount?.textContent].filter(Boolean).join(' · ');};
+    const liveNumber=live.querySelector('.rps-live-number');
+    const sync=()=>{status.textContent=liveStatus?.textContent?.trim()||'Status unavailable';const count=playerCount?.textContent?.match(/\\d+\\s*\\/\\s*\\d+/);if(liveNumber)liveNumber.textContent=count?count[0].replace(/\\s/g,''):'—';};
     sync(); if(liveStatus)new MutationObserver(sync).observe(liveStatus,{childList:true,subtree:true,characterData:true});
     if(playerCount)new MutationObserver(sync).observe(playerCount,{childList:true,subtree:true,characterData:true});
     const scoreText=$('.js-score'); if(scoreText){const syncScore=()=>{};new MutationObserver(syncScore).observe(scoreText,{childList:true,subtree:true,characterData:true});}
