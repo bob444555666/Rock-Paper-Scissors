@@ -3,6 +3,8 @@ from urllib.parse import urlparse
 
 from workers import Response, WorkerEntrypoint
 from game import BEATS, MOVES, EXTENDED_MOVES, SMARTNESS, daily_challenge, play_round, play_custom_round
+from posthog_client import posthog_client
+from posthog_logs import log_request_failure, log_round_completed
 
 SITE_ORIGIN = "https://www.stone-paper-scissors.com"
 
@@ -23,8 +25,39 @@ def json_response(data, status=200):
     )
 
 
+def capture_completed_round(event, round_data):
+    """Record a completed game action without affecting the API response."""
+    log_round_completed(round_data)
+    if not posthog_client:
+        return
+    try:
+        posthog_client.capture(
+            event=event,
+            properties={
+                "round_result": round_data["result"],
+                "difficulty": round_data["level"],
+                "game_variant": round_data["variant"],
+                "round_number": round_data["telemetry"]["rounds"],
+            },
+        )
+    except Exception:
+        pass
+
+
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
+        try:
+            return await self._fetch(request)
+        except Exception as error:
+            log_request_failure(error)
+            if posthog_client:
+                try:
+                    posthog_client.capture_exception(error)
+                except Exception:
+                    pass
+            raise
+
+    async def _fetch(self, request):
         path = urlparse(request.url).path.rstrip("/") or "/"
         method = request.method.upper()
         origin = request.headers.get("Origin")
@@ -78,10 +111,14 @@ class Default(WorkerEntrypoint):
                 if not isinstance(variant, str) or not isinstance(style, str):
                     return json_response({"error": "Variant and style must be strings."}, 400)
                 try:
-                    return json_response(play_custom_round(move, variant, level, history, style, rounds))
+                    round_data = play_custom_round(move, variant, level, history, style, rounds)
                 except ValueError as error:
                     return json_response({"error": str(error)}, 400)
+                capture_completed_round("custom_round_played", round_data)
+                return json_response(round_data)
             if move not in MOVES or any(item not in MOVES for item in history):
                 return json_response({"error": "Move and history must use rock, paper, or scissors."}, 400)
-            return json_response(play_round(move, level, history, rounds))
+            round_data = play_round(move, level, history, rounds)
+            capture_completed_round("classic_round_played", round_data)
+            return json_response(round_data)
         return json_response({"error": "Not found."}, 404)

@@ -1,0 +1,4 @@
+opentelemetry-api
+opentelemetry-exporter-otlp
+opentelemetry-sdk
+posthog<8,>=7.69

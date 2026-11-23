@@ -3,7 +3,12 @@ name = "rps-python-api"
 version = "0.1.0"
 description = "An additive Python API for Stone Paper Scissors"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "opentelemetry-api",
+    "opentelemetry-exporter-otlp",
+    "opentelemetry-sdk",
+    "posthog>=7.69,<8",
+]
 
 [dependency-groups]
 dev = ["workers-py"]

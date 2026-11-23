@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+src/entry.py
+src/game.py
+src/posthog_client.py
+src/posthog_logs.py
+src/rps_python_api.egg-info/PKG-INFO
+src/rps_python_api.egg-info/SOURCES.txt
+src/rps_python_api.egg-info/dependency_links.txt
+src/rps_python_api.egg-info/requires.txt
+src/rps_python_api.egg-info/top_level.txt
+tests/test_game.py
