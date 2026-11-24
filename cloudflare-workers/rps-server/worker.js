@@ -697,6 +697,12 @@ var index_default = {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { ...cors(env), "Access-Control-Max-Age": "86400" } });
 
+    if (url.pathname === "/site/status" && request.method === "GET") {
+      const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+      const response = await control.fetch("https://control/maintenance/status");
+      return json(env, await response.json());
+    }
+
     if (url.pathname === "/developer/published-config" && request.method === "GET") {
       if (!env.RPS_DATABASE) return json(env, { config: null });
       await env.RPS_DATABASE.prepare("CREATE TABLE IF NOT EXISTS developer_site_config (id INTEGER PRIMARY KEY CHECK(id=1),config_json TEXT NOT NULL,proposal_id TEXT,published_by TEXT,published_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
@@ -1284,6 +1290,24 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
         const out = await ask("/acct/admin-delete", { id: targetId });
         return json(env, out.data, out.status);
       }
+      if (act === "maintenance") {
+        if (!isOwner) return deny();
+        const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+        const action = String(body.action || "get");
+        if (action === "get") {
+          const response = await control.fetch("https://control/maintenance/status");
+          return json(env, await response.json());
+        }
+        if (action === "set") {
+          const enabled = body.enabled === true;
+          const response = await control.fetch("https://control/maintenance/set", {
+            method: "POST",
+            body: JSON.stringify({ enabled })
+          });
+          return json(env, await response.json(), response.status);
+        }
+        return json(env, { error: "Unknown maintenance action." }, 400);
+      }
       if (act === "server") {
         if (!isManager) return deny();
         const on = body.on === true;
@@ -1765,6 +1789,22 @@ index_default.fetch = async function(request, env) {
     // Fail open if the protection store is temporarily unavailable so the game stays playable.
     console.log("Firewall check unavailable:", String(error && error.message || error));
   }
+  if (request.method !== "OPTIONS" && url.pathname !== "/site/status" &&
+      url.pathname !== "/auth/login" && !url.pathname.startsWith("/staff/")) {
+    try {
+      const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+      const maintenanceResponse = await control.fetch("https://control/maintenance/status");
+      const maintenance = await maintenanceResponse.json();
+      if (maintenance.enabled === true) {
+        return json(env, {
+          error: "The website is temporarily disabled for maintenance. Please check back soon.",
+          maintenance: true
+        }, 503);
+      }
+    } catch (error) {
+      console.log("Maintenance status check unavailable:", String(error && error.message || error));
+    }
+  }
   const response = await __rpsOriginalFetch(request, env);
   try {
     if (response.status !== 101) {
@@ -1837,6 +1877,16 @@ var RPSRoom = class extends DurableObject {
     if (url.pathname === "/firewall/clear-events") {
       await this.ctx.storage.put("fw:events", []);
       return Response.json({ ok: true });
+    }
+    if (url.pathname === "/maintenance/status") {
+      const maintenance = await this.ctx.storage.get("siteMaintenance") || { enabled: false };
+      return Response.json({ enabled: maintenance.enabled === true, message: "Stone Paper Scissors is temporarily disabled while maintenance is underway. Please check back soon." });
+    }
+    if (url.pathname === "/maintenance/set") {
+      const d = await request.json().catch(() => ({}));
+      const maintenance = { enabled: d.enabled === true, updatedAt: Date.now() };
+      await this.ctx.storage.put("siteMaintenance", maintenance);
+      return Response.json({ enabled: maintenance.enabled, updatedAt: maintenance.updatedAt });
     }
     if (url.pathname === "/on") {
       await this.ctx.storage.put("serverOnline", true);
