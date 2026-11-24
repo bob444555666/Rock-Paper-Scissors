@@ -1209,6 +1209,12 @@ ${list.map((u) => `<div class="acct"><span>${esc(u.username || "(no username yet
         }
         return json(env, { error: "Unknown firewall action." }, 400);
       }
+      if (act === "online-people") {
+        if (!isCoOwner) return deny();
+        const control = env.RPS_ROOM.get(env.RPS_ROOM.idFromName(CONTROL_NAME));
+        const response = await control.fetch("https://control/presence/list");
+        return json(env, await response.json());
+      }
       if (act === "panel") {
         const list = (await ask("/chal/admin-list", {})).data.challenges || [];
         const tournaments = (await ask("/tour/admin-list", {})).data.tournaments || [];
@@ -1967,6 +1973,32 @@ var RPSRoom = class extends DurableObject {
     }
     if (url.pathname === "/count") {
       return Response.json({ count: this.players.length, names: this.players.map((p) => p.name) });
+    }
+    if (url.pathname === "/presence/upsert") {
+      const d = await request.json().catch(() => ({}));
+      const id = String(d.id || "").slice(0, 100);
+      const username = String(d.username || "Player").slice(0, 24);
+      if (!id) return Response.json({ error: "Missing player id." }, { status: 400 });
+      const people = await this.ctx.storage.get("livePeople") || {};
+      const prior = people[id];
+      people[id] = { username, connectedAt: prior && prior.connectedAt || Date.now(), lastSeen: Date.now() };
+      await this.ctx.storage.put("livePeople", people);
+      return Response.json({ ok: true });
+    }
+    if (url.pathname === "/presence/remove") {
+      const d = await request.json().catch(() => ({}));
+      const id = String(d.id || "").slice(0, 100);
+      const people = await this.ctx.storage.get("livePeople") || {};
+      delete people[id];
+      await this.ctx.storage.put("livePeople", people);
+      return Response.json({ ok: true });
+    }
+    if (url.pathname === "/presence/list") {
+      const people = await this.ctx.storage.get("livePeople") || {};
+      const now = Date.now();
+      const active = Object.entries(people).filter(([, p]) => p && now - Number(p.lastSeen || 0) < 15 * 60 * 1000).map(([id, p]) => ({ id, username: p.username, connectedAt: p.connectedAt }));
+      if (active.length !== Object.keys(people).length) await this.ctx.storage.put("livePeople", Object.fromEntries(active.map(p => [p.id, people[p.id]])));
+      return Response.json({ people: active.sort((a, b) => a.connectedAt - b.connectedAt) });
     }
     if (url.pathname.startsWith("/ai/")) {
       const d = await request.json().catch(() => ({}));
@@ -3196,9 +3228,12 @@ var RPSRoom = class extends DurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
     this.players.push({ id: playerId, name, socket: server });
+    const presence = this.env.RPS_ROOM.get(this.env.RPS_ROOM.idFromName(CONTROL_NAME));
+    presence.fetch("https://control/presence/upsert", { method: "POST", body: JSON.stringify({ id: playerId, username: name }) }).catch(() => {});
     server.send(JSON.stringify({ type: "welcome", playerId, name }));
     this.sendPlayerCount();
     server.addEventListener("message", async (event) => {
+      presence.fetch("https://control/presence/upsert", { method: "POST", body: JSON.stringify({ id: playerId, username: name }) }).catch(() => {});
       let data;
       try {
         data = JSON.parse(event.data);
@@ -3213,7 +3248,7 @@ var RPSRoom = class extends DurableObject {
         this.receiveMove(playerId, data.move);
       }
     });
-    server.addEventListener("close", () => this.removePlayer(playerId));
+    server.addEventListener("close", () => { this.removePlayer(playerId); presence.fetch("https://control/presence/remove", { method: "POST", body: JSON.stringify({ id: playerId }) }).catch(() => {}); });
     return new Response(null, { status: 101, webSocket: client });
   }
   async stillOnline() {
