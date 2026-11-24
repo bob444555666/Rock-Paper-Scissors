@@ -7,6 +7,13 @@ var GOOGLE_CLIENT_ID = "673440193252-afoh2lbjqrduu3buqrt6lppnl89q8ogt.apps.googl
 var SITE_ORIGIN = "https://www.stone-paper-scissors.com";
 var CONTROL_NAME = "__SERVER_CONTROL__";
 var USERS_NAME = "__USERS__";
+function premiumActive(user, now = Date.now()) {
+  if (!user || !user.premium) return false;
+  if (user.premium.lifetime === true) return true;
+  const expiresAt = Number(user.premium.expiresAt);
+  return !Number.isFinite(expiresAt) || expiresAt <= 0 || expiresAt > now;
+}
+__name(premiumActive, "premiumActive");
 var enc = new TextEncoder();
 function b64urlEncode(bytes) {
   let s = "";
@@ -1972,7 +1979,7 @@ var RPSRoom = class extends DurableObject {
         const mode = d.mode === "chat" ? "chat" : "coach";
         const u = d.userId ? await S.get("user:" + String(d.userId).slice(0, 80)) : null;
         const rawPlan = String(u && (u.premiumPlan || (u.premium && u.premium.plan)) || "").toLowerCase().replace(/[_\s]+/g, "-");
-        if (!u || !u.premium) return Response.json({ error: mode === "chat" ? "AI Chat requires a Pro or Legend plan." : "AI Coach requires a Plus, Pro, or Legend plan.", premiumRequired: true }, { status: 403 });
+        if (!u || !premiumActive(u, now)) return Response.json({ error: mode === "chat" ? "AI Chat requires a Pro or Legend plan." : "AI Coach requires a Plus, Pro, or Legend plan.", premiumRequired: true }, { status: 403 });
         if (mode === "chat" && !rawPlan.includes("ultra") && rawPlan !== "duo" && rawPlan !== "family") return Response.json({ error: "AI Chat requires a Pro or Legend plan.", premiumRequired: true }, { status: 403 });
         const key = "airl:" + String(d.key || "x").slice(0, 80);
         const limit = mode === "chat" ? AI_LIMIT_CHAT : Number(d.limit) || AI_LIMIT_GUEST;
@@ -2155,7 +2162,7 @@ var RPSRoom = class extends DurableObject {
       const { t, eid } = ref;
       const meP = toPlayer(t, eid);
       const acct = await S.get("user:" + meP.accountId);
-      const scout = !!(acct && acct.premium && ["duo", "family"].includes(String(acct.premiumPlan || acct.premium.plan || "").trim().toLowerCase()));
+      const scout = !!(acct && premiumActive(acct, now) && ["duo", "family"].includes(String(acct.premiumPlan || acct.premium.plan || "").trim().toLowerCase()));
       if (path === "/tour/state") {
         if (toTick(t, now)) await save(t);
         return Response.json({ state: toView(t, eid, now, scout) });
@@ -2261,10 +2268,26 @@ var RPSRoom = class extends DurableObject {
         const u = await S.get("user:" + uid);
         if (!u) return bad("No account with that username.", 404);
         const plan = ["individual", "duo", "family"].includes(String(d.plan || "")) ? String(d.plan) : "individual";
+        const lifetime = d.lifetime === true;
+        let expiresAt = 0;
+        if (!lifetime) {
+          const years = Number(d.years), months = Number(d.months), days = Number(d.days);
+          if (![years, months, days].every(Number.isInteger) || years < 0 || years > 100 || months < 0 || months > 1200 || days < 0 || days > 36500 || years + months + days < 1) return bad("Enter a valid duration greater than zero, or choose Lifetime.");
+          const expiry = new Date(Date.now());
+          const originalDay = expiry.getUTCDate();
+          const monthIndex = expiry.getUTCFullYear() * 12 + expiry.getUTCMonth() + years * 12 + months;
+          const targetYear = Math.floor(monthIndex / 12);
+          const targetMonth = monthIndex % 12;
+          const lastDay = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+          expiry.setUTCDate(1);
+          expiry.setUTCFullYear(targetYear, targetMonth, 1);
+          expiry.setUTCDate(Math.min(originalDay, lastDay) + days);
+          expiresAt = expiry.getTime();
+        }
         u.premiumPlan = plan;
-        u.premium = { since: Date.now(), source: "admin", plan, lifetime: d.lifetime === true };
+        u.premium = { since: Date.now(), source: "admin", plan, lifetime, ...(lifetime ? {} : { expiresAt }) };
         await S.put("user:" + uid, u);
-        return Response.json({ ok: true, username: u.username || username, plan, lifetime: d.lifetime === true });
+        return Response.json({ ok: true, username: u.username || username, plan, lifetime, expiresAt });
       }
       if (path === "/chal/prem-remove") {
         const u = d.id ? await S.get("user:" + String(d.id).slice(0, 80)) : null;
@@ -2276,7 +2299,17 @@ var RPSRoom = class extends DurableObject {
       }
       if (path === "/chal/prem-list") {
         const all = await S.list({ prefix: "user:" });
-        const premium = [...all.values()].filter((u) => u.premium).map((u) => ({ id: u.id, username: u.username || "(no username)", avatarAt: u.avatarAt || 0, source: u.premium.source, plan: u.premiumPlan || u.premium.plan || "", lifetime: u.premium.lifetime === true }));
+        const premium = [];
+        for (const u of all.values()) {
+          if (!u || !u.premium) continue;
+          if (!premiumActive(u)) {
+            delete u.premium;
+            if (u.premiumPlan && u.premiumPlan !== "free" && u.premium.source === "admin") delete u.premiumPlan;
+            await S.put("user:" + u.id, u);
+            continue;
+          }
+          premium.push({ id: u.id, username: u.username || "(no username)", avatarAt: u.avatarAt || 0, source: u.premium.source, plan: u.premiumPlan || u.premium.plan || "", lifetime: u.premium.lifetime === true, expiresAt: Number(u.premium.expiresAt) || 0 });
+        }
         return Response.json({ premium });
       }
       if (path === "/chal/role-get") {
@@ -2651,7 +2684,7 @@ var RPSRoom = class extends DurableObject {
       if (path === "/acct/leaderboard") {
         const mode = d.mode === "computer" ? "computer" : "online";
         const all = await S.list({ prefix: "user:" });
-        const rows = [...all.values()].filter((u) => u.username).map((u) => ({ name: u.username, av: u.avatarAt || 0, prem: !!u.premium && u.premiumBadge !== false, ...statsOf(u)[mode] })).filter((r) => r.wins + r.losses + r.ties > 0).sort((a, b) => b.wins - a.wins || a.losses - b.losses).slice(0, 100);
+        const rows = [...all.values()].filter((u) => u.username).map((u) => ({ name: u.username, av: u.avatarAt || 0, prem: premiumActive(u) && u.premiumBadge !== false, ...statsOf(u)[mode] })).filter((r) => r.wins + r.losses + r.ties > 0).sort((a, b) => b.wins - a.wins || a.losses - b.losses).slice(0, 100);
         return Response.json({ rows });
       }
       const me = await S.get("user:" + d.id);
@@ -2731,7 +2764,7 @@ var RPSRoom = class extends DurableObject {
           return Response.json({ data: { stats: safeStats(me.arcade.stats), dailyUsedDate: date, vaultStyle: String(me.arcade.vaultStyle || "") } });
         }
         if (d.action === "vault") {
-          if (!me.premium) return bad("The Style Vault is Premium-only.", 403);
+          if (!premiumActive(me)) return bad("The Style Vault is Premium-only.", 403);
           const styles = ["Neon Challenger", "Royal Champion", "Galaxy Runner", "Dragon Ace"];
           if (!styles.includes(d.style)) return bad("Unknown style.");
           me.arcade = { ...currentArcade, vaultStyle: d.style, updatedAt: Date.now() };
@@ -2830,6 +2863,11 @@ var RPSRoom = class extends DurableObject {
       }
       if (path === "/acct/profile") return Response.json({ user: pub(me) });
       if (path === "/acct/premium") {
+        if (me.premium && !premiumActive(me)) {
+          delete me.premium;
+          if (me.premiumPlan && me.premiumPlan !== "free" && !me.stripeSubscription) delete me.premiumPlan;
+          await S.put("user:" + me.id, me);
+        }
         if (String(me.username || "").trim().toLowerCase() === "ashton" && me.ashtonPlanChoice !== true) {
           const alreadyLifetimeUltraPlus = me.premium && me.premium.source === "admin" && me.premium.lifetime === true && String(me.premiumPlan || me.premium.plan || "") === "family";
           if (!alreadyLifetimeUltraPlus) {
@@ -2839,19 +2877,20 @@ var RPSRoom = class extends DurableObject {
           }
         }
         return Response.json({
-          premium: !!me.premium,
-          source: me.premium ? me.premium.source : "",
-          since: me.premium ? me.premium.since : 0,
+          premium: premiumActive(me),
+          source: premiumActive(me) ? me.premium.source : "",
+          since: premiumActive(me) ? me.premium.since : 0,
           badge: me.premiumBadge !== false,
           prefs: me.premiumPrefs || {},
-          plan: me.premiumPlan || me.premium && me.premium.plan || "",
-          lifetime: !!(me.premium && me.premium.lifetime === true),
+          plan: premiumActive(me) ? (me.premiumPlan || me.premium.plan || "") : "",
+          lifetime: !!(premiumActive(me) && me.premium.lifetime === true),
+          expiresAt: premiumActive(me) ? (Number(me.premium.expiresAt) || 0) : 0,
           canManageMembers: !!(me.premium && me.premium.source === "stripe" && Number(me.premiumMemberLimit) > 0)
         });
       }
       if (path === "/acct/premium-members") {
         const plan = String(me.premiumPlan || "");
-        if (!me.premium || me.premium.source !== "stripe" || !me.stripeSubscription || !["active", "trialing"].includes(me.stripeSubscription.status) || Number(me.premiumMemberLimit) < 1) return bad("An active subscription with paid extra accounts is required to manage members.", 403);
+        if (!premiumActive(me) || me.premium.source !== "stripe" || !me.stripeSubscription || !["active", "trialing"].includes(me.stripeSubscription.status) || Number(me.premiumMemberLimit) < 1) return bad("An active subscription with paid extra accounts is required to manage members.", 403);
         const members = [];
         for (const memberId of Array.isArray(me.premiumMembers) ? me.premiumMembers : []) { const member = await S.get("user:" + memberId); if (member && member.premiumOwnerId === me.id) members.push({ id: member.id, username: member.username || "Player" }); }
         return Response.json({ plan, memberLimit: Math.max(0, Math.min(99, Number(me.premiumMemberLimit) || 0)), members });
@@ -2876,9 +2915,9 @@ var RPSRoom = class extends DurableObject {
         if (members.includes(target.id)) return Response.json({ ok: true, alreadyMember: true });
         const memberLimit = Math.max(0, Math.min(99, Number(me.premiumMemberLimit) || 0));
         if (members.length >= memberLimit) return bad("Your plan has reached its member limit.", 409);
-        if (target.premium && target.premium.source === "stripe" && target.stripeSubscription && ["active", "trialing"].includes(target.stripeSubscription.status)) return bad("That account already has its own active Premium subscription.", 409);
+        if (premiumActive(target) && target.premium.source === "stripe" && target.stripeSubscription && ["active", "trialing"].includes(target.stripeSubscription.status)) return bad("That account already has its own active Premium subscription.", 409);
         if (target.premiumOwnerId && target.premiumOwnerId !== me.id) return bad("That account is already part of another group plan.", 409);
-        if (target.premium && target.premium.source !== "group") return bad("That account already has Premium through another source.", 409);
+        if (premiumActive(target) && target.premium.source !== "group") return bad("That account already has Premium through another source.", 409);
         me.premiumMembers = [...members, target.id];
         target.premium = { since: Date.now(), source: "group", ownerId: me.id, plan };
         target.premiumOwnerId = me.id;
@@ -2888,7 +2927,7 @@ var RPSRoom = class extends DurableObject {
         return Response.json({ ok: true, added: true });
       }
       if (path === "/acct/premium-prefs") {
-        if (!me.premium) return bad("These options are for Premium members.", 403);
+        if (!premiumActive(me)) return bad("These options are for Premium members.", 403);
         const src = d.prefs && typeof d.prefs === "object" && !Array.isArray(d.prefs) ? d.prefs : {};
         const prefs = {};
         for (const [k, v] of Object.entries(src).slice(0, 40)) {
@@ -2901,7 +2940,7 @@ var RPSRoom = class extends DurableObject {
         return Response.json({ prefs });
       }
       if (path === "/acct/premium-badge") {
-        if (!me.premium) return bad("You do not have Premium.");
+        if (!premiumActive(me)) return bad("You do not have Premium.");
         me.premiumBadge = d.on !== false;
         await S.put("user:" + me.id, me);
         return Response.json({ badge: me.premiumBadge });
