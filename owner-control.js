@@ -2,7 +2,7 @@
 'use strict';
 const API='https://rps-server.heyboernathan.workers.dev';
 const $=id=>document.getElementById(id);
-let token=localStorage.getItem('token')||'',gateToken='',role='',panel={};
+let token=localStorage.getItem('token')||'',gateToken='',role='',panel={},liveRefresh=null;
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labelRole=r=>({'staff':'Staff','manager':'Manager','co-owner':'Co-owner','owner':'Owner'}[r]||'');
 const say=(el,msg,bad=false)=>{el.textContent=msg||'';el.className='msg'+(bad?' error':'');};
@@ -48,12 +48,32 @@ async function boot(){
 }
 let tab='overview';
 function buildTabs(){
- const items=[['overview','Overview'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans'],['developers','Developer Lab']];
+ const items=[['overview','Overview'],['live','Live People'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans'],['developers','Developer Lab']];
  if(role==='owner')items.push(['site','Site Availability'],['verification','Verification Override'],['firewall','Firewall']);
  $('tabs').innerHTML=items.map(([id,name])=>'<button data-tab="'+id+'" class="'+(tab===id?'active':'')+'">'+name+'</button>').join('');
  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;buildTabs();render();});
 }
 async function reload(){panel=await post('/staff/panel');buildTabs();render();}
+async function livePeople(){
+ const root=$('workspace');
+ root.innerHTML='<article class="card"><div class="section-title"><div><div class="eyebrow">Real-time multiplayer presence</div><h2>Live People</h2><p class="muted">Players currently connected to a multiplayer room. This list refreshes automatically.</p></div><button id="live-refresh" class="secondary">Refresh now</button></div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><article class="card"><div class="eyebrow">Online now</div><div id="live-count" style="font-size:42px;font-weight:900;line-height:1.2">—</div><p class="muted">Active multiplayer connections</p></article><article class="card"><div class="eyebrow">Last updated</div><div id="live-updated" style="font-size:18px;font-weight:800">—</div><p class="muted">Automatic refresh every 10 seconds</p></article></div><div class="section-title"><h3>Connected players</h3><span id="live-indicator" class="tag">CONNECTING</span></div><div id="live-list" class="table-list">Loading live players…</div><p id="live-error" class="msg" role="status"></p></article>';
+ const refresh=async()=>{
+  const button=$('live-refresh');if(button)button.disabled=true;
+  try{
+   const data=await post('/staff/online-people');
+   const people=Array.isArray(data.people)?data.people:[];
+   $('live-count').textContent=String(people.length);
+   $('live-updated').textContent=new Date().toLocaleTimeString();
+   $('live-indicator').textContent='● LIVE';$('live-indicator').style.color='var(--green)';
+   $('live-list').innerHTML=people.length?people.map(p=>'<div class="employee-row"><div><strong>🟢 '+esc(p.username||'Player')+'</strong><small>Connected since '+esc(new Date(p.connectedAt).toLocaleTimeString())+'</small></div><span class="tag">IN GAME</span></div>').join(''):'<div class="notice">No players are currently connected to multiplayer rooms.</div>';
+   say($('live-error'),'');
+  }catch(e){$('live-indicator').textContent='● UNAVAILABLE';$('live-indicator').style.color='var(--red)';say($('live-error'),'Could not load live player data: '+e.message,true);}
+  finally{if(button)button.disabled=false;}
+ };
+ $('live-refresh').onclick=refresh;
+ await refresh();
+ liveRefresh=setInterval(refresh,10000);
+}
 async function verificationOverride(){
  const root=$('workspace');
  root.innerHTML='<article class="card"><div class="section-title"><div><div class="eyebrow">Owner-only security action</div><h2>Email verification override</h2></div><span class="tag">OWNER ONLY</span></div><div class="notice">This does not disable verification for the public. It verifies one active pending signup after the Owner signs in, reauthenticates, and enters the private BY_PASS_KEY.</div><label for="verify-email">Pending signup email</label><input id="verify-email" type="email" autocomplete="off" placeholder="player@example.com"><label for="verify-key">BY_PASS_KEY</label><input id="verify-key" type="password" autocomplete="off" placeholder="Enter the Cloudflare secret"><button id="verify-submit" class="good">Verify this pending signup</button><p class="muted">The pending signup must still be active and not expired. Every successful override is recorded in the server security audit log. Never share this key or put it in website code.</p><p id="verify-result" class="msg" role="status"></p></article>';
@@ -117,11 +137,13 @@ async function developers(){
  }catch(e){root.innerHTML='<article class="card"><h2>Developer management unavailable</h2><p class="msg error">'+esc(e.message)+'</p></article>';}
 }
 function render(){
+ if(liveRefresh){clearInterval(liveRefresh);liveRefresh=null;}
  const root=$('workspace');$('work-msg').textContent='';
  if(tab==='site'){siteMaintenance();return;}
  if(tab==='verification'){verificationOverride();return;}
  if(tab==='firewall'){firewall();return;}
  if(tab==='developers'){developers();return;}
+ if(tab==='live'){livePeople();return;}
  if(tab==='overview'){
   root.innerHTML='<div class="grid"><article class="card"><h3>RPS server</h3><p class="status '+(panel.online?'on':'off')+'">'+(panel.online?'● ONLINE':'● OFFLINE')+'</p><p class="muted">Server status and operational controls.</p></article><article class="card"><h3>Administration</h3><p><span class="pill">'+labelRole(role)+'</span></p><p class="muted">You have access to employee management, account administration, server operations, tournaments and memberships.</p></article></div>';return;
  }
