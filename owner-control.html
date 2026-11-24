@@ -20,6 +20,34 @@ button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.seco
 #qr-canvas{background:white;border-radius:12px;padding:12px;display:inline-block;margin:12px auto}#qr-canvas canvas{display:block;max-width:100%;height:auto!important}
 @media(max-width:600px){header{padding:13px 14px}.card{padding:15px}.employee-row{align-items:flex-start;flex-direction:column}.two{grid-template-columns:1fr}}
 @media print{body{background:white;color:#111}body *{visibility:hidden!important}#qr-print-area,#qr-print-area *{visibility:visible!important}#qr-print-area{position:absolute;left:0;top:0;width:100%;background:white;color:#111;border:0;box-shadow:none;text-align:center}#qr-canvas{background:white}#qr-canvas canvas{margin:auto}}
+
+/* Game-inspired Owner Control visual refresh */
+:root{--oc-nav-bg:#101a30;--oc-nav-text:#c7d5ec;--oc-accent:#58d9ff;--oc-nav-active:#203c63}
+body{background:radial-gradient(ellipse at 12% 0%,#1a3260 0,transparent 42%),radial-gradient(ellipse at 88% 5%,#38205d 0,transparent 34%),#070b14!important}
+header{background:linear-gradient(105deg,#080d19f5,#111a30f0 55%,#1b1230f0)!important;border-bottom:1px solid #3a4d70;box-shadow:0 10px 35px #0007}
+.brand{font-size:13px;letter-spacing:.12em}.brand:before{content:"◆";color:#58d9ff;margin-right:10px}
+.hero{padding:24px 26px;border:1px solid #344a70;border-radius:22px;background:linear-gradient(115deg,#132746e8,#17152ee8);box-shadow:0 18px 55px #0005;position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;width:230px;height:230px;right:-70px;top:-110px;border:1px solid #58d9ff44;border-radius:50%;box-shadow:0 0 0 24px #58d9ff08,0 0 0 48px #58d9ff06;pointer-events:none}
+.hero h1{letter-spacing:-.04em;text-shadow:0 4px 30px #58d9ff22}
+#app>.section-title{padding:12px 4px 18px}
+.oc-shell{display:grid;grid-template-columns:245px minmax(0,1fr);gap:18px;align-items:start}
+#tabs{display:flex;flex-direction:column;flex-wrap:nowrap;gap:6px;margin:0;padding:12px;border-radius:18px;background:var(--oc-nav-bg);border:1px solid #334766;box-shadow:0 14px 40px #0005;position:sticky;top:88px;max-height:calc(100vh - 110px);overflow:auto}
+#tabs button{width:100%;justify-content:flex-start;text-align:left;margin:0;padding:12px 13px;background:transparent;border:1px solid transparent;color:var(--oc-nav-text);border-radius:11px;font-weight:750;transition:background .16s,border-color .16s,transform .16s}
+#tabs button:before{content:"";width:7px;height:7px;border-radius:50%;background:#60738f;box-shadow:0 0 0 4px #60738f22;flex:0 0 auto}
+#tabs button:hover{background:#ffffff0c;border-color:#ffffff18;transform:translateX(2px)}
+#tabs button.active{background:linear-gradient(105deg,var(--oc-nav-active),#243050);border-color:var(--oc-accent);color:#fff;box-shadow:inset 3px 0 var(--oc-accent),0 7px 20px #0003}
+#tabs button.active:before{background:var(--oc-accent);box-shadow:0 0 12px var(--oc-accent)}
+#workspace{min-width:0}#workspace>.card:first-child{margin-top:0}
+.card{border-color:#2b3d5c;box-shadow:0 16px 45px #0004}.card h2{letter-spacing:-.025em}
+input,select,textarea{background:#080f1e}
+button,.button{box-shadow:0 5px 16px #0003}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--oc-accent);outline-offset:2px}
+.oc-color-row{display:grid;grid-template-columns:minmax(0,1fr) 74px;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid #293b58}
+.oc-color-row input[type=color]{width:68px;height:44px;padding:4px;border-radius:10px;cursor:pointer}
+.oc-preview-nav{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid #405778;border-radius:14px;margin:14px 0;background:var(--oc-nav-bg);color:var(--oc-nav-text)}
+.oc-preview-nav strong{color:inherit}
+@media(max-width:760px){.oc-shell{grid-template-columns:1fr}#tabs{position:relative;top:auto;max-height:none;flex-direction:row;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:9px}#tabs button{width:auto;flex:0 0 auto;padding:10px 12px}#tabs button:hover{transform:none}.hero{padding:20px}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -36,11 +64,11 @@ button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.seco
 </section>
 <section id="app" class="hidden">
 <div class="section-title"><div><div class="eyebrow">Verified administrator</div><h2 id="welcome">Owner workspace</h2><p class="muted">Your role: <strong id="role-name"></strong></p></div><button id="logout" class="secondary">Log out</button></div>
-<nav id="tabs" class="tabs"></nav><div id="workspace"></div><p id="work-msg" class="msg" role="status"></p>
+<div class="oc-shell"><nav id="tabs" class="tabs" aria-label="Owner navigation"></nav><div><div id="workspace"></div><p id="work-msg" class="msg" role="status"></p></div></div>
 <article id="qr-print-area" class="card hidden"><div class="section-title"><div><h2>Employee QR pass</h2><p id="qr-caption" class="muted"></p></div><button id="qr-print">Print QR code</button></div><div class="center" style="text-align:center"><div id="qr-canvas"></div></div><p id="qr-url" class="muted"></p><p class="muted">This code is single-use, linked to one employee account, and expires after 15 minutes.</p></article>
 </section>
 </main>
-<script src="/owner-control.js?v=16"></script>
+<script src="/owner-control.js?v=17"></script>
 
 <script src="/discord-global.js?v=1" defer></script>
 </body></html>
