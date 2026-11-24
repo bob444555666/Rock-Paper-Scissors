@@ -1,0 +1,29 @@
+/* Site-wide dark-only appearance. Loaded after each page's own styles. */
+:root { color-scheme: dark !important; }
+html { color-scheme: dark !important; background: #080b12 !important; }
+body { color-scheme: dark !important; color: #edf2fc; background-color: #080b12 !important; }
+body :is(input,select,textarea) {
+  color-scheme: dark !important; color: #edf2fc !important;
+  background-color: #101827 !important; border-color: #40516a !important;
+}
+body :is(input,select,textarea)::placeholder { color: #94a3b8 !important; }
+body :is(main,section,article,aside,nav,header,footer,form,fieldset,dialog,
+.card,.panel,.modal,.menu,.dropdown,.tile,.stat,.room,.box,.container,
+.auth-card,.profile-card,.settings-card,.achievement-card,.quest-card,
+.leaderboard,.table-wrap,.member-manager,.sp-peek,.result,.notice) {
+  color-scheme: dark !important;
+}
+body :is(.card,.panel,.modal,.menu,.dropdown,.tile,.stat,.room,.box,.container,
+.auth-card,.profile-card,.settings-card,.achievement-card,.quest-card,
+.leaderboard,.table-wrap,.member-manager,.sp-peek,.result,.notice) {
+  background-color: rgba(16, 24, 39, .96) !important;
+  border-color: rgba(148, 163, 184, .22) !important;
+}
+body :is(table,thead,tbody,tr,th,td) { color: #edf2fc; border-color: rgba(148,163,184,.22); }
+body :is(h1,h2,h3,h4,h5,h6,p,li,label,small,td,th,legend) { color: inherit; }
+body a { color: #8bdcff; }
+body a:hover { color: #b8ff75; }
+body :is(button,[role="button"],.button,.btn) { color-scheme: dark; }
+@media (prefers-color-scheme: light) {
+  :root,html,body { color-scheme: dark !important; }
+}
