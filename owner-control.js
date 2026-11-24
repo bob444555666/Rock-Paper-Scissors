@@ -143,8 +143,21 @@ function render(){
  }
  if(tab==='plans'){
   const list=panel.premium||[];
-  root.innerHTML='<div class="grid"><article class="card"><h2>Grant Plus / Pro / Legend</h2><input id="plan-user" placeholder="RPS username"><select id="plan-name"><option value="individual">Plus</option><option value="duo">Pro</option><option value="family">Legend</option></select><button id="plan-grant">Grant plan for life</button></article><article class="card"><h2>Current plan access ('+list.length+')</h2><div class="table-list">'+list.map(p=>'<div class="employee-row"><div><strong>'+esc(p.username)+'</strong><small>'+esc((p.lifetime?'Lifetime ':'')+({'individual':'Plus','duo':'Pro','family':'Legend'}[p.plan]||'Plus'))+'</small></div><button class="danger" data-rm-plan="'+esc(p.id)+'">Remove</button></div>').join('')+'</div></article></div>';
-  $('plan-grant').onclick=()=>action('prem-plan',{username:$('plan-user').value,plan:$('plan-name').value,lifetime:true},'Plan granted.');
+  root.innerHTML='<div class="grid"><article class="card"><h2>Grant Plus / Pro / Legend</h2><p class="muted">Grant a plan for a custom duration or permanently. The timer starts when you grant access.</p><label for="plan-user">Player username</label><input id="plan-user" placeholder="RPS username" autocomplete="off"><label for="plan-name">Plan</label><select id="plan-name"><option value="individual">Plus</option><option value="duo">Pro</option><option value="family">Legend</option></select><h3 style="margin:14px 0 6px">Access duration</h3><div class="two"><div><label for="plan-years">Years</label><input id="plan-years" type="number" min="0" max="100" step="1" value="0"></div><div><label for="plan-months">Months</label><input id="plan-months" type="number" min="0" max="1200" step="1" value="1"></div><div><label for="plan-days">Days</label><input id="plan-days" type="number" min="0" max="36500" step="1" value="0"></div></div><label style="display:flex;align-items:center;gap:9px;margin:12px 0"><input id="plan-lifetime" type="checkbox" style="width:auto;margin:0"> Lifetime access (never expires)</label><button id="plan-grant" class="good">Grant plan access</button><p id="plan-result" class="msg" role="status"></p></article><article class="card"><h2>Current plan access ('+list.length+')</h2><div class="table-list">'+list.map(p=>'<div class="employee-row"><div><strong>'+esc(p.username)+'</strong><small>'+esc((p.lifetime?'Lifetime · ':p.expiresAt?'Expires '+new Date(p.expiresAt).toLocaleString()+' · ':'No expiry set · ')+({'individual':'Plus','duo':'Pro','family':'Legend'}[p.plan]||'Plus'))+'</small></div><button class="danger" data-rm-plan="'+esc(p.id)+'">Remove</button></div>').join('')+'</div></article></div>';
+  const lifetime=$('plan-lifetime');
+  const durationInputs=[$('plan-years'),$('plan-months'),$('plan-days')];
+  lifetime.onchange=()=>durationInputs.forEach(input=>{input.disabled=lifetime.checked;});
+  $('plan-grant').onclick=async()=>{
+   const username=$('plan-user').value.trim(),years=Number($('plan-years').value),months=Number($('plan-months').value),days=Number($('plan-days').value),permanent=lifetime.checked;
+   if(!username){say($('plan-result'),'Enter the player username.',true);return;}
+   if(!permanent&&(![years,months,days].every(Number.isInteger)||years<0||years>100||months<0||months>1200||days<0||days>36500||years+months+days===0)){say($('plan-result'),'Enter a valid duration greater than zero, or choose Lifetime.',true);return;}
+   const duration=permanent?'Lifetime':[(years?years+' year'+(years===1?'':'s'):'') ,(months?months+' month'+(months===1?'':'s'):''),(days?days+' day'+(days===1?'':'s'):'')].filter(Boolean).join(', ');
+   if(!confirm('Grant '+$('plan-name').selectedOptions[0].text+' to '+username+' for '+duration+'?'))return;
+   $('plan-grant').disabled=true;say($('plan-result'),'Granting plan access…');
+   try{await post('/staff/prem-plan',{username,plan:$('plan-name').value,lifetime:permanent,years,months,days});say($('plan-result'),'Granted '+$('plan-name').selectedOptions[0].text+' to '+username+' for '+duration+'.');await reload();}
+   catch(e){say($('plan-result'),e.message,true);}
+   finally{$('plan-grant').disabled=false;}
+  };
   root.querySelectorAll('[data-rm-plan]').forEach(b=>b.onclick=()=>action('prem-remove',{id:b.dataset.rmPlan},'Plan access removed.'));return;
  }
 }
