@@ -154,7 +154,7 @@ function render(){
    const duration=permanent?'Lifetime':[(years?years+' year'+(years===1?'':'s'):'') ,(months?months+' month'+(months===1?'':'s'):''),(days?days+' day'+(days===1?'':'s'):'')].filter(Boolean).join(', ');
    if(!confirm('Grant '+$('plan-name').selectedOptions[0].text+' to '+username+' for '+duration+'?'))return;
    $('plan-grant').disabled=true;say($('plan-result'),'Granting plan access…');
-   try{await post('/staff/prem-plan',{username,plan:$('plan-name').value,lifetime:permanent,years,months,days});say($('plan-result'),'Granted '+$('plan-name').selectedOptions[0].text+' to '+username+' for '+duration+'.');await reload();}
+   try{await post('/staff/prem-plan',{username,plan:$('plan-name').value,lifetime:permanent,years,months,days});await reload();say($('work-msg'),'Granted '+$('plan-name').selectedOptions[0].text+' to '+username+' for '+duration+'.');}
    catch(e){say($('plan-result'),e.message,true);}
    finally{$('plan-grant').disabled=false;}
   };
