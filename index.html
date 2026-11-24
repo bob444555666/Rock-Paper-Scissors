@@ -241,15 +241,6 @@
       </button>
 
     </div>
-
-
-    <a id="join-discord-nav" class="discord-nav" href="https://discord.com/channels/1574652420146069534/1574652421689581570" target="_blank" rel="noopener noreferrer" aria-label="Join the Stone Paper Scissors Discord community"> <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.7 5.3A18.4 18.4 0 0 0 15.2 4l-.6 1.2a16.8 16.8 0 0 0-5.2 0L8.8 4a18.4 18.4 0 0 0-4.5 1.3C1.5 9.5.7 13.6 1.1 17.7a18.5 18.5 0 0 0 5.5 2.8l1.2-2a12 12 0 0 1-1.9-.9l.5-.4a13.2 13.2 0 0 0 11.2 0l.5.4a12 12 0 0 1-1.9.9l1.2 2a18.5 18.5 0 0 0 5.5-2.8c.5-4.8-.8-8.9-3.2-12.4ZM8.6 14.8c-1.1 0-2-1-2-2.2s.9-2.2 2-2.2 2 1 2 2.2-.9 2.2-2 2.2Zm6.8 0c-1.1 0-2-1-2-2.2s.9-2.2 2-2.2 2 1 2 2.2-.9 2.2-2 2.2Z"/></svg><span>Join Discord</span></a>
-    <style>
-      .discord-nav{position:fixed;top:10px;left:18px;z-index:1200;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border:1px solid rgba(114,137,218,.8);border-radius:12px;background:linear-gradient(135deg,#5865f2,#414bbd);color:#fff;font-weight:900;text-decoration:none;box-shadow:0 8px 24px #0007;transition:filter .16s ease,transform .16s ease}
-      .discord-nav:hover{color:#fff;filter:brightness(1.13);transform:translateY(-2px)}
-      .discord-nav:focus-visible{outline:3px solid #b8ff55;outline-offset:3px}
-      @media(max-width:600px){.discord-nav{top:calc(8px + env(safe-area-inset-top));left:10px;min-height:38px;padding:8px 10px;font-size:12px;gap:6px}}
-    </style>
     <button id="chat-with-friends-nav" type="button" class="fc-nav-chat" aria-label="Open Chat with Friends">💬 Chat with Friends</button>
     <style>.fc-nav-chat{position:fixed;top:10px;right:18px;left:auto;transform:none;z-index:1200;border:1px solid #55d9df;border-radius:12px;padding:10px 16px;background:linear-gradient(135deg,#163c52,#29245a);color:#eafcff;font-weight:850;box-shadow:0 8px 24px #0007;cursor:pointer}.fc-nav-chat:hover{filter:brightness(1.2)}@media(max-width:600px){.fc-nav-chat{top:calc(8px + env(safe-area-inset-top));right:10px;left:auto;transform:none;padding:9px 11px;font-size:12px}}</style>
     <button id="friends-btn" type="button" hidden>👥 Friends <em class="badge" id="fr-badge" hidden></em></button>
@@ -398,5 +389,7 @@
     </script>
 
 
-  </body>
+  
+<script src="/discord-global.js?v=1" defer></script>
+</body>
 </html>
