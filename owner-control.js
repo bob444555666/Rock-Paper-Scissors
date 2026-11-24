@@ -49,7 +49,7 @@ async function boot(){
 let tab='overview';
 function buildTabs(){
  const items=[['overview','Overview'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans'],['developers','Developer Lab']];
- if(role==='owner')items.push(['verification','Verification Override'],['firewall','Firewall']);
+ if(role==='owner')items.push(['site','Site Availability'],['verification','Verification Override'],['firewall','Firewall']);
  $('tabs').innerHTML=items.map(([id,name])=>'<button data-tab="'+id+'" class="'+(tab===id?'active':'')+'">'+name+'</button>').join('');
  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;buildTabs();render();});
 }
@@ -85,6 +85,23 @@ async function firewall(){
   $('fw-clear').onclick=async()=>{if(!confirm('Clear the firewall event log?'))return;try{await post('/staff/firewall',{action:'clear-events'});await firewall();say($('work-msg'),'Firewall log cleared.');}catch(e){say($('work-msg'),e.message,true);}};
  }catch(e){$('fw-status').textContent='Could not load firewall: '+e.message;$('fw-status').className='notice error';}
 }
+async function siteMaintenance(){
+ const root=$('workspace');
+ root.innerHTML='<article class="card"><div class="section-title"><div><div class="eyebrow">Global website control</div><h2>Site availability</h2></div><span class="tag">OWNER ONLY</span></div><div id="maintenance-status" class="notice">Checking current site status…</div><p class="muted">Turn maintenance mode on to temporarily disable the public game across every page. Visitors will see a full-screen notice. Your Owner Control Centre remains accessible so you can turn the site back on. Turning it back on removes the notice automatically.</p><button id="maintenance-toggle" class="danger" disabled>Loading…</button><p id="maintenance-result" class="msg" role="status"></p></article>';
+ const status=$('maintenance-status'),button=$('maintenance-toggle'),result=$('maintenance-result');
+ let enabled=false;
+ const paint=()=>{status.innerHTML=enabled?'<strong class="error">● SITE TEMPORARILY DISABLED</strong><br><span class="muted">Visitors are seeing the maintenance notice. Public game API requests are paused.</span>':'<strong class="success">● SITE ONLINE</strong><br><span class="muted">The public website and game are available.</span>';button.textContent=enabled?'Turn Site Back On':'Temporarily Disable Site';button.className=enabled?'good':'danger';button.disabled=false;};
+ try{
+  const data=await post('/staff/maintenance',{action:'get'});enabled=data.enabled===true;paint();
+ }catch(e){status.textContent='Could not load site status: '+e.message;status.className='notice error';return;}
+ button.onclick=async()=>{
+  const next=!enabled;
+  if(!confirm(next?'Temporarily disable the public website for everyone? Visitors will see a maintenance notice until you turn it back on.':'Turn the website back on for everyone and remove the maintenance notice?'))return;
+  button.disabled=true;say(result,next?'Enabling maintenance mode…':'Restoring the website…');
+  try{const data=await post('/staff/maintenance',{action:'set',enabled:next});enabled=data.enabled===true;paint();say(result,enabled?'Maintenance mode is on. Visitors now see the temporary-disabled notice.':'Website restored. The temporary-disabled notice has been removed.');}
+  catch(e){say(result,e.message,true);button.disabled=false;}
+ };
+}
 async function developers(){
  const root=$('workspace');root.innerHTML='<article class="card"><h2>Website change proposals</h2><p class="muted">Review Legend developer submissions. Approval publishes validated theme settings. Submitted JavaScript is never executed.</p><div id="dev-proposals" class="table-list">Loading proposals…</div></article><article class="card"><h2>Legacy developer accounts</h2><div id="dev-accounts" class="table-list">Loading…</div></article><article class="card"><h2>Security test submissions</h2><div id="dev-submissions" class="table-list">Loading…</div></article>';
  try{
@@ -101,6 +118,7 @@ async function developers(){
 }
 function render(){
  const root=$('workspace');$('work-msg').textContent='';
+ if(tab==='site'){siteMaintenance();return;}
  if(tab==='verification'){verificationOverride();return;}
  if(tab==='firewall'){firewall();return;}
  if(tab==='developers'){developers();return;}
