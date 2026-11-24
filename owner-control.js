@@ -48,7 +48,7 @@ async function boot(){
 }
 let tab='overview';
 function buildTabs(){
- const items=[['overview','Overview'],['live','Live People'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans'],['developers','Developer Lab']];
+ const items=[['overview','Overview'],['live','Live People'],['appearance','Appearance'],['employees','Employees & Passwords'],['accounts','Accounts'],['server','Server'],['challenges','Challenges'],['tournaments','Tournaments'],['plans','Plans'],['developers','Developer Lab']];
  if(role==='owner')items.push(['site','Site Availability'],['verification','Verification Override'],['firewall','Firewall']);
  $('tabs').innerHTML=items.map(([id,name])=>'<button data-tab="'+id+'" class="'+(tab===id?'active':'')+'">'+name+'</button>').join('');
  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;buildTabs();render();});
@@ -73,6 +73,20 @@ async function livePeople(){
  $('live-refresh').onclick=refresh;
  await refresh();
  liveRefresh=setInterval(refresh,10000);
+}
+function applyNavTheme(bg,text){
+ document.documentElement.style.setProperty('--oc-nav-bg',bg);
+ document.documentElement.style.setProperty('--oc-nav-text',text);
+ try{localStorage.setItem('owner-control-nav-theme',JSON.stringify({bg,text}));}catch(e){}
+}
+function appearance(){
+ const saved=(()=>{try{return JSON.parse(localStorage.getItem('owner-control-nav-theme')||'{}')}catch(e){return {}}})();
+ const bg=saved.bg||'#101a30',fg=saved.text||'#c7d5ec';
+ $('workspace').innerHTML='<article class="card"><div class="eyebrow">Personalise your command centre</div><h2>Appearance & Navigation</h2><p class="muted">Tune the navigation bar to match your style. These settings are saved in this browser and do not change the public game.</p><div class="oc-preview-nav" id="nav-preview"><strong>◆ OWNER CONTROL</strong><span>Overview</span><span>Live People</span><span>Plans</span></div><div class="oc-color-row"><div><strong>Navigation background</strong><p class="muted">Choose the colour behind the navigation items.</p></div><input id="nav-bg-color" type="color" value="'+esc(bg)+'" aria-label="Navigation background colour"></div><div class="oc-color-row"><div><strong>Navigation text</strong><p class="muted">Choose the text colour for navigation items.</p></div><input id="nav-text-color" type="color" value="'+esc(fg)+'" aria-label="Navigation text colour"></div><div class="actions" style="margin-top:16px"><button id="nav-reset" class="secondary">Reset default colours</button></div><p id="appearance-result" class="msg" role="status">Changes preview instantly and save automatically.</p></article>';
+ const update=()=>{const b=$('nav-bg-color').value,t=$('nav-text-color').value;applyNavTheme(b,t);$('nav-preview').style.background=b;$('nav-preview').style.color=t;say($('appearance-result'),'Navigation colours saved on this browser.');};
+ $('nav-bg-color').oninput=update;$('nav-text-color').oninput=update;
+ $('nav-reset').onclick=()=>{$('nav-bg-color').value='#101a30';$('nav-text-color').value='#c7d5ec';update();};
+ $('nav-preview').style.background=bg;$('nav-preview').style.color=fg;
 }
 async function verificationOverride(){
  const root=$('workspace');
@@ -144,6 +158,7 @@ function render(){
  if(tab==='firewall'){firewall();return;}
  if(tab==='developers'){developers();return;}
  if(tab==='live'){livePeople();return;}
+ if(tab==='appearance'){appearance();return;}
  if(tab==='overview'){
   root.innerHTML='<div class="grid"><article class="card"><h3>RPS server</h3><p class="status '+(panel.online?'on':'off')+'">'+(panel.online?'● ONLINE':'● OFFLINE')+'</p><p class="muted">Server status and operational controls.</p></article><article class="card"><h3>Administration</h3><p><span class="pill">'+labelRole(role)+'</span></p><p class="muted">You have access to employee management, account administration, server operations, tournaments and memberships.</p></article></div>';return;
  }
@@ -255,5 +270,6 @@ async function accounts(){
 }
 $('login-go').onclick=login;$('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 $('logout').onclick=()=>{gateToken='';$('login-password').value='';$('app').classList.add('hidden');$('login-card').classList.remove('hidden');say($('login-msg'),'Signed out.');};
+try{const theme=JSON.parse(localStorage.getItem('owner-control-nav-theme')||'{}');if(theme.bg&&theme.text)applyNavTheme(theme.bg,theme.text);}catch(e){}
 boot();
 })();
