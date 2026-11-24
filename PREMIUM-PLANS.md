@@ -28,9 +28,9 @@ The checkout Worker adds the corresponding recurring Stripe price and quantity. 
 ## Benefits shown on the plan page
 
 - **Free:** core game, online rooms, Quick Play, computer opponents, friends, leaderboard, core match history, daily challenges, accessibility settings, and free progression.
-- **Plus:** Free benefits, ad-free experience, additional themes and cosmetics, extra game modes, more practice settings, and expanded statistics.
-- **Pro:** Plus benefits, advanced match formats, private lobbies, custom rules, spectator tools, full match history, AI Coach, adaptive practice, rating trends, and replay sharing.
-- **Legend:** Plus and Pro benefits, creator and tournament tools, custom move sets, Theme Studio, opponent scouting, data export, Nemesis AI, streamer overlays, and priority support.
+- **Plus:** Free benefits, additional themes and cosmetics, extra game modes, more practice settings, and expanded statistics.
+- **Pro:** Plus benefits, ad-free experience, advanced match formats, private lobbies, custom rules, spectator tools, full match history, AI Coach, adaptive practice, rating trends, and replay sharing.
+- **Legend:** Plus and Pro benefits, ad-free experience, creator and tournament tools, custom move sets, Theme Studio, opponent scouting, data export, Nemesis AI, streamer overlays, and priority support.
 
 **Feature-status note:** A plan card is not proof that every roadmap benefit is implemented. Some advanced modes, tournament systems, analytics, and creator tools are still planned and must not be described as live until their UI, service logic, and server-side entitlements are implemented and tested.
 
