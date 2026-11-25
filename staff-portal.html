@@ -24,31 +24,13 @@ button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.seco
 @media print{body{background:#fff;color:#111}body *{visibility:hidden!important}#qr-output,#qr-output *{visibility:visible!important}#qr-output{position:absolute;left:0;top:0;width:100%;background:#fff;color:#111;border:0;box-shadow:none;text-align:center}#qr-canvas{background:#fff}#qr-canvas canvas{margin:auto}}
 @media(max-width:600px){header{padding:13px 14px}.card{padding:15px}.two{grid-template-columns:1fr}.employee-row{align-items:flex-start;flex-direction:column}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 <link rel="stylesheet" href="/dark-mode.css?v=1">
 </head>
 <body>
 <header><div class="brand">STONE PAPER <span>SCISSORS</span> / STAFF</div><div class="header-right"><span id="role-pill" class="pill hidden"></span><a class="button secondary" href="/">Back to game</a></div></header>
 <main>
-<section class="hero"><div class="eyebrow">Secure employee access</div><h1>Staff Portal</h1><p>Scan your employee QR pass, then sign in with the RPS account the owner assigned to you.</p></section>
-<section id="gate" class="card center">
-<h2 id="gate-title">Scan your employee QR code</h2>
-<p class="muted" id="gate-copy">Your QR pass is unique to your account and can only be used once. Ask the owner or manager to generate one for you.</p>
-<div id="qr-reader"></div>
-<div><button id="scan-start" type="button">Open camera scanner</button><button id="scan-stop" class="secondary hidden" type="button">Stop camera</button></div>
-<p class="muted">Can't use your camera? Paste the employee link or QR token below.</p>
-<input id="manual-invite" placeholder="Paste employee link or code" autocomplete="off">
-<button id="manual-go" type="button">Continue</button>
-<div id="login-box" class="hidden" style="max-width:440px;margin:20px auto 0;text-align:left">
-<h3>Employee sign in</h3>
-<p class="muted">Use the username/email and password for the account assigned to this QR code.</p>
-<input id="login-id" placeholder="Username or email" autocomplete="username">
-<input id="login-password" type="password" placeholder="Password" autocomplete="current-password">
-<button id="login-go" type="button" style="width:100%">Verify password and open Staff Portal</button>
-</div>
-<p id="gate-msg" class="msg" role="status"></p>
-</section>
+<section class="hero"><div class="eyebrow">Secure employee access</div><h1>Staff Portal</h1><p>Sign in with the same RPS game username and password assigned to your staff account. No QR code or invitation link is needed.</p></section>
+<section id="gate" class="card center"><h2 id="gate-title">Staff sign in</h2><p class="muted" id="gate-copy">Use your normal RPS game username and password. Only accounts assigned a staff role can enter.</p><div id="login-box" style="max-width:440px;margin:20px auto 0;text-align:left"><label for="login-id">RPS username or email</label><input id="login-id" placeholder="Username or email" autocomplete="username"><label for="login-password">RPS password</label><input id="login-password" type="password" placeholder="Password" autocomplete="current-password"><button id="login-go" type="button" style="width:100%">Sign in to Staff Portal</button></div><p id="gate-msg" class="msg" role="status"></p></section>
 <section id="dashboard" class="hidden">
 <div class="section-title"><div><div class="eyebrow">Authenticated workspace</div><h2 id="welcome-title">Welcome to the team</h2><p class="muted" id="welcome-copy"></p></div><div class="actions"><a id="owner-link" class="button hidden" href="/owner-control.html">Owner Control Centre</a><button id="logout" class="secondary" type="button">Log out</button></div></div>
 <nav id="tabs" class="tabs"></nav>
@@ -56,7 +38,7 @@ button:hover,.button:hover{filter:brightness(1.15)}button.secondary,.button.seco
 <p id="work-msg" class="msg" role="status"></p>
 </section>
 </main>
-<script src="/staff-portal.js?v=5"></script>
+<script src="/staff-portal.js?v=6"></script>
 
 <script src="/discord-global.js?v=1" defer></script>
 <script src="/site-maintenance.js?v=1" defer></script>
